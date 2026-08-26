@@ -27,10 +27,13 @@ const githubRepo = app.node.tryGetContext('githubRepo') as string | undefined;
 const githubToken = app.node.tryGetContext('githubToken') as string | undefined;
 const useGitHub = !!(githubOwner && githubRepo && githubToken);
 
+// Stack name prefix to avoid collisions with other projects in the same account
+const PREFIX = 'FinAssessor';
+
 // ──────────────────────────────────────────────────────────
 // 1. Amplify Hosting — creates Amplify App, gets appId + domain
 // ──────────────────────────────────────────────────────────
-const amplifyHosting = new AmplifyHostingStack(app, `AmplifyHostingStack-${branchName}`, {
+const amplifyHosting = new AmplifyHostingStack(app, `${PREFIX}-Amplify-${branchName}`, {
   description: `Amplify App for Finance Assessor ${branchName}`,
   branchName,
   githubOwner,
@@ -48,14 +51,14 @@ const amplifyAppUrl = cdk.Fn.join('', [
   amplifyHosting.defaultDomain,
 ]);
 
-const backend = new FinanceAssessorStack(app, `FinanceAssessorStack-${branchName}`, {
+const backend = new FinanceAssessorStack(app, `${PREFIX}-Backend-${branchName}`, {
   allowedOrigins: ['http://localhost:3000', amplifyAppUrl],
 });
 
 // ──────────────────────────────────────────────────────────
 // 3. AgentCore Stack — Live Q&A voice agent with stakeholder personas
 // ──────────────────────────────────────────────────────────
-const agentCore = new AgentCoreStack(app, `AgentCoreStack-${branchName}`, {
+const agentCore = new AgentCoreStack(app, `${PREFIX}-AgentCore-${branchName}`, {
   description: `Live Q&A AgentCore runtime for Finance Assessor ${branchName}`,
   userPool: backend.userPool,
   userPoolClient: backend.userPoolClient,
@@ -70,7 +73,7 @@ const agentCore = new AgentCoreStack(app, `AgentCoreStack-${branchName}`, {
 // ──────────────────────────────────────────────────────────
 // 4. Frontend Config — adds branch + env vars to Amplify App
 // ──────────────────────────────────────────────────────────
-new FrontendConfigStack(app, `FrontendConfigStack-${branchName}`, {
+new FrontendConfigStack(app, `${PREFIX}-FrontendConfig-${branchName}`, {
   description: `Frontend branch config for Finance Assessor ${branchName}`,
   amplifyAppId: amplifyHosting.appId,
   amplifyDefaultDomain: amplifyHosting.defaultDomain,

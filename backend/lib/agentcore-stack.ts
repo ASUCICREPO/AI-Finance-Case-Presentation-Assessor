@@ -100,7 +100,7 @@ export class AgentCoreStack extends cdk.Stack {
 
     // Grant authenticated users permission to invoke the AgentCore WebSocket
     new iam.CfnManagedPolicy(this, 'AuthRoleAgentCorePolicy', {
-      managedPolicyName: `AgentCoreInvokeWebSocket-${this.stackName}`,
+      managedPolicyName: `FinAssessor-AgentCoreWS-${this.stackName}`,
       policyDocument: {
         Version: '2012-10-17',
         Statement: [{
