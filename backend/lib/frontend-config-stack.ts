@@ -1,7 +1,10 @@
-import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import * as cdk from 'aws-cdk-lib';
+import * as amplify_cfn from 'aws-cdk-lib/aws-amplify';
+import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
+import { NagSuppressions } from 'cdk-nag';
 
-interface FrontendConfigStackProps extends cdk.StackProps {
+export interface FrontendConfigStackProps extends cdk.StackProps {
   amplifyAppId: string;
   amplifyDefaultDomain: string;
   branchName: string;
@@ -15,24 +18,75 @@ interface FrontendConfigStackProps extends cdk.StackProps {
 
 /**
  * Frontend Config Stack
- * Configures Amplify branch with environment variables needed by the frontend.
+ * Creates the Amplify branch with environment variables and triggers initial build.
  */
 export class FrontendConfigStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: FrontendConfigStackProps) {
     super(scope, id, props);
 
-    // TODO: Create Amplify branch with environment variables
-    // Reference: Real-Estate-Program/backend/lib/frontend-config-stack.ts
+    const {
+      amplifyAppId,
+      amplifyDefaultDomain,
+      branchName,
+      useGitHub,
+      apiUrl,
+      userPoolId,
+      userPoolClientId,
+      identityPoolId,
+      agentCoreWebSocketUrl,
+    } = props;
 
-    // Environment variables that will be injected into the frontend:
-    // NEXT_PUBLIC_API_URL
-    // NEXT_PUBLIC_USER_POOL_ID
-    // NEXT_PUBLIC_USER_POOL_CLIENT_ID
-    // NEXT_PUBLIC_IDENTITY_POOL_ID
-    // NEXT_PUBLIC_AGENTCORE_WS_URL
-    // NEXT_PUBLIC_AWS_REGION
+    const envVars: amplify_cfn.CfnBranch.EnvironmentVariableProperty[] = useGitHub
+      ? [
+        { name: 'NEXT_PUBLIC_API_URL', value: apiUrl },
+        { name: 'NEXT_PUBLIC_USER_POOL_ID', value: userPoolId },
+        { name: 'NEXT_PUBLIC_USER_POOL_CLIENT_ID', value: userPoolClientId },
+        { name: 'NEXT_PUBLIC_IDENTITY_POOL_ID', value: identityPoolId },
+        { name: 'NEXT_PUBLIC_AWS_REGION', value: cdk.Stack.of(this).region },
+        { name: 'NEXT_PUBLIC_AGENTCORE_WS_URL', value: agentCoreWebSocketUrl },
+      ]
+      : [];
 
-    new cdk.CfnOutput(this, 'FrontendApiUrl', { value: props.apiUrl });
-    new cdk.CfnOutput(this, 'FrontendWsUrl', { value: props.agentCoreWebSocketUrl });
+    const branch = new amplify_cfn.CfnBranch(this, 'Branch', {
+      appId: amplifyAppId,
+      branchName,
+      stage: 'PRODUCTION',
+      enableAutoBuild: useGitHub,
+      ...(envVars.length > 0 && { environmentVariables: envVars }),
+    });
+
+    if (useGitHub) {
+      const trigger = new AwsCustomResource(this, 'TriggerAmplifyBuild', {
+        onCreate: {
+          service: 'Amplify',
+          action: 'startJob',
+          parameters: { appId: amplifyAppId, branchName, jobType: 'RELEASE' },
+          physicalResourceId: PhysicalResourceId.of(`${amplifyAppId}-${branchName}-initial`),
+        },
+        policy: AwsCustomResourcePolicy.fromSdkCalls({
+          resources: [
+            `arn:aws:amplify:${this.region}:${this.account}:apps/${amplifyAppId}`,
+            `arn:aws:amplify:${this.region}:${this.account}:apps/${amplifyAppId}/branches/${branchName}/jobs/*`,
+          ],
+        }),
+      });
+      trigger.node.addDependency(branch);
+
+      const stackName = this.stackName;
+      NagSuppressions.addResourceSuppressionsByPath(this, `/${stackName}/TriggerAmplifyBuild/CustomResourcePolicy/Resource`, [
+        { id: 'AwsSolutions-IAM5', reason: 'Amplify startJob creates dynamic job IDs — wildcard on jobs/* is narrowest scope.' },
+      ]);
+      NagSuppressions.addResourceSuppressionsByPath(this, `/${stackName}/AWS679f53fac002430cb0da5b7982bd2287/ServiceRole/Resource`, [
+        { id: 'AwsSolutions-IAM4', reason: 'CDK AwsCustomResource internal Lambda uses AWS managed policy.' },
+      ], true);
+      NagSuppressions.addResourceSuppressionsByPath(this, `/${stackName}/AWS679f53fac002430cb0da5b7982bd2287/Resource`, [
+        { id: 'AwsSolutions-L1', reason: 'CDK AwsCustomResource Lambda runtime managed internally.' },
+      ]);
+    }
+
+    new cdk.CfnOutput(this, 'AmplifyAppUrl', {
+      value: `https://${branchName}.${amplifyDefaultDomain}`,
+      description: `Amplify frontend URL (${branchName})`,
+    });
   }
 }

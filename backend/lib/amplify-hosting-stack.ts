@@ -1,7 +1,11 @@
-import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import * as cdk from 'aws-cdk-lib';
+import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as amplify from '@aws-cdk/aws-amplify-alpha';
+import { NagSuppressions } from 'cdk-nag';
 
-interface AmplifyHostingStackProps extends cdk.StackProps {
+export interface AmplifyHostingStackProps extends cdk.StackProps {
   branchName: string;
   githubOwner?: string;
   githubRepo?: string;
@@ -11,7 +15,7 @@ interface AmplifyHostingStackProps extends cdk.StackProps {
 /**
  * Amplify Hosting Stack
  * Creates the AWS Amplify App for hosting the Next.js frontend.
- * Supports both manual deployment and GitHub CI/CD modes.
+ * Supports GitHub CI/CD (auto-deploys on push) or manual deployment.
  */
 export class AmplifyHostingStack extends cdk.Stack {
   public readonly appId: string;
@@ -20,14 +24,86 @@ export class AmplifyHostingStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: AmplifyHostingStackProps) {
     super(scope, id, props);
 
-    // TODO: Implement Amplify App creation
-    // Reference: Real-Estate-Program/backend/lib/amplify-hosting-stack.ts
+    const { branchName, githubOwner, githubRepo, githubToken } = props;
+    const useGitHub = !!(githubOwner && githubRepo && githubToken);
 
-    // Placeholder outputs
-    this.appId = 'PLACEHOLDER_APP_ID';
-    this.defaultDomain = 'PLACEHOLDER.amplifyapp.com';
+    let amplifyApp: amplify.App;
 
-    new cdk.CfnOutput(this, 'AmplifyAppId', { value: this.appId });
-    new cdk.CfnOutput(this, 'AmplifyDefaultDomain', { value: this.defaultDomain });
+    if (useGitHub) {
+      const githubTokenSecret = new secretsmanager.Secret(this, 'GitHubToken', {
+        description: 'GitHub PAT for Finance Assessor Amplify',
+        secretStringValue: cdk.SecretValue.unsafePlainText(githubToken!),
+      });
+
+      NagSuppressions.addResourceSuppressions(githubTokenSecret, [
+        { id: 'AwsSolutions-SMG4', reason: 'GitHub PATs cannot be auto-rotated by Secrets Manager.' },
+      ]);
+
+      amplifyApp = new amplify.App(this, 'FrontendApp', {
+        appName: `finance-assessor-${branchName}`,
+        description: `Finance Case Assessor frontend (${branchName})`,
+        platform: amplify.Platform.WEB,
+        sourceCodeProvider: new amplify.GitHubSourceCodeProvider({
+          owner: githubOwner!,
+          repository: githubRepo!,
+          oauthToken: githubTokenSecret.secretValue,
+        }),
+        customRules: [
+          { source: '/<*>.js', target: '/<*>.js', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.css', target: '/<*>.css', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.png', target: '/<*>.png', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.ico', target: '/<*>.ico', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.woff2', target: '/<*>.woff2', status: amplify.RedirectStatus.REWRITE },
+          // SPA fallback
+          { source: '</^[^.]+$|\.(?!(js|css|png|ico|woff2|json|txt|map)$)([^.]+$)/>', target: '/index.html', status: amplify.RedirectStatus.REWRITE },
+        ],
+        buildSpec: codebuild.BuildSpec.fromObjectToYaml({
+          version: '1.0',
+          applications: [
+            {
+              appRoot: 'frontend',
+              frontend: {
+                phases: {
+                  preBuild: { commands: ['npm ci'] },
+                  build: { commands: ['npm run build'] },
+                },
+                artifacts: {
+                  baseDirectory: 'out',
+                  files: ['**/*'],
+                },
+                cache: {
+                  paths: ['node_modules/**/*', '.next/cache/**/*'],
+                },
+              },
+            },
+          ],
+        }),
+      });
+    } else {
+      amplifyApp = new amplify.App(this, 'FrontendApp', {
+        appName: `finance-assessor-${branchName}`,
+        description: `Finance Case Assessor frontend (${branchName}) — manual deploy`,
+        platform: amplify.Platform.WEB,
+        customRules: [
+          { source: '/<*>.js', target: '/<*>.js', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.css', target: '/<*>.css', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.png', target: '/<*>.png', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.ico', target: '/<*>.ico', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.woff2', target: '/<*>.woff2', status: amplify.RedirectStatus.REWRITE },
+          { source: '</^[^.]+$|\.(?!(js|css|png|ico|woff2|json|txt|map)$)([^.]+$)/>', target: '/index.html', status: amplify.RedirectStatus.REWRITE },
+        ],
+      });
+    }
+
+    this.appId = amplifyApp.appId;
+    this.defaultDomain = amplifyApp.defaultDomain;
+
+    new cdk.CfnOutput(this, 'AmplifyAppId', { value: amplifyApp.appId });
+    new cdk.CfnOutput(this, 'AmplifyDefaultDomain', { value: amplifyApp.defaultDomain });
+
+    NagSuppressions.addResourceSuppressions(amplifyApp, [
+      { id: 'AwsSolutions-IAM5', reason: 'Amplify auto-generates a service role with wildcards scoped to this app.' },
+      { id: 'AwsSolutions-IAM4', reason: 'Amplify service role uses AWS-managed policies required for build/deploy.' },
+    ], true);
   }
 }
