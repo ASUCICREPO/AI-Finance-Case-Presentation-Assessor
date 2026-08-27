@@ -49,13 +49,17 @@ export class AmplifyHostingStack extends cdk.Stack {
           oauthToken: githubTokenSecret.secretValue,
         }),
         customRules: [
+          // Serve static assets directly
           { source: '/<*>.js', target: '/<*>.js', status: amplify.RedirectStatus.REWRITE },
           { source: '/<*>.css', target: '/<*>.css', status: amplify.RedirectStatus.REWRITE },
           { source: '/<*>.png', target: '/<*>.png', status: amplify.RedirectStatus.REWRITE },
           { source: '/<*>.ico', target: '/<*>.ico', status: amplify.RedirectStatus.REWRITE },
           { source: '/<*>.woff2', target: '/<*>.woff2', status: amplify.RedirectStatus.REWRITE },
-          // SPA fallback
-          { source: '</^[^.]+$|\.(?!(js|css|png|ico|woff2|json|txt|map)$)([^.]+$)/>', target: '/index.html', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.json', target: '/<*>.json', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.txt', target: '/<*>.txt', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.html', target: '/<*>.html', status: amplify.RedirectStatus.REWRITE },
+          // Fallback: all clean URLs → /index.html (client-side routing handles it)
+          { source: '</^[^.]+$/', target: '/index.html', status: amplify.RedirectStatus.REWRITE },
         ],
         buildSpec: codebuild.BuildSpec.fromObjectToYaml({
           version: '1.0',
@@ -90,7 +94,10 @@ export class AmplifyHostingStack extends cdk.Stack {
           { source: '/<*>.png', target: '/<*>.png', status: amplify.RedirectStatus.REWRITE },
           { source: '/<*>.ico', target: '/<*>.ico', status: amplify.RedirectStatus.REWRITE },
           { source: '/<*>.woff2', target: '/<*>.woff2', status: amplify.RedirectStatus.REWRITE },
-          { source: '</^[^.]+$|\.(?!(js|css|png|ico|woff2|json|txt|map)$)([^.]+$)/>', target: '/index.html', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.json', target: '/<*>.json', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.txt', target: '/<*>.txt', status: amplify.RedirectStatus.REWRITE },
+          { source: '/<*>.html', target: '/<*>.html', status: amplify.RedirectStatus.REWRITE },
+          { source: '</^[^.]+$/', target: '/index.html', status: amplify.RedirectStatus.REWRITE },
         ],
       });
     }
