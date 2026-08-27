@@ -34,36 +34,12 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left — Hero Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-gray-50 to-gray-100 items-center justify-center overflow-hidden">
-        <div className="relative w-full h-full flex items-center justify-center p-12">
-          {/* Decorative elements */}
-          <div className="absolute top-20 left-16 bg-white rounded-full px-4 py-2 shadow-md flex items-center gap-2 text-sm font-sans">
-            <span className="text-lg">💬</span>
-            <span className="font-medium text-gray-700">Questions</span>
-          </div>
-          <div className="absolute top-32 right-24 bg-green-500 rounded-full px-4 py-2 shadow-md text-sm font-sans text-white font-medium">
-            Marks: 95%
-          </div>
-          <div className="absolute top-44 right-16 flex items-center gap-1.5 bg-white rounded-full px-3 py-1.5 shadow-md text-sm font-sans">
-            <span className="h-2 w-2 rounded-full bg-red-500" />
-            <span className="font-medium text-gray-700">REC</span>
-          </div>
-          <div className="absolute left-12 top-1/2 bg-white rounded-full px-4 py-2 shadow-md flex items-center gap-2 text-sm font-sans">
-            <span className="text-lg">✅</span>
-            <span className="font-medium text-gray-700">Answered</span>
-          </div>
-          <div className="absolute bottom-1/3 right-1/3 bg-gray-900 rounded-full h-10 w-10 flex items-center justify-center shadow-md">
-            <span className="text-white text-sm font-bold">AI</span>
-          </div>
-
-          {/* Central illustration placeholder */}
-          <div className="w-80 h-96 bg-gradient-to-b from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-32 h-32 rounded-full bg-gray-400 mx-auto mb-4" />
-              <div className="w-48 h-4 bg-gray-400 rounded mx-auto" />
-            </div>
-          </div>
-        </div>
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gray-50 items-center justify-center overflow-hidden">
+        <img
+          src="/login-hero.png"
+          alt="AI-powered presentation assessment"
+          className="w-full h-full object-cover object-center"
+        />
       </div>
 
       {/* Right — Login Form */}
