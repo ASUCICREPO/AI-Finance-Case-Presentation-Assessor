@@ -64,7 +64,7 @@ export class AmplifyHostingStack extends cdk.Stack {
               appRoot: 'frontend',
               frontend: {
                 phases: {
-                  preBuild: { commands: ['npm ci'] },
+                  preBuild: { commands: ['npm install'] },
                   build: { commands: ['npm run build'] },
                 },
                 artifacts: {
