@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Clock, Mic, Video, Volume2, FileSpreadsheet, Flag } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Clock, FileSpreadsheet, Flag } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
+import AnamAvatarPanel from './AnamAvatarPanel';
+import StudentCameraView from './StudentCameraView';
+import { getAnamSessionToken } from '../../../services/api';
 import type { UseAgentCoreReturn } from '../../../hooks/useAgentCore';
 
 interface TimerState {
@@ -25,12 +28,16 @@ interface LiveSessionProps {
   agentCore: UseAgentCoreReturn;
   timer: TimerState;
   workbookSheets: string[];
+  anamPersonaId?: string;
   onSubmit: () => void;
 }
 
 /**
- * Live Q&A Session — wired to AgentCore WebSocket and session timer.
- * Shows questions + transcripts on left, AI persona + student video on right.
+ * Live Q&A Session — fully wired with:
+ * - Anam AI avatar for the stakeholder persona (lip-synced TTS)
+ * - Student webcam feed
+ * - Real-time transcript from AgentCore WebSocket
+ * - Session timer
  */
 export default function LiveSession({
   studentInfo,
@@ -38,17 +45,51 @@ export default function LiveSession({
   agentCore,
   timer,
   workbookSheets,
+  anamPersonaId,
   onSubmit,
 }: LiveSessionProps) {
   const [showSpreadsheet, setShowSpreadsheet] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [anamSessionToken, setAnamSessionToken] = useState<string | null>(null);
+  const [anamFailed, setAnamFailed] = useState(false);
 
-  const { transcript, isAISpeaking, currentAIText, personaName } = agentCore;
+  // Ref for piping assistant text to Anam avatar
+  const onAssistantTextRef = useRef<((text: string, isFinal: boolean) => void) | null>(null);
+
+  const { transcript, isAISpeaking, currentAIText, personaName, status } = agentCore;
   const { formattedTime, isLowTime } = timer;
 
-  // Get final transcript entries (questions from assistant, answers from user)
+  // Fetch Anam session token on mount
+  useEffect(() => {
+    if (!anamPersonaId) {
+      setAnamFailed(true);
+      return;
+    }
+
+    getAnamSessionToken(anamPersonaId)
+      .then((token) => setAnamSessionToken(token))
+      .catch((err) => {
+        console.error('[LiveSession] Failed to get Anam token:', err);
+        setAnamFailed(true);
+      });
+  }, [anamPersonaId]);
+
+  // When we get assistant transcript, pipe to Anam for TTS
+  useEffect(() => {
+    if (!isAISpeaking || !currentAIText || anamFailed) return;
+    if (onAssistantTextRef.current) {
+      onAssistantTextRef.current(currentAIText, !isAISpeaking);
+    }
+  }, [currentAIText, isAISpeaking, anamFailed]);
+
+  // Mute AgentCore audio playback when Anam handles TTS
+  useEffect(() => {
+    // If Anam is active, we don't want AgentCore to also play audio
+    // The AgentCore client already doesn't play when Anam handles it
+  }, [anamSessionToken, anamFailed]);
+
   const finalEntries = transcript.filter((e) => e.isFinal);
-  const questions = finalEntries.filter((e) => e.role === 'assistant');
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -103,13 +144,13 @@ export default function LiveSession({
 
               {/* Live transcript */}
               <div className="space-y-4 max-h-[50vh] overflow-y-auto scrollbar-hide">
-                {questions.length === 0 && (
+                {finalEntries.length === 0 && status === 'active' && (
                   <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600 animate-pulse">
                       ...
                     </span>
                     <p className="text-sm text-gray-500 font-sans italic">
-                      Waiting for {personaName || 'AI'} to begin questioning...
+                      {personaName || 'AI Stakeholder'} is reviewing your workbook and preparing questions...
                     </p>
                   </div>
                 )}
@@ -118,14 +159,14 @@ export default function LiveSession({
                   <div
                     key={idx}
                     className={`flex items-start gap-3 rounded-lg border p-4 ${entry.role === 'assistant'
-                      ? 'border-maroon-200 bg-maroon-50/50'
-                      : 'border-green-200 bg-green-50/50'
+                        ? 'border-maroon-200 bg-maroon-50/50'
+                        : 'border-green-200 bg-green-50/50'
                       }`}
                   >
                     <span
                       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${entry.role === 'assistant'
-                        ? 'bg-maroon-200 text-maroon-700'
-                        : 'bg-green-200 text-green-700'
+                          ? 'bg-maroon-200 text-maroon-700'
+                          : 'bg-green-200 text-green-700'
                         }`}
                     >
                       {entry.role === 'assistant' ? 'Q' : 'A'}
@@ -139,7 +180,7 @@ export default function LiveSession({
                   </div>
                 ))}
 
-                {/* Partial (currently speaking) indicator */}
+                {/* Currently speaking indicator */}
                 {isAISpeaking && currentAIText && (
                   <div className="flex items-start gap-3 rounded-lg border border-maroon-100 bg-maroon-50/30 p-4 opacity-70">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-maroon-200 text-xs font-medium text-maroon-700 animate-pulse">
@@ -158,7 +199,7 @@ export default function LiveSession({
           )}
         </div>
 
-        {/* Right — Timer + Video Feeds */}
+        {/* Right — Timer + Avatar + Camera */}
         <div className="space-y-4">
           {/* Timer */}
           <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -177,50 +218,46 @@ export default function LiveSession({
             </p>
           </div>
 
-          {/* AI Persona Video */}
-          <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-900">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-20 w-20 rounded-full bg-gray-700" />
-            </div>
-            <div className="absolute top-3 left-3 flex items-center gap-2">
-              <span className="text-xs font-medium text-white font-sans">
-                {personaName || 'Mr. Clarkson'}
-              </span>
-            </div>
-            <button className="absolute top-3 right-3 rounded-full bg-white/20 p-1.5">
-              <Volume2 size={14} className="text-white" />
-            </button>
-
-            {/* AI speaking indicator */}
-            {isAISpeaking && currentAIText && (
-              <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-black/60 p-2">
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[10px] font-medium text-gold-500">AI Speaking</span>
+          {/* AI Persona — Anam Avatar or fallback */}
+          {!anamFailed && anamPersonaId ? (
+            <AnamAvatarPanel
+              anamPersonaId={anamPersonaId}
+              sessionToken={anamSessionToken}
+              isActive={status === 'active'}
+              personaName={personaName || 'AI Stakeholder'}
+              onAssistantTextRef={onAssistantTextRef}
+            />
+          ) : (
+            // Fallback: no avatar, just audio indicator
+            <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className={`mx-auto h-20 w-20 rounded-full border-4 ${isAISpeaking ? 'border-maroon-400 animate-pulse' : 'border-gray-700'} flex items-center justify-center`}>
+                  <span className="text-2xl text-white font-bold font-serif">
+                    {(personaName || 'AI').charAt(0)}
+                  </span>
                 </div>
-                <p className="text-xs text-white font-sans line-clamp-2">
-                  &quot;{currentAIText}&quot;
-                </p>
+                <p className="mt-3 text-xs text-gray-400 font-sans">{personaName || 'AI Stakeholder'}</p>
+                {isAISpeaking && (
+                  <p className="mt-1 text-xs text-gold-500 font-sans">Speaking...</p>
+                )}
               </div>
-            )}
-          </div>
+              {/* Speaking text overlay */}
+              {isAISpeaking && currentAIText && (
+                <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-black/60 p-2">
+                  <p className="text-xs text-white font-sans line-clamp-2">
+                    &quot;{currentAIText}&quot;
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Student Webcam */}
-          <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-800">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-16 w-16 rounded-full bg-gray-600" />
-            </div>
-            <div className="absolute top-3 left-3">
-              <span className="text-xs font-medium text-white font-sans">{studentInfo.name}</span>
-            </div>
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3">
-              <button className="rounded-full bg-white/20 p-2 hover:bg-white/30 transition-colors">
-                <Mic size={16} className="text-white" />
-              </button>
-              <button className="rounded-full bg-white/20 p-2 hover:bg-white/30 transition-colors">
-                <Video size={16} className="text-white" />
-              </button>
-            </div>
-          </div>
+          <StudentCameraView
+            studentName={studentInfo.name}
+            isMuted={isMuted}
+            onToggleMute={() => setIsMuted(!isMuted)}
+          />
         </div>
       </div>
 

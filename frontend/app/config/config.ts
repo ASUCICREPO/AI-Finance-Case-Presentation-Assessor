@@ -57,6 +57,7 @@ export interface Persona {
   questionBank: string[];
   assessmentFocus: string[];
   voiceId?: string;
+  anamPersonaId?: string;
   qaTimeLimitSec?: number;
   active: boolean;
   createdAt: string;

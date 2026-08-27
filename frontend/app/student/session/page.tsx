@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { generateSessionId } from '../../config/config';
-import { uploadFile, parseExcel, validateSubmission } from '../../services/api';
+import { uploadFile, parseExcel, validateSubmission, listPersonas } from '../../services/api';
+import { Persona } from '../../config/config';
 import SessionLobby from './components/SessionLobby';
 import LiveSession from './components/LiveSession';
 import SessionComplete from './components/SessionComplete';
@@ -33,8 +34,22 @@ export default function SessionPage() {
   const [workbookSheets, setWorkbookSheets] = useState<string[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Selected persona (hardcoded for now — will come from TA config)
-  const [personaId] = useState('default-ceo-persona');
+  // Selected persona (loaded from API)
+  const [personaId, setPersonaId] = useState<string>('');
+  const [persona, setPersona] = useState<Persona | null>(null);
+
+  // Load first active persona on mount
+  useEffect(() => {
+    listPersonas()
+      .then((personas) => {
+        const active = personas.find((p) => p.active);
+        if (active) {
+          setPersonaId(active.personaID);
+          setPersona(active);
+        }
+      })
+      .catch((err) => console.error('Failed to load personas:', err));
+  }, []);
 
   const studentInfo = {
     name: userName || 'Student',
@@ -135,6 +150,7 @@ export default function SessionPage() {
           agentCore={agentCore}
           timer={timer}
           workbookSheets={workbookSheets}
+          anamPersonaId={persona?.anamPersonaId}
           onSubmit={handleSubmitSession}
         />
       )}
