@@ -221,6 +221,20 @@ export class FinanceAssessorStack extends cdk.Stack {
     } as lambda.FunctionProps);
     this.uploadsBucket.grantReadWrite(s3PresignedUrlFn);
 
+    // Anam AI Session Token Lambda
+    const anamSessionTokenFn = new lambda.Function(this, 'AnamSessionTokenFn', {
+      runtime: lambda.Runtime.PYTHON_3_12,
+      timeout: cdk.Duration.seconds(15),
+      memorySize: 128,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/anam-session-token'),
+      description: 'Exchanges Anam API key for short-lived session token for avatar rendering',
+      environment: {
+        ANAM_API_KEY: process.env.ANAM_API_KEY || 'PLACEHOLDER_SET_IN_CONSOLE',
+        ALLOWED_ORIGINS: 'http://localhost:3000,https://main.d2y1cwozysxwnb.amplifyapp.com',
+      },
+    });
+
     // ──────────────────────────────────────────────────────────
     // API Gateway
     // ──────────────────────────────────────────────────────────
@@ -258,6 +272,10 @@ export class FinanceAssessorStack extends cdk.Stack {
     const analyticsResource = api.root.addResource('analytics');
     analyticsResource.addMethod('POST', new apigateway.LambdaIntegration(postSessionAnalyticsFn));
     analyticsResource.addMethod('GET', new apigateway.LambdaIntegration(postSessionAnalyticsFn));
+
+    // /anam-session
+    const anamSessionResource = api.root.addResource('anam-session');
+    anamSessionResource.addMethod('POST', new apigateway.LambdaIntegration(anamSessionTokenFn));
 
     this.apiUrl = api.url;
 

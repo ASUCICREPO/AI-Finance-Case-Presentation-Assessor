@@ -246,3 +246,16 @@ export async function triggerAnalytics(
     body: JSON.stringify({ sessionId, userId, transcript, rubricWeights }),
   });
 }
+
+
+// ──────────────────────────────────────────────────────────
+// Anam AI Avatar API
+// ──────────────────────────────────────────────────────────
+
+export async function getAnamSessionToken(anamPersonaId: string): Promise<string> {
+  const data = await fetchApi<{ sessionToken: string }>('/anam-session', {
+    method: 'POST',
+    body: JSON.stringify({ anamPersonaId }),
+  });
+  return data.sessionToken;
+}
