@@ -187,7 +187,7 @@ export class FinanceAssessorStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(60),
       memorySize: 512,
     } as lambda.FunctionProps);
-    this.uploadsBucket.grantRead(excelParserFn);
+    this.uploadsBucket.grantReadWrite(excelParserFn);
 
     // Validation Agent Lambda
     const validationAgentFn = new lambda.Function(this, 'ValidationAgentFn', {
