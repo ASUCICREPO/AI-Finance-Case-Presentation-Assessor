@@ -1,10 +1,10 @@
 'use client';
 
 import { useAuth } from '../../context/AuthContext';
-import { Bell, Settings } from 'lucide-react';
+import { Bell, Settings, LogOut } from 'lucide-react';
 
 export default function TAHeader() {
-  const { userName } = useAuth();
+  const { userName, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
@@ -41,6 +41,14 @@ export default function TAHeader() {
             <p className="text-xs text-gray-500 font-sans">TA / Instructor</p>
           </div>
         </div>
+        <button
+          onClick={logout}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+          title="Logout"
+        >
+          <LogOut size={16} />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
       </div>
     </header>
   );
