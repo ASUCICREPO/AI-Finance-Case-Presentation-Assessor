@@ -32,6 +32,7 @@ export default function SessionPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [workbookSheets, setWorkbookSheets] = useState<string[]>([]);
+  const [workbookData, setWorkbookData] = useState<Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>>({});
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Selected persona (loaded from API)
@@ -72,6 +73,7 @@ export default function SessionPage() {
       // Parse the Excel workbook
       const parsed = await parseExcel(s3Key, sessionId);
       setWorkbookSheets(parsed.sheets);
+      setWorkbookData(parsed.data);
 
       // Validate submission
       const validation = await validateSubmission(
@@ -150,6 +152,7 @@ export default function SessionPage() {
           agentCore={agentCore}
           timer={timer}
           workbookSheets={workbookSheets}
+          workbookData={workbookData}
           anamPersonaId={persona?.anamPersonaId}
           onSubmit={handleSubmitSession}
         />
