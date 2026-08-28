@@ -28,6 +28,7 @@ interface LiveSessionProps {
   agentCore: UseAgentCoreReturn;
   timer: TimerState;
   workbookSheets: string[];
+  workbookData: Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>;
   anamPersonaId?: string;
   onSubmit: () => void;
 }
@@ -45,6 +46,7 @@ export default function LiveSession({
   agentCore,
   timer,
   workbookSheets,
+  workbookData,
   anamPersonaId,
   onSubmit,
 }: LiveSessionProps) {
@@ -122,7 +124,7 @@ export default function LiveSession({
               >
                 &larr; Back to Q&A
               </button>
-              <SpreadsheetViewer />
+              <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
             </div>
           ) : (
             <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -159,14 +161,14 @@ export default function LiveSession({
                   <div
                     key={idx}
                     className={`flex items-start gap-3 rounded-lg border p-4 ${entry.role === 'assistant'
-                        ? 'border-maroon-200 bg-maroon-50/50'
-                        : 'border-green-200 bg-green-50/50'
+                      ? 'border-maroon-200 bg-maroon-50/50'
+                      : 'border-green-200 bg-green-50/50'
                       }`}
                   >
                     <span
                       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${entry.role === 'assistant'
-                          ? 'bg-maroon-200 text-maroon-700'
-                          : 'bg-green-200 text-green-700'
+                        ? 'bg-maroon-200 text-maroon-700'
+                        : 'bg-green-200 text-green-700'
                         }`}
                     >
                       {entry.role === 'assistant' ? 'Q' : 'A'}
