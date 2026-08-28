@@ -67,6 +67,7 @@ export class AgentCoreStack extends cdk.Stack {
         'BEDROCK_GUARDRAIL_ID': props.guardrailId,
         'BEDROCK_GUARDRAIL_VERSION': props.guardrailVersion,
         'GUARDRAIL_DISABLED': 'false',
+        'DEPLOY_VERSION': '6',
       },
       lifecycleConfiguration: {
         idleRuntimeSessionTimeout: cdk.Duration.minutes(10),
