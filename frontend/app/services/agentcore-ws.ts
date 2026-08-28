@@ -70,6 +70,7 @@ export class AgentCoreClient {
   public isSessionActive = false;
   public personaName: string | null = null;
   public sessionDuration: number = 0;
+  public muteAudioPlayback = false; // Set true when Anam handles TTS
 
   /**
    * Subscribe to AgentCore events.
@@ -185,6 +186,9 @@ export class AgentCoreClient {
    * Play received audio from the AI persona.
    */
   playAudio(base64Audio: string): void {
+    // Skip playback if Anam avatar is handling TTS
+    if (this.muteAudioPlayback) return;
+
     if (!this.audioContext) {
       this.audioContext = new AudioContext({ sampleRate: 16000 });
     }
@@ -234,7 +238,7 @@ export class AgentCoreClient {
       this.mediaStream = null;
     }
     if (this.audioContext) {
-      this.audioContext.close().catch(() => {});
+      this.audioContext.close().catch(() => { });
       this.audioContext = null;
     }
 
@@ -269,7 +273,7 @@ export class AgentCoreClient {
         case 'audio_clear':
           // Stop any currently playing audio
           if (this.audioContext) {
-            this.audioContext.close().catch(() => {});
+            this.audioContext.close().catch(() => { });
             this.audioContext = new AudioContext({ sampleRate: 16000 });
           }
           break;
@@ -354,9 +358,9 @@ export class AgentCoreClient {
       identityPoolId: config.identityPoolId,
       logins: config.userPoolId
         ? {
-            [`cognito-idp.${config.region}.amazonaws.com/${config.userPoolId}`]:
-              localStorage.getItem('auth_id_token') || '',
-          }
+          [`cognito-idp.${config.region}.amazonaws.com/${config.userPoolId}`]:
+            localStorage.getItem('auth_id_token') || '',
+        }
         : undefined,
       clientConfig: { region: config.region },
     });

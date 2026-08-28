@@ -34,6 +34,7 @@ export interface UseAgentCoreReturn {
   endSession: () => void;
   requestAnalytics: () => void;
   disconnect: () => void;
+  setMuteAudioPlayback: (mute: boolean) => void;
 }
 
 export function useAgentCore(): UseAgentCoreReturn {
@@ -152,6 +153,13 @@ export function useAgentCore(): UseAgentCoreReturn {
     setCurrentAIText('');
   }, []);
 
+  // Mute/unmute Nova Sonic audio playback (when Anam handles TTS)
+  const setMuteAudioPlayback = useCallback((mute: boolean) => {
+    if (clientRef.current) {
+      clientRef.current.muteAudioPlayback = mute;
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -173,5 +181,6 @@ export function useAgentCore(): UseAgentCoreReturn {
     endSession,
     requestAnalytics,
     disconnect,
+    setMuteAudioPlayback,
   };
 }
