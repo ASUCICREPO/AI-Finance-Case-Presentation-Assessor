@@ -178,11 +178,19 @@ export class FinanceAssessorStack extends cdk.Stack {
     } as lambda.FunctionProps);
     this.personasTable.grantReadWriteData(personaCrudFn);
 
-    // Excel Parser Lambda
+    // Excel Parser Lambda (with openpyxl bundled)
     const excelParserFn = new lambda.Function(this, 'ExcelParserFn', {
       ...lambdaDefaults,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset('lambda/excel-parser'),
+      code: lambda.Code.fromAsset('lambda/excel-parser', {
+        bundling: {
+          image: lambda.Runtime.PYTHON_3_12.bundlingImage,
+          command: [
+            'bash', '-c',
+            'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output',
+          ],
+        },
+      }),
       description: 'Parses uploaded Excel/Google Sheet workbooks for AI analysis',
       timeout: cdk.Duration.seconds(60),
       memorySize: 512,
