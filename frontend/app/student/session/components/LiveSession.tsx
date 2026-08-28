@@ -59,7 +59,7 @@ export default function LiveSession({
   // Ref for piping assistant text to Anam avatar
   const onAssistantTextRef = useRef<((text: string, isFinal: boolean) => void) | null>(null);
 
-  const { transcript, isAISpeaking, currentAIText, personaName, status } = agentCore;
+  const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback } = agentCore;
   const { formattedTime, isLowTime } = timer;
 
   // Fetch Anam session token on mount
@@ -70,12 +70,18 @@ export default function LiveSession({
     }
 
     getAnamSessionToken(anamPersonaId)
-      .then((token) => setAnamSessionToken(token))
+      .then((token) => {
+        setAnamSessionToken(token);
+        // Mute Nova Sonic audio when Anam handles TTS
+        setMuteAudioPlayback(true);
+      })
       .catch((err) => {
         console.error('[LiveSession] Failed to get Anam token:', err);
         setAnamFailed(true);
+        // Use Nova Sonic audio as fallback
+        setMuteAudioPlayback(false);
       });
-  }, [anamPersonaId]);
+  }, [anamPersonaId, setMuteAudioPlayback]);
 
   // When we get assistant transcript, pipe to Anam for TTS
   useEffect(() => {
