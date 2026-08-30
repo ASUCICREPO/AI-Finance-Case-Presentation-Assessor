@@ -144,7 +144,6 @@ export default function LiveSession({
                   isActive={status === 'active'}
                   personaName={personaName || 'AI Stakeholder'}
                   onAssistantTextRef={onAssistantTextRef}
-                  fullScreen
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
