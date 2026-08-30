@@ -163,14 +163,14 @@ export default function LiveSession({
                   <div
                     key={idx}
                     className={`flex items-start gap-3 rounded-lg border p-4 ${entry.role === 'assistant'
-                        ? 'border-maroon-200 bg-maroon-50/50'
-                        : 'border-green-200 bg-green-50/50'
+                      ? 'border-maroon-200 bg-maroon-50/50'
+                      : 'border-green-200 bg-green-50/50'
                       }`}
                   >
                     <span
                       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${entry.role === 'assistant'
-                          ? 'bg-maroon-200 text-maroon-700'
-                          : 'bg-green-200 text-green-700'
+                        ? 'bg-maroon-200 text-maroon-700'
+                        : 'bg-green-200 text-green-700'
                         }`}
                     >
                       {entry.role === 'assistant' ? 'Q' : 'A'}
@@ -240,23 +240,22 @@ export default function LiveSession({
                 )}
               </div>
             ) : (
-              /* Fallback avatar */}
-            <div className="relative aspect-video bg-gray-900 flex items-center justify-center">
-              <div className="text-center">
-                <div className={`mx-auto h-16 w-16 rounded-full border-4 ${isAISpeaking ? 'border-maroon-400 animate-pulse' : 'border-gray-700'} flex items-center justify-center bg-gray-800`}>
-                  <span className="text-2xl text-white font-bold font-serif">
-                    {(personaName || 'AI').charAt(0)}
-                  </span>
+              <div className="relative aspect-video bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                  <div className={`mx-auto h-16 w-16 rounded-full border-4 ${isAISpeaking ? 'border-maroon-400 animate-pulse' : 'border-gray-700'} flex items-center justify-center bg-gray-800`}>
+                    <span className="text-2xl text-white font-bold font-serif">
+                      {(personaName || 'AI').charAt(0)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-300 font-sans">{personaName || 'AI Stakeholder'}</p>
                 </div>
-                <p className="mt-2 text-sm text-gray-300 font-sans">{personaName || 'AI Stakeholder'}</p>
+                {isAISpeaking && currentAIText && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2">
+                    <p className="text-xs text-amber-400 font-sans">🎙 AI Speaking</p>
+                    <p className="text-xs text-white font-sans truncate">&quot;{currentAIText}&quot;</p>
+                  </div>
+                )}
               </div>
-              {isAISpeaking && currentAIText && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2">
-                  <p className="text-xs text-amber-400 font-sans">🎙 AI Speaking</p>
-                  <p className="text-xs text-white font-sans truncate">&quot;{currentAIText}&quot;</p>
-                </div>
-              )}
-            </div>
             )}
           </div>
 
