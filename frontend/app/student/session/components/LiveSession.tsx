@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Clock, FileSpreadsheet, Flag } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Clock, Flag, ArrowLeft, ChevronRight, Upload } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
 import AnamAvatarPanel from './AnamAvatarPanel';
@@ -31,14 +31,12 @@ interface LiveSessionProps {
   workbookData: Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>;
   anamPersonaId?: string;
   onSubmit: () => void;
+  onFileUpload?: (file: File) => void;
 }
 
 /**
- * Live Q&A Session — fully wired with:
- * - Anam AI avatar for the stakeholder persona (lip-synced TTS)
- * - Student webcam feed
- * - Real-time transcript from AgentCore WebSocket
- * - Session timer
+ * Live Q&A Session — with Anam avatar, student camera, transcript overlay, and spreadsheet view.
+ * Matches Figma design.
  */
 export default function LiveSession({
   studentInfo,
@@ -49,10 +47,10 @@ export default function LiveSession({
   workbookData,
   anamPersonaId,
   onSubmit,
+  onFileUpload,
 }: LiveSessionProps) {
   const [showSpreadsheet, setShowSpreadsheet] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [anamSessionToken, setAnamSessionToken] = useState<string | null>(null);
   const [anamFailed, setAnamFailed] = useState(false);
 
@@ -72,13 +70,11 @@ export default function LiveSession({
     getAnamSessionToken(anamPersonaId)
       .then((token) => {
         setAnamSessionToken(token);
-        // Mute Nova Sonic audio when Anam handles TTS
         setMuteAudioPlayback(true);
       })
       .catch((err) => {
         console.error('[LiveSession] Failed to get Anam token:', err);
         setAnamFailed(true);
-        // Use Nova Sonic audio as fallback
         setMuteAudioPlayback(false);
       });
   }, [anamPersonaId, setMuteAudioPlayback]);
@@ -91,25 +87,27 @@ export default function LiveSession({
     }
   }, [currentAIText, isAISpeaking, anamFailed]);
 
-  // Mute AgentCore audio playback when Anam handles TTS
-  useEffect(() => {
-    // If Anam is active, we don't want AgentCore to also play audio
-    // The AgentCore client already doesn't play when Anam handles it
-  }, [anamSessionToken, anamFailed]);
+  // File upload handler
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onFileUpload) {
+      onFileUpload(file);
+    }
+  }, [onFileUpload]);
 
-  const finalEntries = transcript.filter((e) => e.isFinal);
+  const hasWorkbookData = workbookSheets.length > 0;
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* Session header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Header bar */}
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold text-gray-900 font-serif">
-            {sessionType === 'practice' ? 'Practice' : ''} Session: Real Estate Investment Case Study
+            {sessionType === 'practice' ? 'Practice' : ''} Session: Real Estate Investment
           </h1>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-            Recording
+            {status === 'active' ? 'Live' : 'Recording'}
           </span>
         </div>
         <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors font-sans">
@@ -117,166 +115,197 @@ export default function LiveSession({
           Report
         </button>
       </div>
-      <p className="mb-6 text-xs text-gray-500 font-sans">This session is being recorded</p>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left — Q&A Transcript or Spreadsheet */}
-        <div className="lg:col-span-2">
-          {showSpreadsheet ? (
-            <div>
-              <button
-                onClick={() => setShowSpreadsheet(false)}
-                className="mb-4 text-sm font-medium text-maroon-600 hover:underline font-sans"
-              >
-                &larr; Back to Q&A
-              </button>
-              <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
-            </div>
-          ) : (
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 font-serif">Q&A</h2>
-                  <p className="mt-1 text-sm text-gray-500 font-sans">
-                    Respond to AI-generated questions. Your responses are being recorded and transcribed.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowSpreadsheet(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-                >
-                  <FileSpreadsheet size={16} />
-                  Spreadsheet
-                </button>
-              </div>
+      <p className="mb-4 text-xs text-gray-500 font-sans">This session is being recorded</p>
 
-              {/* Live transcript */}
-              <div className="space-y-4 max-h-[50vh] overflow-y-auto scrollbar-hide">
-                {finalEntries.length === 0 && status === 'active' && (
-                  <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600 animate-pulse">
-                      ...
-                    </span>
-                    <p className="text-sm text-gray-500 font-sans italic">
-                      {personaName || 'AI Stakeholder'} is reviewing your workbook and preparing questions...
-                    </p>
-                  </div>
-                )}
-
-                {finalEntries.map((entry, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex items-start gap-3 rounded-lg border p-4 ${entry.role === 'assistant'
-                      ? 'border-maroon-200 bg-maroon-50/50'
-                      : 'border-green-200 bg-green-50/50'
-                      }`}
-                  >
-                    <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${entry.role === 'assistant'
-                        ? 'bg-maroon-200 text-maroon-700'
-                        : 'bg-green-200 text-green-700'
-                        }`}
-                    >
-                      {entry.role === 'assistant' ? 'Q' : 'A'}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-500 font-sans mb-1">
-                        {entry.role === 'assistant' ? personaName || 'AI Stakeholder' : studentInfo.name}
-                      </p>
-                      <p className="text-sm text-gray-900 font-sans">{entry.text}</p>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Currently speaking indicator */}
-                {isAISpeaking && currentAIText && (
-                  <div className="flex items-start gap-3 rounded-lg border border-maroon-100 bg-maroon-50/30 p-4 opacity-70">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-maroon-200 text-xs font-medium text-maroon-700 animate-pulse">
-                      Q
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-500 font-sans mb-1">
-                        {personaName || 'AI'} (speaking...)
-                      </p>
-                      <p className="text-sm text-gray-700 font-sans italic">{currentAIText}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+      {showSpreadsheet ? (
+        /* Spreadsheet View */
+        <div>
+          <button
+            onClick={() => setShowSpreadsheet(false)}
+            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 font-sans"
+          >
+            <ArrowLeft size={16} />
+            Back to Q&A
+          </button>
+          <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
         </div>
+      ) : (
+        /* Main Q&A View */
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left - Avatar with transcript overlay */}
+          <div className="lg:col-span-2">
+            <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-900">
+              {/* Anam Avatar or Fallback */}
+              {!anamFailed && anamPersonaId ? (
+                <AnamAvatarPanel
+                  anamPersonaId={anamPersonaId}
+                  sessionToken={anamSessionToken}
+                  isActive={status === 'active'}
+                  personaName={personaName || 'AI Stakeholder'}
+                  onAssistantTextRef={onAssistantTextRef}
+                  fullScreen
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className={`mx-auto h-24 w-24 rounded-full border-4 ${isAISpeaking ? 'border-maroon-400 animate-pulse' : 'border-gray-700'} flex items-center justify-center bg-gray-800`}>
+                      <span className="text-3xl text-white font-bold font-serif">
+                        {(personaName || 'AI').charAt(0)}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-gray-300 font-sans">{personaName || 'AI Stakeholder'}</p>
+                  </div>
+                </div>
+              )}
 
-        {/* Right — Timer + Avatar + Camera */}
-        <div className="space-y-4">
-          {/* Timer */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <h3 className="text-sm font-medium text-gray-500 font-sans">Q&A Session Timer</h3>
-            <div className="mt-2 flex items-center gap-2">
-              <Clock size={18} className={isLowTime ? 'text-red-600' : 'text-gray-700'} />
-              <span
-                className={`text-3xl font-bold font-sans ${isLowTime ? 'text-red-600' : 'text-gray-900'
-                  }`}
-              >
-                {formattedTime}
-              </span>
-            </div>
-            <p className={`mt-1 text-xs font-sans ${isLowTime ? 'text-red-500' : 'text-gray-500'}`}>
-              {isLowTime ? '1 minute remaining' : '15-minute maximum session'}
-            </p>
-          </div>
-
-          {/* AI Persona — Anam Avatar or fallback */}
-          {!anamFailed && anamPersonaId ? (
-            <AnamAvatarPanel
-              anamPersonaId={anamPersonaId}
-              sessionToken={anamSessionToken}
-              isActive={status === 'active'}
-              personaName={personaName || 'AI Stakeholder'}
-              onAssistantTextRef={onAssistantTextRef}
-            />
-          ) : (
-            // Fallback: no avatar, just audio indicator
-            <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-900 flex items-center justify-center">
-              <div className="text-center">
-                <div className={`mx-auto h-20 w-20 rounded-full border-4 ${isAISpeaking ? 'border-maroon-400 animate-pulse' : 'border-gray-700'} flex items-center justify-center`}>
-                  <span className="text-2xl text-white font-bold font-serif">
-                    {(personaName || 'AI').charAt(0)}
+              {/* Persona name badge */}
+              <div className="absolute bottom-20 left-4 flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center">
+                  <span className="text-xs text-white font-medium">
+                    {(personaName || 'K').charAt(0)}
                   </span>
                 </div>
-                <p className="mt-3 text-xs text-gray-400 font-sans">{personaName || 'AI Stakeholder'}</p>
-                {isAISpeaking && (
-                  <p className="mt-1 text-xs text-gold-500 font-sans">Speaking...</p>
-                )}
+                <span className="text-sm text-white font-sans">{personaName || 'Keith Clarkson'}</span>
               </div>
-              {/* Speaking text overlay */}
-              {isAISpeaking && currentAIText && (
-                <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-black/60 p-2">
-                  <p className="text-xs text-white font-sans line-clamp-2">
+
+              {/* Transcript overlay */}
+              {(isAISpeaking || currentAIText) && (
+                <div className="absolute bottom-4 left-4 right-4 rounded-lg bg-black/70 p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs text-amber-400 font-medium">🎙 AI Speaking</span>
+                  </div>
+                  <p className="text-sm text-white font-sans">
                     &quot;{currentAIText}&quot;
                   </p>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Student Webcam */}
-          <StudentCameraView
-            studentName={studentInfo.name}
-            isMuted={isMuted}
-            onToggleMute={() => setIsMuted(!isMuted)}
-          />
+            {/* Upload spreadsheet button if no data yet */}
+            {!hasWorkbookData && (
+              <div className="mt-4">
+                <label className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors font-sans">
+                  <Upload size={16} />
+                  Upload your spreadsheet
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+
+            {/* View spreadsheet button if data exists */}
+            {hasWorkbookData && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowSpreadsheet(true)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
+                >
+                  View Spreadsheet
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right - Timer, Student Info, Student Camera */}
+          <div className="space-y-4">
+            {/* Timer */}
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <h3 className="text-sm font-medium text-gray-500 font-sans">Q&A Session Timer</h3>
+              <div className="mt-2 flex items-center gap-2">
+                <Clock size={20} className={isLowTime ? 'text-red-600' : 'text-gray-700'} />
+                <span
+                  className={`text-3xl font-bold font-sans ${isLowTime ? 'text-red-600' : 'text-gray-900'}`}
+                >
+                  {formattedTime}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 font-sans">15-minute maximum session</p>
+            </div>
+
+            {/* Student Info */}
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <h3 className="text-sm font-bold text-gray-900 font-sans mb-3">Student Info</h3>
+              <dl className="space-y-2 text-sm font-sans">
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Student</dt>
+                  <dd className="font-medium text-gray-900">{studentInfo.name}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Group</dt>
+                  <dd className="font-medium text-gray-900">{studentInfo.group}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Course</dt>
+                  <dd className="font-medium text-gray-900">{studentInfo.course}</dd>
+                </div>
+              </dl>
+            </div>
+
+            {/* Note */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs text-amber-800 font-sans">
+                <strong>Note:</strong> This assessment is AI-proctored and AI-graded. Final grading
+                will be reviewed and handed over to your instructor and Teaching Assistant.
+              </p>
+            </div>
+
+            {/* Avatar small preview + Student Camera */}
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              {/* AI Avatar small */}
+              <div className="relative aspect-video bg-gray-900">
+                {!anamFailed && anamPersonaId ? (
+                  <div className="absolute inset-0 flex items-center justify-center text-white text-sm">
+                    Mr. Clarkson
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-16 w-16 rounded-full bg-gray-700 flex items-center justify-center">
+                      <span className="text-xl text-white font-bold">
+                        {(personaName || 'K').charAt(0)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {/* Speaking indicator */}
+                {isAISpeaking && (
+                  <div className="absolute bottom-2 left-2 right-2 rounded bg-black/60 px-2 py-1">
+                    <p className="text-xs text-amber-400 font-sans">🎙 AI Speaking</p>
+                    <p className="text-xs text-white font-sans truncate">&quot;{currentAIText}&quot;</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Student Camera */}
+              <StudentCameraView
+                studentName={studentInfo.name}
+                compact
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Submit button */}
-      <div className="mt-6 flex justify-end">
+      {/* Bottom actions */}
+      <div className="mt-6 flex items-center justify-between">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
         <button
           onClick={() => setShowSubmitModal(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-maroon-600 px-6 py-3 text-white font-sans font-medium hover:bg-maroon-700 transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-maroon-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
         >
           Submit
-          <span>&rarr;</span>
+          <ChevronRight size={16} />
         </button>
       </div>
 

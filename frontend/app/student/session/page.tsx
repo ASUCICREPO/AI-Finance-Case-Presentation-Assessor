@@ -7,33 +7,25 @@ import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { generateSessionId } from '../../config/config';
 import { uploadFile, parseExcel, validateSubmission, listPersonas } from '../../services/api';
 import { Persona } from '../../config/config';
-import SessionLobby from './components/SessionLobby';
+import PracticeOverview from './components/PracticeOverview';
 import LiveSession from './components/LiveSession';
 import SessionComplete from './components/SessionComplete';
-import StartSessionModal from './components/StartSessionModal';
-import UploadStep from './components/UploadStep';
 
-export type SessionView = 'upload' | 'lobby' | 'active' | 'complete';
+export type SessionView = 'overview' | 'active' | 'complete';
 export type SessionType = 'practice' | 'graded';
 
 export default function SessionPage() {
   const { userId, userName, userGroup, userCourse } = useAuth();
   const agentCore = useAgentCore();
   const timer = useSessionTimer(() => {
-    // Timer expired — end session
     agentCore.endSession();
   });
 
-  const [sessionView, setSessionView] = useState<SessionView>('upload');
+  const [sessionView, setSessionView] = useState<SessionView>('overview');
   const [sessionType] = useState<SessionType>('practice');
-  const [showStartModal, setShowStartModal] = useState(false);
   const [sessionId] = useState(() => generateSessionId());
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [workbookSheets, setWorkbookSheets] = useState<string[]>([]);
   const [workbookData, setWorkbookData] = useState<Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>>({});
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Selected persona (loaded from API)
   const [personaId, setPersonaId] = useState<string>('');
@@ -58,61 +50,14 @@ export default function SessionPage() {
     course: userCourse || 'FIN 502 - Real Estate Finance',
   };
 
-  // ── File Upload Handler ─────────────────────────────────
-  const handleFileUpload = useCallback(async (file: File) => {
-    setUploadError(null);
-    setIsUploading(true);
-    setUploadedFile(file);
-
-    try {
-      // Upload to S3
-      const { s3Key } = await uploadFile(sessionId, file, 'uploads', (percent) => {
-        setUploadProgress(percent);
-      });
-
-      // Parse the Excel workbook
-      const parsed = await parseExcel(s3Key, sessionId);
-      setWorkbookSheets(parsed.sheets);
-      setWorkbookData(parsed.data);
-
-      // Validate submission
-      const validation = await validateSubmission(
-        sessionId,
-        userId || '',
-        undefined,
-        [file.name]
-      );
-
-      if (!validation.isValid) {
-        setUploadError(validation.errors.join('. '));
-        return;
-      }
-
-      // Move to lobby
-      setSessionView('lobby');
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setIsUploading(false);
-    }
-  }, [sessionId, userId]);
-
-  // ── Begin Q&A Session ───────────────────────────────────
-  const handleBeginSession = () => {
-    setShowStartModal(true);
-  };
-
-  const handleConfirmStart = async () => {
-    setShowStartModal(false);
-
+  // ── Start Assessment (from overview) ────────────────────
+  const handleStartAssessment = async () => {
     await agentCore.startSession({
       personaId,
       userId: userId || '',
       sessionId,
-      qaTimeLimitSec: 900, // 15 minutes
+      qaTimeLimitSec: 900,
     });
-
-    // Start the timer when session becomes active
     timer.start(900);
     setSessionView('active');
   };
@@ -125,23 +70,24 @@ export default function SessionPage() {
     setSessionView('complete');
   };
 
+  // ── Handle file upload during live session ──────────────
+  const handleFileUpload = useCallback(async (file: File) => {
+    try {
+      const { s3Key } = await uploadFile(sessionId, file, 'uploads');
+      const parsed = await parseExcel(s3Key, sessionId);
+      setWorkbookSheets(parsed.sheets);
+      setWorkbookData(parsed.data);
+    } catch (err) {
+      console.error('File upload failed:', err);
+    }
+  }, [sessionId]);
+
   return (
     <div className="animate-step-enter">
-      {sessionView === 'upload' && (
-        <UploadStep
-          onFileUpload={handleFileUpload}
-          uploadedFile={uploadedFile}
-          uploadProgress={uploadProgress}
-          isUploading={isUploading}
-          error={uploadError}
-        />
-      )}
-
-      {sessionView === 'lobby' && (
-        <SessionLobby
-          studentInfo={studentInfo}
+      {sessionView === 'overview' && (
+        <PracticeOverview
           sessionType={sessionType}
-          onBeginSession={handleBeginSession}
+          onStartAssessment={handleStartAssessment}
         />
       )}
 
@@ -155,6 +101,7 @@ export default function SessionPage() {
           workbookData={workbookData}
           anamPersonaId={persona?.anamPersonaId}
           onSubmit={handleSubmitSession}
+          onFileUpload={handleFileUpload}
         />
       )}
 
@@ -166,14 +113,6 @@ export default function SessionPage() {
           onDone={() => agentCore.disconnect()}
         />
       )}
-
-      {/* Start Session Confirmation Modal */}
-      <StartSessionModal
-        isOpen={showStartModal}
-        sessionType={sessionType}
-        onConfirm={handleConfirmStart}
-        onCancel={() => setShowStartModal(false)}
-      />
     </div>
   );
 }

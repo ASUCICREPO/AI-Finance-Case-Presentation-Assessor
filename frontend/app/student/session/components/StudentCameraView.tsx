@@ -1,19 +1,20 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Video, VideoOff, Mic, MicOff } from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, Volume2 } from 'lucide-react';
 
 interface StudentCameraViewProps {
   studentName: string;
-  isMuted: boolean;
-  onToggleMute: () => void;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
+  compact?: boolean;
 }
 
 /**
  * Student Camera View — captures and displays the student's webcam feed.
- * Also shows mic mute toggle.
+ * Supports compact mode for sidebar placement.
  */
-export default function StudentCameraView({ studentName, isMuted, onToggleMute }: StudentCameraViewProps) {
+export default function StudentCameraView({ studentName, isMuted = false, onToggleMute, compact = false }: StudentCameraViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
@@ -25,7 +26,7 @@ export default function StudentCameraView({ studentName, isMuted, onToggleMute }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480 },
-        audio: false, // Audio is handled by AgentCore WebSocket
+        audio: false,
       });
       if (!mountedRef.current) {
         stream.getTracks().forEach(t => t.stop());
@@ -55,6 +56,55 @@ export default function StudentCameraView({ studentName, isMuted, onToggleMute }
     };
   }, [startCamera]);
 
+  if (compact) {
+    return (
+      <div className="relative aspect-video bg-gray-800">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`absolute inset-0 h-full w-full object-cover ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
+          style={{ transform: 'scaleX(-1)' }}
+        />
+
+        {/* Student name badge */}
+        <div className="absolute bottom-2 left-2 flex items-center gap-2 z-10">
+          <div className="h-6 w-6 rounded-full bg-maroon-600 flex items-center justify-center">
+            <span className="text-xs text-white font-medium">
+              {studentName.charAt(0)}
+            </span>
+          </div>
+          <span className="text-xs text-white font-sans">{studentName}</span>
+          <Volume2 size={12} className="text-white" />
+        </div>
+
+        {/* Controls */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-2 z-10">
+          <button className="rounded-full bg-white/20 p-1.5 hover:bg-white/30 transition-colors">
+            <Mic size={12} className="text-white" />
+          </button>
+          <button className="rounded-full bg-white/20 p-1.5 hover:bg-white/30 transition-colors">
+            <Video size={12} className="text-white" />
+          </button>
+        </div>
+
+        {/* Loading state */}
+        {!cameraActive && !permissionDenied && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <Video size={24} className="text-gray-500 animate-pulse" />
+          </div>
+        )}
+
+        {permissionDenied && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <VideoOff size={24} className="text-gray-500" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="relative aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-800">
       <video
@@ -62,9 +112,8 @@ export default function StudentCameraView({ studentName, isMuted, onToggleMute }
         autoPlay
         playsInline
         muted
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-          cameraActive ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${cameraActive ? 'opacity-100' : 'opacity-0'
+          }`}
         style={{ transform: 'scaleX(-1)' }}
       />
 
@@ -99,19 +148,20 @@ export default function StudentCameraView({ studentName, isMuted, onToggleMute }
       )}
 
       {/* Controls */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
-        <button
-          onClick={onToggleMute}
-          className={`rounded-full p-2 transition-colors ${
-            isMuted ? 'bg-red-500 hover:bg-red-600' : 'bg-white/20 hover:bg-white/30'
-          }`}
-        >
-          {isMuted ? <MicOff size={16} className="text-white" /> : <Mic size={16} className="text-white" />}
-        </button>
-        <div className="rounded-full bg-white/20 p-2">
-          <Video size={16} className="text-white" />
+      {onToggleMute && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
+          <button
+            onClick={onToggleMute}
+            className={`rounded-full p-2 transition-colors ${isMuted ? 'bg-red-500 hover:bg-red-600' : 'bg-white/20 hover:bg-white/30'
+              }`}
+          >
+            {isMuted ? <MicOff size={16} className="text-white" /> : <Mic size={16} className="text-white" />}
+          </button>
+          <div className="rounded-full bg-white/20 p-2">
+            <Video size={16} className="text-white" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
