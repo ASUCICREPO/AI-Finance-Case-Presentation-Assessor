@@ -27,18 +27,29 @@ export default function SessionPage() {
   const [workbookSheets, setWorkbookSheets] = useState<string[]>([]);
   const [workbookData, setWorkbookData] = useState<Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>>({});
 
+  // Hardcoded Anam persona ID (LLM disabled, uses Anam for voice)
+  const ANAM_PERSONA_ID = '36908df0-128e-48c6-b2f3-cbf007707d00';
+
   // Selected persona (loaded from API)
-  const [personaId, setPersonaId] = useState<string>('');
+  const [personaId, setPersonaId] = useState<string>(ANAM_PERSONA_ID);
   const [persona, setPersona] = useState<Persona | null>(null);
 
-  // Load first active persona on mount
+  // Load persona details on mount
   useEffect(() => {
     listPersonas()
       .then((personas) => {
-        const active = personas.find((p) => p.active);
-        if (active) {
-          setPersonaId(active.personaID);
-          setPersona(active);
+        // Try to find our specific Anam persona first
+        const anamPersona = personas.find((p) => p.personaID === ANAM_PERSONA_ID);
+        if (anamPersona) {
+          setPersonaId(anamPersona.personaID);
+          setPersona(anamPersona);
+        } else {
+          // Fallback to first active persona
+          const active = personas.find((p) => p.active);
+          if (active) {
+            setPersonaId(active.personaID);
+            setPersona(active);
+          }
         }
       })
       .catch((err) => console.error('Failed to load personas:', err));
@@ -99,7 +110,7 @@ export default function SessionPage() {
           timer={timer}
           workbookSheets={workbookSheets}
           workbookData={workbookData}
-          anamPersonaId={persona?.anamPersonaId}
+          anamPersonaId={persona?.anamPersonaId || ANAM_PERSONA_ID}
           onSubmit={handleSubmitSession}
           onFileUpload={handleFileUpload}
         />
