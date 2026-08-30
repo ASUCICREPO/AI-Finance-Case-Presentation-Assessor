@@ -1,182 +1,199 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
 import {
   FileText,
-  BookOpen,
-  ClipboardCheck,
-  Globe,
-  HelpCircle,
-  ChevronRight,
-  Calendar,
+  CheckCircle,
+  Clock,
+  Filter,
 } from 'lucide-react';
 
+interface Assessment {
+  id: string;
+  name: string;
+  group: string;
+  deadline: string;
+  duration: string;
+  submissionTime: string | null;
+  status: 'Submitted' | 'Not started' | 'In progress';
+}
+
+// Sample data matching Figma design
+const sampleAssessments: Assessment[] = [
+  { id: '1', name: 'Data Privacy Compliance', group: 'Group 1', deadline: 'Aug 20', duration: '15 min', submissionTime: 'Aug 20, 10:30 AM MST', status: 'Submitted' },
+  { id: '2', name: 'SOC 2 Readiness Check', group: 'Group 2', deadline: 'Aug 22', duration: '15 min', submissionTime: 'Aug 22, 2:15 PM MST', status: 'Submitted' },
+  { id: '3', name: 'Real Estate Investment', group: 'Group 1', deadline: 'Aug 25', duration: '15 min', submissionTime: null, status: 'Not started' },
+  { id: '4', name: 'IT Security Assessment', group: 'Group 3', deadline: 'Aug 27', duration: '15 min', submissionTime: null, status: 'Not started' },
+  { id: '5', name: 'GDPR Compliance Audit', group: 'Group 2', deadline: 'Aug 28', duration: '15 min', submissionTime: null, status: 'Not started' },
+  { id: '6', name: 'Risk Management Review', group: 'Group 4', deadline: 'Sep 01', duration: '15 min', submissionTime: null, status: 'Not started' },
+  { id: '7', name: 'Vendor Risk Assessment', group: 'Group 3', deadline: 'Sep 03', duration: '15 min', submissionTime: null, status: 'Not started' },
+  { id: '8', name: 'Business Continuity Plan', group: 'Group 1', deadline: 'Sep 05', duration: '15 min', submissionTime: null, status: 'Not started' },
+  { id: '9', name: 'Regulatory Compliance', group: 'Group 4', deadline: 'Sep 08', duration: '15 min', submissionTime: null, status: 'Not started' },
+  { id: '10', name: 'Financial Case Analysis', group: 'Group 4', deadline: 'Sep 08', duration: '15 min', submissionTime: null, status: 'Not started' },
+];
+
 /**
- * Student Dashboard - Case Assessment Overview
- * Shows the current case assignment, assessment expectations,
- * quick links, and assessment details.
+ * Student Dashboard - Assessments Overview
+ * Shows stats cards and a list of assigned assessments with status.
  */
 export default function StudentDashboard() {
-  const { userName, userCourse } = useAuth();
+  const { userName } = useAuth();
+  const [assessments] = useState<Assessment[]>(sampleAssessments);
+  const [filterStatus, setFilterStatus] = useState<string>('All');
+
+  const totalAssessments = assessments.length;
+  const completedAssessments = assessments.filter(a => a.status === 'Submitted').length;
+  const pendingAssessments = totalAssessments - completedAssessments;
+
+  const filteredAssessments = filterStatus === 'All'
+    ? assessments
+    : assessments.filter(a => a.status === filterStatus);
 
   return (
-    <div className="mx-auto max-w-5xl animate-fade-in">
-      {/* Breadcrumb */}
-      <nav className="mb-4 text-sm text-gray-500 font-sans">
-        <span>My Courses</span>
-        <span className="mx-2">/</span>
-        <span>{userCourse || 'FIN 502'}</span>
-        <span className="mx-2">/</span>
-        <span className="text-gray-900">Case Assessment</span>
-      </nav>
-
-      {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900 font-serif">
-        Commercial Real Estate Investment Analysis
-      </h1>
-      <p className="mt-1 text-gray-600 font-sans">
-        {userCourse || 'FIN 502'} - Real Estate Finance - Prof. Atif Ikram
-      </p>
-
-      {/* Meta badges */}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-medium text-red-700">
-          <Calendar size={14} />
-          Due: Oct 24, 11:59 PM
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-700">
-          <ClipboardCheck size={14} />
-          Individual Assessment
-        </span>
+    <div className="mx-auto max-w-6xl animate-fade-in">
+      {/* Welcome header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 font-serif">
+          Welcome back, {userName || 'Student'}!
+        </h1>
+        <p className="mt-1 text-gray-600 font-sans">
+          Great news! You have {pendingAssessments} assessments waiting for you to tackle!
+        </p>
       </div>
 
-      {/* Case Overview badge */}
-      <div className="mt-6">
-        <span className="inline-block rounded-full bg-maroon-600 px-4 py-1.5 text-sm font-medium text-white">
-          Case Overview
-        </span>
-      </div>
-
-      {/* Main content grid */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        {/* Left column - Assessment expectations & details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Assessment Expectations */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-gray-900 font-serif">
-              Assessment expectations
-            </h2>
-            <p className="mt-3 text-sm text-gray-600 font-sans leading-relaxed">
-              You will analyze a commercial real estate investment opportunity for a mixed-use
-              development in downtown Phoenix. You will be assessed on the depth of your analysis,
-              the quality of your financial modeling, and your ability to present a clear,
-              well-supported investment recommendation.
-            </p>
-
-            <h3 className="mt-6 text-base font-bold text-gray-900 font-serif">
-              How to complete the Q&A
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm text-gray-600 font-sans">
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Review each topic and prepare concise, data-backed responses.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Know your financial model inside out — assumptions, metrics, and outputs.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Support your analysis with market evidence and comparable deals.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Clearly articulate risks and how they&apos;re mitigated.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Defend your final recommendation with a logical, well-structured argument.
-              </li>
-            </ul>
+      {/* Stats cards */}
+      <div className="grid gap-4 sm:grid-cols-3 mb-8">
+        {/* Total Assessments */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-gray-100 p-2">
+              <FileText size={20} className="text-gray-600" />
+            </div>
+            <span className="text-sm text-gray-600 font-sans">Total Assessments</span>
           </div>
+          <p className="mt-3 text-3xl font-bold text-gray-900 font-sans">{totalAssessments}</p>
+        </div>
 
-          {/* Assessment Details */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-gray-900 font-serif">
-              Assessment Details
-            </h2>
-            <dl className="mt-4 grid grid-cols-2 gap-4 text-sm font-sans">
-              <div>
-                <dt className="text-gray-500">Format</dt>
-                <dd className="mt-1 font-medium text-gray-900">Individual Presentation</dd>
-              </div>
-              <div>
-                <dt className="text-gray-500">Requirements</dt>
-                <dd className="mt-1 font-medium text-gray-900">
-                  Camera/face must be visible / Stable Internet
-                </dd>
-              </div>
-              <div>
-                <dt className="text-gray-500">Scoring</dt>
-                <dd className="mt-1 font-medium text-gray-900">AI as well as human grading</dd>
-              </div>
-              <div>
-                <dt className="text-gray-500">Duration</dt>
-                <dd className="mt-1 font-medium text-gray-900">15 minutes maximum</dd>
-              </div>
-              <div>
-                <dt className="text-gray-500">Recording</dt>
-                <dd className="mt-1 font-medium text-gray-900">
-                  This session will be recorded for review and quality purposes
-                </dd>
-              </div>
-            </dl>
+        {/* Completed Assessments */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-green-100 p-2">
+              <CheckCircle size={20} className="text-green-600" />
+            </div>
+            <span className="text-sm text-gray-600 font-sans">Completed Assessments</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold text-gray-900 font-sans">{completedAssessments}</p>
+        </div>
+
+        {/* Pending Assessments */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-amber-100 p-2">
+              <Clock size={20} className="text-amber-600" />
+            </div>
+            <span className="text-sm text-gray-600 font-sans">Pending Assessments</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold text-gray-900 font-sans">{pendingAssessments}</p>
+        </div>
+      </div>
+
+      {/* Assigned assessments table */}
+      <div className="rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <h2 className="text-lg font-bold text-gray-900 font-serif">Assigned assessments</h2>
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-gray-500" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 font-sans focus:outline-none focus:ring-2 focus:ring-maroon-500"
+            >
+              <option value="All">Filter by All</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Not started">Not started</option>
+              <option value="In progress">In progress</option>
+            </select>
           </div>
         </div>
 
-        {/* Right column - Quick Links */}
-        <div className="space-y-6">
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-gray-900 font-serif">Quick Links</h2>
-            <p className="mt-1 text-sm text-gray-500 font-sans">
-              Jump to key resources and support in one place.
-            </p>
-
-            <nav className="mt-4 space-y-1">
-              {[
-                { label: 'Assignment instructions', icon: FileText },
-                { label: 'Presentation and Q&A guidelines', icon: BookOpen },
-                { label: 'Evaluation Rubric', icon: ClipboardCheck },
-                { label: 'Generic practice session', icon: Globe },
-                { label: 'Accessibility', icon: Globe },
-                { label: 'Help Center', icon: HelpCircle },
-              ].map((link) => (
-                <button
-                  key={link.label}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-                >
-                  <span className="flex items-center gap-2">
-                    <link.icon size={16} className="text-maroon-600" />
-                    {link.label}
-                  </span>
-                  <ChevronRight size={16} className="text-gray-400" />
-                </button>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Assessment Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Group
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Deadline
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Duration
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Submission Time
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredAssessments.map((assessment) => (
+                <tr key={assessment.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900 font-sans">
+                    {assessment.name}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 font-sans">
+                    {assessment.group}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 font-sans">
+                    {assessment.deadline}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 font-sans">
+                    {assessment.duration}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 font-sans">
+                    {assessment.submissionTime || '-'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${assessment.status === 'Submitted'
+                          ? 'bg-green-100 text-green-700'
+                          : assessment.status === 'In progress'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                    >
+                      {assessment.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {assessment.status === 'Submitted' ? (
+                      <button className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans">
+                        Start
+                      </button>
+                    ) : (
+                      <Link
+                        href="/student/session"
+                        className="inline-flex rounded-lg bg-maroon-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
+                      >
+                        Start
+                      </Link>
+                    )}
+                  </td>
+                </tr>
               ))}
-            </nav>
-          </div>
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      {/* Start Assessment button */}
-      <div className="mt-8 flex justify-end">
-        <Link
-          href="/student/session"
-          className="inline-flex items-center gap-2 rounded-lg bg-maroon-600 px-6 py-3 text-white font-sans font-medium hover:bg-maroon-700 transition-colors"
-        >
-          Start assessment
-          <ChevronRight size={18} />
-        </Link>
       </div>
     </div>
   );
