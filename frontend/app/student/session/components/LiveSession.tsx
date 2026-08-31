@@ -126,9 +126,9 @@ export default function LiveSession({
       <p className="mb-4 text-xs text-gray-500 font-sans shrink-0">This session is being recorded</p>
 
       {/* Main content: Spreadsheet LEFT, Q&A Panel RIGHT - side by side */}
-      <div className="flex gap-6 flex-1 min-h-0">
-        {/* LEFT - Spreadsheet Viewer */}
-        <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex gap-4 flex-1 min-h-0">
+        {/* LEFT - Spreadsheet Viewer (takes remaining space) */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
           {hasWorkbookData ? (
             <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
           ) : (
@@ -148,8 +148,8 @@ export default function LiveSession({
           )}
         </div>
 
-        {/* RIGHT - Q&A Session Panel (Timer, Avatar, Camera, Submit) */}
-        <div className="w-[320px] shrink-0 space-y-4 flex flex-col">
+        {/* RIGHT - Q&A Session Panel (Timer, Avatar, Camera, Submit) - fixed width */}
+        <div className="w-[300px] shrink-0 space-y-3 flex flex-col">
           {/* Q&A Session Timer */}
           <div className="rounded-xl bg-gray-100 p-4 shrink-0">
             <h3 className="text-sm font-bold text-gray-900 font-sans mb-2">Q&A Session</h3>
