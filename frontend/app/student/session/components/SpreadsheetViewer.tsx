@@ -16,22 +16,32 @@ interface SpreadsheetViewerProps {
 
 /**
  * Spreadsheet Viewer - Displays uploaded Excel data in a tabular format
- * with tabs for different sheets.
+ * with tabs for different sheets. Shows ALL rows including headers and footnotes.
  */
 export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerProps) {
   const [activeTab, setActiveTab] = useState<string>(sheets[0] || '');
   const [page, setPage] = useState(0);
-  const rowsPerPage = 15;
+  const rowsPerPage = 20;
 
   const currentSheet = data[activeTab];
-  const headers = currentSheet?.headers || [];
   const allRows = currentSheet?.rows || [];
   const totalRows = allRows.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const displayRows = allRows.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
 
-  // Column letters (A, B, C, ...)
-  const colLetters = headers.map((_, i) => String.fromCharCode(65 + i));
+  // Determine max columns from all rows
+  const maxCols = Math.max(...allRows.map(r => r.length), 1);
+
+  // Generate column letters (A, B, C, ...)
+  const getColLetter = (idx: number) => {
+    let result = '';
+    while (idx >= 0) {
+      result = String.fromCharCode(65 + (idx % 26)) + result;
+      idx = Math.floor(idx / 26) - 1;
+    }
+    return result;
+  };
+  const colLetters = Array.from({ length: maxCols }, (_, i) => getColLetter(i));
 
   if (sheets.length === 0) {
     return (
@@ -52,53 +62,55 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-        <table className="w-full text-sm font-sans">
+      <div className="overflow-x-auto max-h-[450px] overflow-y-auto">
+        <table className="w-full text-sm font-sans border-collapse">
           <thead className="sticky top-0 bg-white z-10">
             {/* Column letters row */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 w-10"></th>
+            <tr className="border-b border-gray-200 bg-gray-100">
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 w-12 border-r border-gray-200 bg-gray-100 sticky left-0">
+                {/* Row number column */}
+              </th>
               {colLetters.map((letter, i) => (
-                <th key={i} className="px-3 py-2 text-left text-xs font-medium text-gray-500 min-w-[100px]">
+                <th key={i} className="px-2 py-2 text-center text-xs font-medium text-gray-500 min-w-[80px] border-r border-gray-100">
                   {letter}
                 </th>
               ))}
             </tr>
-            {/* Headers row */}
-            <tr className="border-b border-gray-200 bg-gray-100">
-              <td className="px-3 py-2 text-xs text-gray-400">1</td>
-              {headers.map((header, i) => (
-                <td key={i} className="px-3 py-2 text-xs font-semibold text-gray-700 truncate max-w-[200px]" title={String(header)}>
-                  {header}
-                </td>
-              ))}
-            </tr>
           </thead>
           <tbody>
-            {displayRows.map((row, rowIdx) => (
-              <tr key={rowIdx} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="px-3 py-2 text-xs text-gray-400">
-                  {page * rowsPerPage + rowIdx + 2}
-                </td>
-                {row.map((cell, colIdx) => (
-                  <td
-                    key={colIdx}
-                    className="px-3 py-2 text-xs text-gray-900 truncate max-w-[200px]"
-                    title={cell !== null ? String(cell) : ''}
-                  >
-                    {cell !== null ? String(cell) : ''}
+            {displayRows.map((row, rowIdx) => {
+              const actualRowNum = page * rowsPerPage + rowIdx + 1;
+              return (
+                <tr key={rowIdx} className="border-b border-gray-100 hover:bg-blue-50/50">
+                  {/* Row number */}
+                  <td className="px-2 py-1.5 text-xs text-gray-500 text-center border-r border-gray-200 bg-gray-50 sticky left-0 font-medium">
+                    {actualRowNum}
                   </td>
-                ))}
-                {/* Fill empty cells if row is shorter than headers */}
-                {row.length < headers.length &&
-                  Array(headers.length - row.length)
-                    .fill(null)
-                    .map((_, i) => <td key={`empty-${i}`} className="px-3 py-2"></td>)}
-              </tr>
-            ))}
+                  {/* Cells */}
+                  {colLetters.map((_, colIdx) => {
+                    const cell = row[colIdx];
+                    const cellValue = cell !== null && cell !== undefined && cell !== ''
+                      ? String(cell)
+                      : '';
+                    const isNumber = typeof cell === 'number';
+
+                    return (
+                      <td
+                        key={colIdx}
+                        className={`px-2 py-1.5 text-xs border-r border-gray-100 max-w-[200px] truncate ${isNumber ? 'text-right text-gray-900' : 'text-left text-gray-800'
+                          }`}
+                        title={cellValue}
+                      >
+                        {cellValue}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
             {displayRows.length === 0 && (
               <tr>
-                <td colSpan={headers.length + 1} className="px-3 py-8 text-center text-gray-400">
+                <td colSpan={colLetters.length + 1} className="px-3 py-8 text-center text-gray-400">
                   No data in this sheet
                 </td>
               </tr>
@@ -118,8 +130,8 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
                 setPage(0);
               }}
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${activeTab === sheet
-                  ? 'bg-maroon-600 text-white'
-                  : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'bg-maroon-600 text-white'
+                : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
                 }`}
             >
               {sheet}

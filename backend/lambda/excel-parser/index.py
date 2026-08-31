@@ -66,7 +66,7 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
     Parse Excel workbook bytes into structured JSON.
     Uses openpyxl for .xlsx files.
 
-    Returns dict of sheet_name -> { headers: [...], rows: [[...], ...] }
+    Returns dict of sheet_name -> { headers: [...], rows: [[...], ...], rowCount: int }
     """
     try:
         import openpyxl
@@ -81,19 +81,55 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
             continue
 
         ws = wb[sheet_name]
-        rows = []
+        
+        # Get all rows including empty ones to preserve structure
+        all_rows = []
+        max_col = ws.max_column
+        
+        for row_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=ws.max_row, values_only=True), start=1):
+            # Convert tuple to list and handle cell values
+            row_data = []
+            for cell_val in row[:max_col]:
+                if cell_val is None:
+                    row_data.append('')
+                elif isinstance(cell_val, (int, float)):
+                    # Keep numbers as-is (avoid float precision issues for display)
+                    if isinstance(cell_val, float) and cell_val == int(cell_val):
+                        row_data.append(int(cell_val))
+                    else:
+                        row_data.append(cell_val)
+                else:
+                    row_data.append(str(cell_val))
+            all_rows.append(row_data)
+        
+        # Find the header row (first row with multiple non-empty cells)
+        header_idx = 0
+        for idx, row in enumerate(all_rows):
+            non_empty = sum(1 for cell in row if cell not in [None, '', 0])
+            if non_empty >= 3:  # At least 3 non-empty cells = likely a header
+                header_idx = idx
+                break
+        
+        # Generate column headers (A, B, C, ... or use first data row if has labels)
         headers = []
-
-        for i, row in enumerate(ws.iter_rows(values_only=True)):
-            if i == 0:
-                headers = [str(cell) if cell else f'Col_{j}' for j, cell in enumerate(row)]
-            else:
-                rows.append([cell for cell in row])
-
+        if header_idx < len(all_rows):
+            first_row = all_rows[header_idx]
+            for col_idx, cell in enumerate(first_row):
+                if cell and str(cell).strip():
+                    headers.append(str(cell))
+                else:
+                    # Use Excel-style column letters
+                    col_letter = openpyxl.utils.get_column_letter(col_idx + 1)
+                    headers.append(col_letter)
+        else:
+            # Fallback to A, B, C...
+            headers = [openpyxl.utils.get_column_letter(i + 1) for i in range(max_col)]
+        
+        # All rows (including header row for full fidelity)
         result[sheet_name] = {
             'headers': headers,
-            'rows': rows,
-            'rowCount': len(rows),
+            'rows': all_rows,  # Include ALL rows for complete view
+            'rowCount': len(all_rows),
         }
 
     return result
