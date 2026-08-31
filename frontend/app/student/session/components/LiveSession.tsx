@@ -59,7 +59,7 @@ export default function LiveSession({
   const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback } = agentCore;
   const { formattedTime, isLowTime } = timer;
 
-  // Fetch Anam session token on mount
+  // Fetch Anam session token on mount - BEFORE AgentCore connects
   useEffect(() => {
     if (!anamPersonaId) {
       setAnamFailed(true);
@@ -69,11 +69,15 @@ export default function LiveSession({
     getAnamSessionToken(anamPersonaId)
       .then((token) => {
         setAnamSessionToken(token);
+        // CRITICAL: Mute Nova Sonic audio playback BEFORE session starts
+        // Anam will handle TTS with lip sync instead
         setMuteAudioPlayback(true);
+        console.log('[LiveSession] Anam token received, Nova Sonic audio MUTED');
       })
       .catch((err) => {
         console.error('[LiveSession] Failed to get Anam token:', err);
         setAnamFailed(true);
+        // Keep Nova Sonic audio enabled as fallback
         setMuteAudioPlayback(false);
       });
   }, [anamPersonaId, setMuteAudioPlayback]);

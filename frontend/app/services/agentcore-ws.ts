@@ -184,10 +184,16 @@ export class AgentCoreClient {
 
   /**
    * Play received audio from the AI persona.
+   * IMPORTANT: When Anam avatar is active, this should be muted
+   * because Anam handles TTS with lip sync.
    */
   playAudio(base64Audio: string): void {
-    // Skip playback if Anam avatar is handling TTS
-    if (this.muteAudioPlayback) return;
+    // CRITICAL: Skip playback if Anam avatar is handling TTS
+    // This prevents the muffled dual-audio issue
+    if (this.muteAudioPlayback) {
+      console.log('[AgentCore] Audio playback MUTED (Anam handles TTS)');
+      return;
+    }
 
     if (!this.audioContext) {
       this.audioContext = new AudioContext({ sampleRate: 16000 });

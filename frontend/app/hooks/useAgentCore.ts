@@ -50,6 +50,9 @@ export function useAgentCore(): UseAgentCoreReturn {
   const clientRef = useRef<AgentCoreClient | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
 
+  // Store mute flag - applies to client when created
+  const muteAudioRef = useRef<boolean>(false);
+
   // Event handler
   const handleEvent = useCallback((event: AgentCoreEvent) => {
     switch (event.type) {
@@ -109,6 +112,10 @@ export function useAgentCore(): UseAgentCoreReturn {
       const client = createAgentCoreClient();
       clientRef.current = client;
 
+      // CRITICAL: Apply mute setting immediately after client creation
+      client.muteAudioPlayback = muteAudioRef.current;
+      console.log('[useAgentCore] Client created, muteAudioPlayback =', client.muteAudioPlayback);
+
       // Subscribe to events
       unsubRef.current = client.on(handleEvent);
 
@@ -155,6 +162,11 @@ export function useAgentCore(): UseAgentCoreReturn {
 
   // Mute/unmute Nova Sonic audio playback (when Anam handles TTS)
   const setMuteAudioPlayback = useCallback((mute: boolean) => {
+    // Store the mute setting
+    muteAudioRef.current = mute;
+    console.log('[useAgentCore] setMuteAudioPlayback =', mute);
+
+    // Apply to existing client if available
     if (clientRef.current) {
       clientRef.current.muteAudioPlayback = mute;
     }

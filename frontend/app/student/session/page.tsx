@@ -109,6 +109,11 @@ export default function SessionPage() {
   const handleConfirmStart = async () => {
     setShowStartModal(false);
 
+    // CRITICAL: Mute Nova Sonic audio playback BEFORE starting session
+    // Anam avatar will handle TTS with lip sync
+    agentCore.setMuteAudioPlayback(true);
+    console.log('[SessionPage] Nova Sonic audio MUTED before session start');
+
     await agentCore.startSession({
       personaId,
       userId: userId || '',
