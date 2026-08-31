@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createClient, AnamEvent } from '@anam-ai/js-sdk';
 import { Loader2, Volume2 } from 'lucide-react';
 
@@ -16,6 +16,12 @@ interface AnamAvatarPanelProps {
 /**
  * Anam AI Avatar Panel — renders a live video avatar that speaks
  * the AI stakeholder's responses with lip-synced TTS.
+ * 
+ * IMPORTANT: Anam is ONLY used for visual avatar + TTS.
+ * - Anam's built-in LLM is DISABLED
+ * - Anam's microphone input is DISABLED
+ * - Nova Sonic handles all AI logic and speech recognition
+ * - Nova Sonic text output is piped to Anam for TTS + lip sync
  */
 export default function AnamAvatarPanel({
   anamPersonaId,
@@ -38,12 +44,15 @@ export default function AnamAvatarPanel({
     const initAnam = async () => {
       setConnecting(true);
       try {
+        // Create Anam client with input audio DISABLED
+        // Anam is ONLY used for avatar rendering + TTS (speaking Nova Sonic output)
+        // LLM must be disabled on the Anam persona configuration (server-side)
         const client = createClient(sessionToken, {
-          disableInputAudio: true, // Mic handled by Nova Sonic, not Anam
+          disableInputAudio: true,   // Don't let Anam listen to mic (Nova Sonic handles speech recognition)
         });
 
         client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {
-          console.log('[Anam] Connected — avatar ready');
+          console.log('[Anam] Connected — avatar ready (LLM disabled, TTS only mode)');
           setConnected(true);
           setConnecting(false);
         });
@@ -51,6 +60,12 @@ export default function AnamAvatarPanel({
         client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
           console.log('[Anam] Connection closed');
           setConnected(false);
+        });
+
+        // Suppress any Anam-generated messages (in case LLM still triggers)
+        client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: unknown) => {
+          // Log but ignore - we only want Anam to speak what we tell it via talkMessageStream
+          console.log('[Anam] Received message event (ignoring - LLM should be disabled):', event);
         });
 
         clientRef.current = client;
@@ -83,19 +98,28 @@ export default function AnamAvatarPanel({
   // Register text callback — pipes Nova Sonic transcript to Anam for TTS + lip sync
   useEffect(() => {
     onAssistantTextRef.current = (text: string, isFinal: boolean) => {
-      if (!clientRef.current || !connected) return;
+      if (!clientRef.current || !connected) {
+        console.log('[Anam] Cannot speak - not connected');
+        return;
+      }
 
       try {
-        if (!talkStreamRef.current || !talkStreamRef.current.isActive()) {
+        // Create a new talk stream for each message segment
+        if (!talkStreamRef.current) {
           talkStreamRef.current = clientRef.current.createTalkMessageStream();
+          console.log('[Anam] Created new talk stream for TTS');
         }
 
-        if (talkStreamRef.current.isActive()) {
+        // Stream the text chunk to Anam for TTS
+        if (talkStreamRef.current && talkStreamRef.current.isActive && talkStreamRef.current.isActive()) {
           talkStreamRef.current.streamMessageChunk(text, isFinal);
+          console.log('[Anam] Streaming text to TTS:', text.substring(0, 50) + '...', 'isFinal:', isFinal);
         }
 
-        if (isFinal) {
+        // Close the stream when the message is complete
+        if (isFinal && talkStreamRef.current) {
           talkStreamRef.current = null;
+          console.log('[Anam] Closed talk stream (message complete)');
         }
       } catch (e) {
         console.warn('[Anam] Talk stream error:', e);

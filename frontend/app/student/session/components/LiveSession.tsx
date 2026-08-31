@@ -79,12 +79,24 @@ export default function LiveSession({
   }, [anamPersonaId, setMuteAudioPlayback]);
 
   // Pipe assistant transcript to Anam for TTS
+  // Only send FINAL (complete) assistant messages, not partial streaming text
+  const lastFinalTextRef = useRef<string>('');
+
   useEffect(() => {
-    if (!isAISpeaking || !currentAIText || anamFailed) return;
-    if (onAssistantTextRef.current) {
-      onAssistantTextRef.current(currentAIText, !isAISpeaking);
+    // Get the latest final assistant message from transcript
+    const finalAssistantEntries = transcript.filter(e => e.role === 'assistant' && e.isFinal);
+    const latestFinal = finalAssistantEntries[finalAssistantEntries.length - 1];
+
+    if (latestFinal && latestFinal.text !== lastFinalTextRef.current && !anamFailed) {
+      lastFinalTextRef.current = latestFinal.text;
+
+      // Send the complete message to Anam for TTS
+      if (onAssistantTextRef.current) {
+        console.log('[LiveSession] Sending to Anam TTS:', latestFinal.text.substring(0, 50) + '...');
+        onAssistantTextRef.current(latestFinal.text, true);
+      }
     }
-  }, [currentAIText, isAISpeaking, anamFailed]);
+  }, [transcript, anamFailed]);
 
   // File upload handler
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
