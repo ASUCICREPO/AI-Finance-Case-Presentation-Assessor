@@ -128,36 +128,39 @@ export default function LiveSession({
       {/* Main content: Spreadsheet LEFT, Q&A Panel RIGHT - side by side */}
       <div className="flex gap-4 flex-1 min-h-0">
         {/* LEFT - Spreadsheet Viewer + Transcript */}
-        <div className="flex-1 min-w-0 flex flex-col overflow-hidden gap-4">
-          {hasWorkbookData ? (
-            <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
-          ) : (
-            <div className="rounded-xl border border-gray-200 bg-white p-8 flex-1 flex flex-col items-center justify-center">
-              <p className="text-gray-500 mb-4 font-sans">No spreadsheet uploaded yet</p>
-              <label className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors font-sans">
-                <Upload size={16} />
-                Upload your spreadsheet
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-            </div>
-          )}
+        <div className="flex-1 min-w-0 flex flex-col gap-3">
+          {/* Spreadsheet - takes remaining space with max height */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {hasWorkbookData ? (
+              <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-white p-8 h-full flex flex-col items-center justify-center">
+                <p className="text-gray-500 mb-4 font-sans">No spreadsheet uploaded yet</p>
+                <label className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors font-sans">
+                  <Upload size={16} />
+                  Upload your spreadsheet
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
 
-          {/* Transcript Viewer - Below Spreadsheet */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden h-[140px] shrink-0 flex flex-col">
-            <div className="px-4 py-2 border-b border-gray-100 shrink-0">
+          {/* Transcript Viewer - Fixed height at bottom */}
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden h-[120px] shrink-0 flex flex-col">
+            <div className="px-4 py-2 border-b border-gray-100 shrink-0 bg-gray-50">
               <span className="text-sm font-medium text-gray-700 font-sans">Live Transcript</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 text-sm">
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1 text-sm">
               {transcript.filter(e => e.isFinal).length === 0 ? (
-                <p className="text-gray-400 italic">Conversation will appear here...</p>
+                <p className="text-gray-400 italic text-xs">Conversation will appear here...</p>
               ) : (
                 transcript.filter(e => e.isFinal).slice(-10).map((entry, idx) => (
-                  <div key={idx} className={`${entry.role === 'assistant' ? 'text-maroon-700' : 'text-gray-700'}`}>
+                  <div key={idx} className={`text-xs ${entry.role === 'assistant' ? 'text-maroon-700' : 'text-gray-700'}`}>
                     <span className="font-medium">{entry.role === 'assistant' ? 'AI' : 'You'}:</span>{' '}
                     <span>{entry.text}</span>
                   </div>

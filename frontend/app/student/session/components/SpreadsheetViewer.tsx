@@ -52,9 +52,9 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white">
+    <div className="rounded-xl border border-gray-200 bg-white h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
         <span className="text-sm text-gray-500 font-sans">Spreadsheet Viewer</span>
         <span className="text-xs text-gray-400">
           {totalRows} rows total
@@ -62,7 +62,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto max-h-[450px] overflow-y-auto">
+      <div className="overflow-x-auto flex-1 overflow-y-auto">
         <table className="w-full text-sm font-sans border-collapse">
           <thead className="sticky top-0 bg-white z-10">
             {/* Column letters row */}
@@ -120,7 +120,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
       </div>
 
       {/* Tabs & Pagination */}
-      <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
+      <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 shrink-0">
         <div className="flex gap-1 flex-wrap">
           {sheets.map((sheet) => (
             <button
