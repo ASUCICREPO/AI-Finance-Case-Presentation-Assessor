@@ -127,8 +127,8 @@ export default function LiveSession({
 
       {/* Main content: Spreadsheet LEFT, Q&A Panel RIGHT - side by side */}
       <div className="flex gap-4 flex-1 min-h-0">
-        {/* LEFT - Spreadsheet Viewer (takes remaining space) */}
-        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        {/* LEFT - Spreadsheet Viewer + Transcript */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden gap-4">
           {hasWorkbookData ? (
             <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
           ) : (
@@ -146,6 +146,25 @@ export default function LiveSession({
               </label>
             </div>
           )}
+
+          {/* Transcript Viewer - Below Spreadsheet */}
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden h-[140px] shrink-0 flex flex-col">
+            <div className="px-4 py-2 border-b border-gray-100 shrink-0">
+              <span className="text-sm font-medium text-gray-700 font-sans">Live Transcript</span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 text-sm">
+              {transcript.filter(e => e.isFinal).length === 0 ? (
+                <p className="text-gray-400 italic">Conversation will appear here...</p>
+              ) : (
+                transcript.filter(e => e.isFinal).slice(-10).map((entry, idx) => (
+                  <div key={idx} className={`${entry.role === 'assistant' ? 'text-maroon-700' : 'text-gray-700'}`}>
+                    <span className="font-medium">{entry.role === 'assistant' ? 'AI' : 'You'}:</span>{' '}
+                    <span>{entry.text}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         {/* RIGHT - Q&A Session Panel (Timer, Avatar, Camera, Submit) - fixed width */}
@@ -215,25 +234,6 @@ export default function LiveSession({
               studentName={studentInfo.name}
               compact
             />
-          </div>
-
-          {/* Transcript Viewer */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex-1 min-h-[120px] flex flex-col">
-            <div className="px-3 py-2 border-b border-gray-100 shrink-0">
-              <span className="text-xs font-medium text-gray-700 font-sans">Live Transcript</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
-              {transcript.filter(e => e.isFinal).length === 0 ? (
-                <p className="text-gray-400 italic">Conversation will appear here...</p>
-              ) : (
-                transcript.filter(e => e.isFinal).slice(-10).map((entry, idx) => (
-                  <div key={idx} className={`${entry.role === 'assistant' ? 'text-maroon-700' : 'text-gray-700'}`}>
-                    <span className="font-medium">{entry.role === 'assistant' ? 'AI' : 'You'}:</span>{' '}
-                    <span className="line-clamp-2">{entry.text}</span>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
 
           {/* Submit Button */}
