@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Clock, Flag, ArrowLeft, ChevronRight, Upload, Volume2 } from 'lucide-react';
+import { Clock, Flag, ChevronRight, Upload, Volume2 } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
 import AnamAvatarPanel from './AnamAvatarPanel';
@@ -36,7 +36,7 @@ interface LiveSessionProps {
 
 /**
  * Live Q&A Session — Spreadsheet on left, Q&A Panel (timer, avatar, camera) on right.
- * Matches Figma design with fixed right sidebar.
+ * Both always visible side by side.
  */
 export default function LiveSession({
   studentInfo,
@@ -49,8 +49,6 @@ export default function LiveSession({
   onSubmit,
   onFileUpload,
 }: LiveSessionProps) {
-  const [showSpreadsheet, setShowSpreadsheet] = useState(true); // Default to spreadsheet view
-  const [fullWidthMode, setFullWidthMode] = useState(false); // Hide Q&A panel for full spreadsheet view
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [anamSessionToken, setAnamSessionToken] = useState<string | null>(null);
   const [anamFailed, setAnamFailed] = useState(false);
@@ -107,132 +105,53 @@ export default function LiveSession({
   const hasWorkbookData = workbookSheets.length > 0;
 
   return (
-    <div className={`flex gap-6 ${fullWidthMode ? '' : 'h-[calc(100vh-180px)]'}`}>
-      {/* Left/Center - Spreadsheet or Q&A Transcript */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header bar */}
-        <div className="mb-4 rounded-xl border border-gray-200 bg-white px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold text-gray-900 font-serif">
-              {sessionType === 'practice' ? 'Practice' : 'Real'} Session: Real Estate Investment
-            </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
-              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              Recording
-            </span>
-          </div>
-          <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors font-sans">
-            <Flag size={14} />
-            Report
-          </button>
+    <div className="flex flex-col h-[calc(100vh-140px)]">
+      {/* Header bar */}
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <h1 className="text-lg font-bold text-gray-900 font-serif">
+            {sessionType === 'practice' ? 'Practice' : 'Real'} Session: Real Estate Investment
+          </h1>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+            Recording
+          </span>
         </div>
+        <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors font-sans">
+          <Flag size={14} />
+          Report
+        </button>
+      </div>
 
-        <p className="mb-4 text-xs text-gray-500 font-sans">This session is being recorded</p>
+      <p className="mb-4 text-xs text-gray-500 font-sans shrink-0">This session is being recorded</p>
 
-        {/* Spreadsheet or Q&A view */}
-        <div className={`flex-1 ${fullWidthMode ? '' : 'overflow-hidden'}`}>
-          {showSpreadsheet && hasWorkbookData ? (
-            <div className={`${fullWidthMode ? '' : 'h-full'} flex flex-col`}>
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={() => {
-                    if (fullWidthMode) {
-                      // Return from full-width mode to side-by-side
-                      setFullWidthMode(false);
-                    } else {
-                      // Go to Q&A view
-                      setShowSpreadsheet(false);
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-                >
-                  <ArrowLeft size={16} />
-                  Back to Q&A
-                </button>
-                <span className="text-sm text-gray-500 font-sans">Spreadsheet Sandbox Viewer</span>
-              </div>
-              <div className={`${fullWidthMode ? '' : 'flex-1 overflow-auto'}`}>
-                <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
-              </div>
-            </div>
+      {/* Main content: Spreadsheet LEFT, Q&A Panel RIGHT - side by side */}
+      <div className="flex gap-6 flex-1 min-h-0">
+        {/* LEFT - Spreadsheet Viewer */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {hasWorkbookData ? (
+            <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
           ) : (
-            /* Q&A Transcript View */
-            <div className="rounded-xl border border-gray-200 bg-white p-6 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900 font-serif">Q&A Session</h2>
-                {hasWorkbookData && (
-                  <button
-                    onClick={() => {
-                      setShowSpreadsheet(true);
-                      setFullWidthMode(true); // Go to full-width spreadsheet mode
-                    }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-                  >
-                    View Spreadsheet
-                    <ChevronRight size={16} />
-                  </button>
-                )}
-              </div>
-
-              {/* Transcript entries */}
-              <div className="flex-1 space-y-4 overflow-y-auto">
-                {transcript.filter(e => e.isFinal).length === 0 && status === 'active' && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p className="text-sm font-sans">Waiting for the Q&A to begin...</p>
-                  </div>
-                )}
-
-                {transcript.filter(e => e.isFinal).map((entry, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex items-start gap-3 rounded-lg border p-4 ${entry.role === 'assistant'
-                      ? 'border-maroon-200 bg-maroon-50/50'
-                      : 'border-green-200 bg-green-50/50'
-                      }`}
-                  >
-                    <span
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${entry.role === 'assistant'
-                        ? 'bg-maroon-200 text-maroon-700'
-                        : 'bg-green-200 text-green-700'
-                        }`}
-                    >
-                      {entry.role === 'assistant' ? 'Q' : 'A'}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-500 font-sans mb-1">
-                        {entry.role === 'assistant' ? personaName || 'AI Stakeholder' : studentInfo.name}
-                      </p>
-                      <p className="text-sm text-gray-900 font-sans">{entry.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Upload button if no workbook */}
-              {!hasWorkbookData && (
-                <div className="mt-6">
-                  <label className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors font-sans">
-                    <Upload size={16} />
-                    Upload your spreadsheet
-                    <input
-                      type="file"
-                      accept=".xlsx,.xls,.csv"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              )}
+            <div className="rounded-xl border border-gray-200 bg-white p-8 flex-1 flex flex-col items-center justify-center">
+              <p className="text-gray-500 mb-4 font-sans">No spreadsheet uploaded yet</p>
+              <label className="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors font-sans">
+                <Upload size={16} />
+                Upload your spreadsheet
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Right Sidebar - Q&A Session Panel (Timer, Avatar, Camera, Submit) - Hidden in full-width mode */}
-      {!fullWidthMode && (
-        <div className="w-[320px] shrink-0 space-y-4">
+        {/* RIGHT - Q&A Session Panel (Timer, Avatar, Camera, Submit) */}
+        <div className="w-[320px] shrink-0 space-y-4 flex flex-col">
           {/* Q&A Session Timer */}
-          <div className="rounded-xl bg-gray-100 p-4">
+          <div className="rounded-xl bg-gray-100 p-4 shrink-0">
             <h3 className="text-sm font-bold text-gray-900 font-sans mb-2">Q&A Session</h3>
             <div className="flex items-center gap-2">
               <Clock size={20} className="text-gray-600" />
@@ -243,10 +162,10 @@ export default function LiveSession({
             <p className="mt-1 text-xs text-gray-500 font-sans">15-minute maximum session</p>
           </div>
 
-          {/* AI Avatar Card - Mr. Clarkson */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          {/* AI Avatar Card */}
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex-1 flex flex-col">
             {/* Avatar name header */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 shrink-0">
               <span className="text-sm font-medium text-gray-900 font-sans">
                 {personaName || 'Mr. Clarkson'}
               </span>
@@ -256,7 +175,7 @@ export default function LiveSession({
             </div>
 
             {!anamFailed && anamPersonaId ? (
-              <div className="relative">
+              <div className="relative flex-1">
                 <AnamAvatarPanel
                   anamPersonaId={anamPersonaId}
                   sessionToken={anamSessionToken}
@@ -277,7 +196,7 @@ export default function LiveSession({
                 )}
               </div>
             ) : (
-              <div className="relative aspect-video bg-gray-900 flex items-center justify-center">
+              <div className="relative flex-1 bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
                   <div className={`mx-auto h-16 w-16 rounded-full border-4 ${isAISpeaking ? 'border-maroon-400 animate-pulse' : 'border-gray-700'} flex items-center justify-center bg-gray-800`}>
                     <span className="text-2xl text-white font-bold font-serif">
@@ -291,7 +210,7 @@ export default function LiveSession({
           </div>
 
           {/* Student Camera Card */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shrink-0">
             <StudentCameraView
               studentName={studentInfo.name}
               compact
@@ -301,13 +220,13 @@ export default function LiveSession({
           {/* Submit Button */}
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-400 px-6 py-3 text-sm font-medium text-white hover:bg-gray-500 transition-colors font-sans"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-400 px-6 py-3 text-sm font-medium text-white hover:bg-gray-500 transition-colors font-sans shrink-0"
           >
             Submit
             <ChevronRight size={16} />
           </button>
         </div>
-      )}
+      </div>
 
       {/* Submit confirmation modal */}
       <SubmitModal
