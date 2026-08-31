@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { getCompletedSessions } from '../../utils/sessionStorage';
 import Link from 'next/link';
 import {
   FileText,
@@ -20,8 +21,8 @@ interface Assessment {
   status: 'Submitted' | 'Not started' | 'In progress';
 }
 
-// Sample data matching Figma design
-const sampleAssessments: Assessment[] = [
+// Base assessment data
+const baseAssessments: Assessment[] = [
   { id: '1', name: 'Data Privacy Compliance', group: 'Group 1', deadline: 'Aug 20', duration: '15 min', submissionTime: 'Aug 20, 10:30 AM MST', status: 'Submitted' },
   { id: '2', name: 'SOC 2 Readiness Check', group: 'Group 2', deadline: 'Aug 22', duration: '15 min', submissionTime: 'Aug 22, 2:15 PM MST', status: 'Submitted' },
   { id: '3', name: 'Real Estate Investment', group: 'Group 1', deadline: 'Aug 25', duration: '15 min', submissionTime: null, status: 'Not started' },
@@ -34,14 +35,34 @@ const sampleAssessments: Assessment[] = [
   { id: '10', name: 'Financial Case Analysis', group: 'Group 4', deadline: 'Sep 08', duration: '15 min', submissionTime: null, status: 'Not started' },
 ];
 
+function mergeAssessmentsWithCompleted(base: Assessment[]): Assessment[] {
+  const completed = getCompletedSessions();
+  return base.map((assessment) => {
+    const completedSession = completed.find((c) => c.assessmentId === assessment.id);
+    if (completedSession) {
+      return {
+        ...assessment,
+        status: 'Submitted' as const,
+        submissionTime: completedSession.submissionTime,
+      };
+    }
+    return assessment;
+  });
+}
+
 /**
  * Student Dashboard - Assessments Overview
  * Shows stats cards and a list of assigned assessments with status.
  */
 export default function StudentDashboard() {
   const { userName } = useAuth();
-  const [assessments] = useState<Assessment[]>(sampleAssessments);
+  const [assessments, setAssessments] = useState<Assessment[]>(baseAssessments);
   const [filterStatus, setFilterStatus] = useState<string>('All');
+
+  // Load completed sessions from localStorage on mount
+  useEffect(() => {
+    setAssessments(mergeAssessmentsWithCompleted(baseAssessments));
+  }, []);
 
   const totalAssessments = assessments.length;
   const completedAssessments = assessments.filter(a => a.status === 'Submitted').length;
@@ -166,10 +187,10 @@ export default function StudentDashboard() {
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${assessment.status === 'Submitted'
-                          ? 'bg-green-100 text-green-700'
-                          : assessment.status === 'In progress'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-gray-100 text-gray-600'
+                        ? 'bg-green-100 text-green-700'
+                        : assessment.status === 'In progress'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-gray-100 text-gray-600'
                         }`}
                     >
                       {assessment.status}

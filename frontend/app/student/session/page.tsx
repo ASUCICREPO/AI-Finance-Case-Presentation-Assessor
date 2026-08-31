@@ -7,6 +7,7 @@ import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { generateSessionId } from '../../config/config';
 import { uploadFile, parseExcel, listPersonas } from '../../services/api';
 import { Persona } from '../../config/config';
+import { saveCompletedSession, formatSubmissionTime } from '../../utils/sessionStorage';
 import PracticeOverview from './components/PracticeOverview';
 import CalibrationCheck from './components/CalibrationCheck';
 import DocumentUpload from './components/DocumentUpload';
@@ -130,6 +131,21 @@ export default function SessionPage() {
     agentCore.requestAnalytics();
     agentCore.endSession();
     timer.pause();
+
+    // Save completed session to localStorage
+    // Assessment ID "3" = "Real Estate Investment" (the one we're testing)
+    const questionsAsked = agentCore.transcript.filter(e => e.role === 'assistant' && e.isFinal).length;
+    const responsesGiven = agentCore.transcript.filter(e => e.role === 'user' && e.isFinal).length;
+
+    saveCompletedSession({
+      assessmentId: '3', // Real Estate Investment
+      sessionId,
+      submissionTime: formatSubmissionTime(),
+      questionsAsked,
+      responsesGiven,
+      aiScore: agentCore.assessmentReport?.overallScore,
+    });
+
     setSessionView('complete');
   };
 
