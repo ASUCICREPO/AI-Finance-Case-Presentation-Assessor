@@ -34,11 +34,11 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left — Hero Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gray-50 items-center justify-center overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gray-100 items-center justify-center overflow-hidden p-12">
         <img
           src="/login-hero.png"
           alt="AI-powered presentation assessment"
-          className="w-full h-full object-cover object-center"
+          className="max-w-[80%] max-h-[80%] object-contain"
         />
       </div>
 
