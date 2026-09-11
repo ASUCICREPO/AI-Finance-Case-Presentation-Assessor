@@ -65,35 +65,40 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
     """
     Parse Excel workbook bytes into structured JSON.
     Uses openpyxl for .xlsx files.
+    
+    Returns BOTH values and formulas for each sheet.
 
-    Returns dict of sheet_name -> { headers: [...], rows: [[...], ...], rowCount: int }
+    Returns dict of sheet_name -> { headers: [...], rows: [[...], ...], formulas: [[...], ...], rowCount: int }
     """
     try:
         import openpyxl
-        wb = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
+        # Load twice: once for values, once for formulas
+        wb_values = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
+        wb_formulas = openpyxl.load_workbook(BytesIO(file_content), data_only=False)
     except ImportError:
         # Fallback: return placeholder indicating openpyxl not available in layer
         return {'error': 'openpyxl not available - add to Lambda layer'}
 
     result = {}
-    for sheet_name in wb.sheetnames:
+    for sheet_name in wb_values.sheetnames:
         if sheet_filter and sheet_name not in sheet_filter:
             continue
 
-        ws = wb[sheet_name]
+        ws_values = wb_values[sheet_name]
+        ws_formulas = wb_formulas[sheet_name]
         
         # Get all rows including empty ones to preserve structure
         all_rows = []
-        max_col = ws.max_column
+        all_formulas = []
+        max_col = ws_values.max_column
         
-        for row_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=ws.max_row, values_only=True), start=1):
-            # Convert tuple to list and handle cell values
+        # Extract values
+        for row_idx, row in enumerate(ws_values.iter_rows(min_row=1, max_row=ws_values.max_row, values_only=True), start=1):
             row_data = []
             for cell_val in row[:max_col]:
                 if cell_val is None:
                     row_data.append('')
                 elif isinstance(cell_val, (int, float)):
-                    # Keep numbers as-is (avoid float precision issues for display)
                     if isinstance(cell_val, float) and cell_val == int(cell_val):
                         row_data.append(int(cell_val))
                     else:
@@ -102,15 +107,27 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
                     row_data.append(str(cell_val))
             all_rows.append(row_data)
         
+        # Extract formulas
+        for row_idx, row in enumerate(ws_formulas.iter_rows(min_row=1, max_row=ws_formulas.max_row), start=1):
+            formula_row = []
+            for cell in row[:max_col]:
+                # Check if cell has a formula (starts with =)
+                if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
+                    formula_row.append(cell.value)
+                else:
+                    # No formula - show empty or the value itself
+                    formula_row.append('')
+            all_formulas.append(formula_row)
+        
         # Find the header row (first row with multiple non-empty cells)
         header_idx = 0
         for idx, row in enumerate(all_rows):
             non_empty = sum(1 for cell in row if cell not in [None, '', 0])
-            if non_empty >= 3:  # At least 3 non-empty cells = likely a header
+            if non_empty >= 3:
                 header_idx = idx
                 break
         
-        # Generate column headers (A, B, C, ... or use first data row if has labels)
+        # Generate column headers
         headers = []
         if header_idx < len(all_rows):
             first_row = all_rows[header_idx]
@@ -118,17 +135,15 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
                 if cell and str(cell).strip():
                     headers.append(str(cell))
                 else:
-                    # Use Excel-style column letters
                     col_letter = openpyxl.utils.get_column_letter(col_idx + 1)
                     headers.append(col_letter)
         else:
-            # Fallback to A, B, C...
             headers = [openpyxl.utils.get_column_letter(i + 1) for i in range(max_col)]
         
-        # All rows (including header row for full fidelity)
         result[sheet_name] = {
             'headers': headers,
-            'rows': all_rows,  # Include ALL rows for complete view
+            'rows': all_rows,
+            'formulas': all_formulas,  # NEW: Include formulas
             'rowCount': len(all_rows),
         }
 

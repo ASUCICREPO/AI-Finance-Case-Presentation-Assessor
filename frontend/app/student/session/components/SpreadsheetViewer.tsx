@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FunctionSquare, Hash } from 'lucide-react';
 
 interface SheetData {
   headers: string[];
   rows: (string | number | null)[][];
+  formulas?: (string | null)[][]; // NEW: formulas array
   rowCount: number;
 }
 
@@ -17,17 +18,22 @@ interface SpreadsheetViewerProps {
 /**
  * Spreadsheet Viewer - Displays uploaded Excel data in a tabular format
  * with tabs for different sheets. Shows ALL rows including headers and footnotes.
+ * Toggle between Values and Formulas view.
  */
 export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerProps) {
   const [activeTab, setActiveTab] = useState<string>(sheets[0] || '');
   const [page, setPage] = useState(0);
+  const [showFormulas, setShowFormulas] = useState(false); // NEW: toggle state
   const rowsPerPage = 20;
 
   const currentSheet = data[activeTab];
   const allRows = currentSheet?.rows || [];
+  const allFormulas = currentSheet?.formulas || [];
+  const hasFormulas = allFormulas.some(row => row.some(cell => cell && cell !== ''));
   const totalRows = allRows.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const displayRows = allRows.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const displayFormulas = allFormulas.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
 
   // Determine max columns from all rows
   const maxCols = Math.max(...allRows.map(r => r.length), 1);
@@ -55,7 +61,23 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
     <div className="rounded-xl border border-gray-200 bg-white h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
-        <span className="text-sm text-gray-500 font-sans">Spreadsheet Viewer</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500 font-sans">Spreadsheet Viewer</span>
+          {/* Formula Toggle */}
+          {hasFormulas && (
+            <button
+              onClick={() => setShowFormulas(!showFormulas)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${showFormulas
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                }`}
+              title={showFormulas ? 'Show Values' : 'Show Formulas'}
+            >
+              {showFormulas ? <Hash size={12} /> : <FunctionSquare size={12} />}
+              {showFormulas ? 'Values' : 'Formulas'}
+            </button>
+          )}
+        </div>
         <span className="text-xs text-gray-400">
           {totalRows} rows total
         </span>
@@ -80,6 +102,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
           <tbody>
             {displayRows.map((row, rowIdx) => {
               const actualRowNum = page * rowsPerPage + rowIdx + 1;
+              const formulaRow = displayFormulas[rowIdx] || [];
               return (
                 <tr key={rowIdx} className="border-b border-gray-100 hover:bg-blue-50/50">
                   {/* Row number */}
@@ -89,19 +112,28 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
                   {/* Cells */}
                   {colLetters.map((_, colIdx) => {
                     const cell = row[colIdx];
-                    const cellValue = cell !== null && cell !== undefined && cell !== ''
-                      ? String(cell)
-                      : '';
-                    const isNumber = typeof cell === 'number';
+                    const formula = formulaRow[colIdx];
+
+                    // Show formula if in formula mode AND formula exists, otherwise show value
+                    const displayValue = showFormulas && formula
+                      ? formula
+                      : (cell !== null && cell !== undefined && cell !== '' ? String(cell) : '');
+
+                    const isFormula = showFormulas && formula;
+                    const isNumber = !isFormula && typeof cell === 'number';
 
                     return (
                       <td
                         key={colIdx}
-                        className={`px-2 py-1.5 text-xs border-r border-gray-100 max-w-[200px] truncate ${isNumber ? 'text-right text-gray-900' : 'text-left text-gray-800'
+                        className={`px-2 py-1.5 text-xs border-r border-gray-100 max-w-[200px] truncate ${isFormula
+                            ? 'text-left text-blue-600 font-mono bg-blue-50/30'
+                            : isNumber
+                              ? 'text-right text-gray-900'
+                              : 'text-left text-gray-800'
                           }`}
-                        title={cellValue}
+                        title={isFormula ? formula : displayValue}
                       >
-                        {cellValue}
+                        {displayValue}
                       </td>
                     );
                   })}
