@@ -43,7 +43,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right — Login Form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
+      <div className="flex w-full lg:w-1/2 items-start justify-center px-6 py-12 pt-24">
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
