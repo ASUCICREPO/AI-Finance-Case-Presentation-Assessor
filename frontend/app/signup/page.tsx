@@ -109,8 +109,7 @@ export default function SignUpPage() {
               className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
             >
               <option value="student">Student</option>
-              <option value="ta">Teaching Assistant</option>
-              <option value="instructor">Instructor</option>
+              <option value="instructor">Admin</option>
             </select>
           </div>
 
