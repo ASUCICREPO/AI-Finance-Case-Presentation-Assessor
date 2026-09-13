@@ -152,11 +152,10 @@ export default function SubmissionsPage() {
                     setStatusFilter(status);
                     setShowFilters(false);
                   }}
-                  className={`w-full text-left px-3 py-1.5 text-sm rounded ${
-                    statusFilter === status
+                  className={`w-full text-left px-3 py-1.5 text-sm rounded ${statusFilter === status
                       ? 'bg-maroon-50 text-maroon-700'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {status === 'all' ? 'All Statuses' : status}
                 </button>
@@ -230,9 +229,9 @@ export default function SubmissionsPage() {
                       <div>
                         <p>{new Date(submission.submittedAt).toLocaleDateString()}</p>
                         <p className="text-xs text-gray-400">
-                          {new Date(submission.submittedAt).toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
+                          {new Date(submission.submittedAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
                           })}
                         </p>
                       </div>
@@ -259,7 +258,7 @@ export default function SubmissionsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/ta/submissions/${submission.submissionId}`}
+                        href={`/ta/submissions/review?id=${submission.submissionId}`}
                         className="inline-flex items-center gap-1 rounded-lg bg-maroon-50 px-3 py-1.5 text-xs font-medium text-maroon-700 hover:bg-maroon-100 transition-colors"
                       >
                         <Eye size={14} />

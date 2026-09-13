@@ -90,9 +90,9 @@ export default function TADashboard() {
     },
     {
       label: 'Average Score',
-      value: stats?.finalScores.avg !== null ? `${stats.finalScores.avg}%` : '—',
+      value: stats?.finalScores?.avg !== null && stats?.finalScores?.avg !== undefined ? `${stats.finalScores.avg}%` : '—',
       icon: TrendingUp,
-      change: stats?.finalScores.median !== null ? `Median: ${stats.finalScores.median}%` : '',
+      change: stats?.finalScores?.median !== null && stats?.finalScores?.median !== undefined ? `Median: ${stats.finalScores.median}%` : '',
       href: '/ta/gradebook',
     },
   ];
@@ -181,10 +181,10 @@ export default function TADashboard() {
                       <td className="py-3">
                         <span
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${sub.status === 'Reviewed'
-                              ? 'bg-green-100 text-green-700'
-                              : sub.status === 'Overridden'
-                                ? 'bg-orange-100 text-orange-700'
-                                : 'bg-yellow-100 text-yellow-700'
+                            ? 'bg-green-100 text-green-700'
+                            : sub.status === 'Overridden'
+                              ? 'bg-orange-100 text-orange-700'
+                              : 'bg-yellow-100 text-yellow-700'
                             }`}
                         >
                           {sub.status}
@@ -200,7 +200,7 @@ export default function TADashboard() {
                       </td>
                       <td className="py-3 text-right">
                         <Link
-                          href={`/ta/submissions/${sub.submissionId}`}
+                          href={`/ta/submissions/review?id=${sub.submissionId}`}
                           className="inline-flex items-center gap-1 text-xs text-maroon-600 hover:underline"
                         >
                           <Eye size={12} />

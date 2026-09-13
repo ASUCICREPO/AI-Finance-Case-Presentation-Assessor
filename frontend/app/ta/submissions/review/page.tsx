@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -27,9 +27,9 @@ import {
 } from '../../../services/api';
 
 export default function SubmissionReviewPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const submissionId = params.submissionId as string;
+  const submissionId = searchParams.get('id');
 
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
@@ -49,10 +49,16 @@ export default function SubmissionReviewPage() {
   });
 
   useEffect(() => {
-    fetchSubmission();
+    if (submissionId) {
+      fetchSubmission();
+    } else {
+      setLoading(false);
+      setError('No submission ID provided');
+    }
   }, [submissionId]);
 
   async function fetchSubmission() {
+    if (!submissionId) return;
     try {
       setLoading(true);
       setError(null);
@@ -82,6 +88,7 @@ export default function SubmissionReviewPage() {
   }
 
   async function handleSaveGrade() {
+    if (!submissionId) return;
     if (reviewerScore === '' || reviewerScore < 0 || reviewerScore > 100) {
       alert('Please enter a valid score between 0 and 100');
       return;

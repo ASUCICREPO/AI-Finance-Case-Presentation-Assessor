@@ -56,7 +56,7 @@ export default function StudentsPage() {
   }
 
   // Get unique sections for filter
-  const sections = [...new Set(students.map(s => s.section).filter(Boolean))];
+  const sections = [...new Set(students.map(s => s.section).filter((s): s is string => Boolean(s)))];
 
   // Filter students by search
   const filteredStudents = students.filter(student => {
@@ -175,9 +175,8 @@ export default function StudentsPage() {
                     <td className="px-4 py-3 text-gray-600">{student.loginId || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{student.section || '—'}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        student.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${student.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
                         {student.status}
                       </span>
                     </td>
