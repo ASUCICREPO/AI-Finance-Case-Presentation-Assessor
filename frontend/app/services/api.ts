@@ -259,3 +259,300 @@ export async function getAnamSessionToken(anamPersonaId: string): Promise<string
   });
   return data.sessionToken;
 }
+
+
+// ──────────────────────────────────────────────────────────
+// TA Dashboard API - Students
+// ──────────────────────────────────────────────────────────
+
+export interface Student {
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  loginId?: string;
+  section?: string;
+  groupId?: string;
+  role: string;
+  status: string;
+  lastActivity?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentsResponse {
+  students: Student[];
+  count: number;
+}
+
+export async function listStudents(section?: string): Promise<StudentsResponse> {
+  const params = section ? `?section=${encodeURIComponent(section)}` : '';
+  return fetchApi<StudentsResponse>(`/students${params}`);
+}
+
+export async function getStudent(studentId: string): Promise<Student> {
+  return fetchApi<Student>(`/students/${studentId}`);
+}
+
+export async function createStudent(data: Partial<Student>): Promise<Student> {
+  return fetchApi<Student>('/students', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateStudent(studentId: string, data: Partial<Student>): Promise<Student> {
+  return fetchApi<Student>(`/students/${studentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteStudent(studentId: string): Promise<void> {
+  await fetchApi(`/students/${studentId}`, { method: 'DELETE' });
+}
+
+export async function bulkImportStudents(students: Partial<Student>[]): Promise<{
+  created: number;
+  errors: number;
+  students: Student[];
+  errorDetails: Array<{ index: number; error: string; data?: Partial<Student> }>;
+}> {
+  return fetchApi('/students/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ students }),
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// TA Dashboard API - Groups
+// ──────────────────────────────────────────────────────────
+
+export interface Group {
+  groupId: string;
+  groupName: string;
+  assessmentId: string;
+  description?: string;
+  studentIds: string[];
+  students?: Array<{
+    studentId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  }>;
+  maxSize: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupsResponse {
+  groups: Group[];
+  count: number;
+}
+
+export async function listGroups(assessmentId?: string, includeStudents = false): Promise<GroupsResponse> {
+  const params = new URLSearchParams();
+  if (assessmentId) params.set('assessmentId', assessmentId);
+  if (includeStudents) params.set('includeStudents', 'true');
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchApi<GroupsResponse>(`/groups${query}`);
+}
+
+export async function getGroup(groupId: string): Promise<Group> {
+  return fetchApi<Group>(`/groups/${groupId}?includeStudents=true`);
+}
+
+export async function createGroup(data: Partial<Group>): Promise<Group> {
+  return fetchApi<Group>('/groups', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateGroup(groupId: string, data: Partial<Group>): Promise<Group> {
+  return fetchApi<Group>(`/groups/${groupId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteGroup(groupId: string): Promise<void> {
+  await fetchApi(`/groups/${groupId}`, { method: 'DELETE' });
+}
+
+export async function addGroupMembers(groupId: string, studentIds: string[]): Promise<{
+  message: string;
+  addedStudentIds: string[];
+  totalMembers: number;
+}> {
+  return fetchApi(`/groups/${groupId}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ studentIds }),
+  });
+}
+
+export async function removeGroupMembers(groupId: string, studentIds: string[]): Promise<{
+  message: string;
+  removedStudentIds: string[];
+  totalMembers: number;
+}> {
+  return fetchApi(`/groups/${groupId}/members`, {
+    method: 'DELETE',
+    body: JSON.stringify({ studentIds }),
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// TA Dashboard API - Submissions
+// ──────────────────────────────────────────────────────────
+
+export interface Submission {
+  submissionId: string;
+  studentId: string;
+  assessmentId: string;
+  sessionId: string;
+  status: 'Pending' | 'Reviewed' | 'Overridden';
+  submittedAt: string;
+  aiScore?: number;
+  aiScoreBreakdown?: Record<string, number>;
+  reviewerScore?: number;
+  reviewerScoreBreakdown?: Record<string, number>;
+  reviewerFeedback?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  videoUrl?: string;
+  transcriptUrl?: string;
+  spreadsheetUrl?: string;
+  duration?: number;
+  student?: {
+    studentId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    section?: string;
+    groupId?: string;
+  };
+  assessment?: {
+    assessmentId: string;
+    title: string;
+    dueDate?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubmissionsResponse {
+  submissions: Submission[];
+  count: number;
+}
+
+export async function listSubmissions(filters?: {
+  assessmentId?: string;
+  studentId?: string;
+  status?: string;
+}): Promise<SubmissionsResponse> {
+  const params = new URLSearchParams();
+  if (filters?.assessmentId) params.set('assessmentId', filters.assessmentId);
+  if (filters?.studentId) params.set('studentId', filters.studentId);
+  if (filters?.status) params.set('status', filters.status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchApi<SubmissionsResponse>(`/submissions${query}`);
+}
+
+export async function getSubmission(submissionId: string): Promise<Submission> {
+  return fetchApi<Submission>(`/submissions/${submissionId}`);
+}
+
+export async function gradeSubmission(submissionId: string, data: {
+  reviewerScore: number;
+  reviewerScoreBreakdown?: Record<string, number>;
+  reviewerFeedback?: string;
+  reviewerId?: string;
+}): Promise<Submission> {
+  return fetchApi<Submission>(`/submissions/${submissionId}/grade`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getSubmissionTranscript(submissionId: string): Promise<{
+  submissionId: string;
+  transcript: string | null;
+  transcriptUrl?: string;
+}> {
+  return fetchApi(`/submissions/${submissionId}/transcript`);
+}
+
+// ──────────────────────────────────────────────────────────
+// TA Dashboard API - Gradebook
+// ──────────────────────────────────────────────────────────
+
+export interface GradebookEntry {
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  section?: string;
+  groupId?: string;
+  submissionCount: number;
+  gradedCount: number;
+  averageScore: number | null;
+  submissions: Submission[];
+}
+
+export interface GradebookResponse {
+  gradebook: GradebookEntry[];
+  totalStudents: number;
+  totalSubmissions: number;
+}
+
+export async function getGradebook(filters?: {
+  assessmentId?: string;
+  section?: string;
+}): Promise<GradebookResponse> {
+  const params = new URLSearchParams();
+  if (filters?.assessmentId) params.set('assessmentId', filters.assessmentId);
+  if (filters?.section) params.set('section', filters.section);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchApi<GradebookResponse>(`/gradebook${query}`);
+}
+
+export interface GradebookStats {
+  total: number;
+  byStatus: {
+    pending: number;
+    reviewed: number;
+    overridden: number;
+  };
+  aiScores: { min: number | null; max: number | null; avg: number | null; median: number | null };
+  reviewerScores: { min: number | null; max: number | null; avg: number | null; median: number | null };
+  finalScores: { min: number | null; max: number | null; avg: number | null; median: number | null };
+  scoreDistribution: Record<string, number>;
+  reviewProgress: {
+    reviewed: number;
+    pending: number;
+    percentComplete: number;
+  };
+}
+
+export async function getGradebookStats(assessmentId?: string): Promise<GradebookStats> {
+  const params = assessmentId ? `?assessmentId=${encodeURIComponent(assessmentId)}` : '';
+  return fetchApi<GradebookStats>(`/gradebook/stats${params}`);
+}
+
+export async function exportGradebook(options: {
+  assessmentId?: string;
+  section?: string;
+  includeBreakdown?: boolean;
+}): Promise<{
+  message: string;
+  filename: string;
+  downloadUrl: string;
+  recordCount: number;
+}> {
+  return fetchApi('/gradebook/export', {
+    method: 'POST',
+    body: JSON.stringify(options),
+  });
+}

@@ -6,10 +6,11 @@ import Link from 'next/link';
 import {
   LayoutDashboard,
   Users,
+  UsersRound,
   ClipboardCheck,
   UserCircle,
   Scale,
-  BarChart3,
+  BookOpen,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -17,11 +18,12 @@ import {
 
 const navItems = [
   { label: 'Dashboard', href: '/ta/dashboard', icon: LayoutDashboard },
-  { label: 'Students', href: '/ta/assessments', icon: Users },
-  { label: 'Assessments', href: '/ta/assessments/review', icon: ClipboardCheck },
+  { label: 'Students', href: '/ta/students', icon: Users },
+  { label: 'Groups', href: '/ta/groups', icon: UsersRound },
+  { label: 'Submissions', href: '/ta/submissions', icon: ClipboardCheck },
   { label: 'Personas', href: '/ta/personas', icon: UserCircle },
   { label: 'Rubrics', href: '/ta/rubrics', icon: Scale },
-  { label: 'Analytics', href: '/ta/analytics', icon: BarChart3 },
+  { label: 'Grade Book', href: '/ta/gradebook', icon: BookOpen },
   { label: 'Settings', href: '/ta/settings', icon: Settings },
 ];
 
@@ -31,9 +33,8 @@ export default function TASidebar() {
 
   return (
     <aside
-      className={`sticky top-16 h-[calc(100vh-4rem)] border-r border-gray-200 bg-gray-900 transition-all duration-300 ${
-        collapsed ? 'w-16' : 'w-56'
-      }`}
+      className={`sticky top-16 h-[calc(100vh-4rem)] border-r border-gray-200 bg-gray-900 transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'
+        }`}
     >
       <nav className="flex flex-col gap-1 p-2 pt-4">
         {navItems.map((item) => {
@@ -42,11 +43,10 @@ export default function TASidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
                   ? 'bg-maroon-600 text-white'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              } ${collapsed ? 'justify-center' : ''}`}
+                } ${collapsed ? 'justify-center' : ''}`}
               title={collapsed ? item.label : undefined}
             >
               <item.icon size={20} />
