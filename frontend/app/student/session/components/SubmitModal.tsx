@@ -11,7 +11,7 @@ interface SubmitModalProps {
 
 /**
  * Submit Session Confirmation Modal
- * Based on Figma: "Submit practice assessment?" modal
+ * Based on Figma: "Submit Assessment?" modal
  */
 export default function SubmitModal({
   isOpen,
@@ -25,54 +25,68 @@ export default function SubmitModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl animate-fade-in">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangle size={20} className="text-red-600" />
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 font-serif">
-              Submit {isPractice ? 'practice' : ''} assessment?
-            </h2>
-          </div>
+      <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-fade-in">
+        {/* Close button */}
+        <div className="flex justify-end">
           <button
             onClick={onCancel}
             className="rounded-full p-1 hover:bg-gray-100 transition-colors"
           >
-            <X size={18} className="text-gray-500" />
+            <X size={20} className="text-gray-400" />
           </button>
+        </div>
+
+        {/* Header with icon */}
+        <div className="flex flex-col items-center text-center mt-2">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 mb-4">
+            <AlertTriangle size={24} className="text-amber-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 font-serif">
+            Submit Assessment?
+          </h2>
         </div>
 
         {/* Body */}
         <div className="mt-4">
-          <p className="text-sm text-gray-600 font-sans">
-            {isPractice
-              ? 'This is a practice assessment. Please review the following before ending:'
-              : 'Please review the following before submitting your assessment:'}
+          <p className="text-sm text-gray-500 font-sans text-center">
+            Are you sure you want to end this session? Please review the following:
           </p>
 
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-5 space-y-3">
             {isPractice ? (
               <>
-                <li className="flex items-start gap-2 text-sm font-bold text-gray-900 font-sans">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-900" />
-                  This is a practice session — your score will not affect your final grade.
+                <li className="flex items-start gap-3 text-sm text-gray-900 font-sans">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-maroon-600" />
+                  <span>
+                    <strong>This is a practice test.</strong> You can attempt it unlimited times to prepare.
+                  </span>
                 </li>
-                <li className="flex items-start gap-2 text-sm text-gray-700 font-sans">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-900" />
-                  You can retake this practice assessment unlimited times at any point.
+                <li className="flex items-start gap-3 text-sm text-gray-900 font-sans">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-maroon-600" />
+                  <span>
+                    <strong>Your score will not count</strong> toward your final grading.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3 text-sm text-gray-900 font-sans">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-maroon-600" />
+                  <span>
+                    Use this opportunity to identify areas of improvement before the real assessment.
+                  </span>
                 </li>
               </>
             ) : (
               <>
-                <li className="flex items-start gap-2 text-sm font-bold text-gray-900 font-sans">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-900" />
-                  This submission is final and will be graded.
+                <li className="flex items-start gap-3 text-sm text-gray-900 font-sans">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-maroon-600" />
+                  <span>
+                    <strong>The attempt will be submitted and graded.</strong>
+                  </span>
                 </li>
-                <li className="flex items-start gap-2 text-sm text-gray-700 font-sans">
-                  <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-900" />
-                  You cannot retake this assessment once submitted.
+                <li className="flex items-start gap-3 text-sm text-gray-900 font-sans">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-maroon-600" />
+                  <span>
+                    Unanswered or unassessed competency areas may reduce the provisional score.
+                  </span>
                 </li>
               </>
             )}
@@ -80,18 +94,18 @@ export default function SubmitModal({
         </div>
 
         {/* Actions */}
-        <div className="mt-6 flex items-center justify-end gap-3">
+        <div className="mt-8 flex items-center justify-center gap-3">
           <button
             onClick={onCancel}
-            className="rounded-lg border border-maroon-600 px-4 py-2 text-sm font-medium text-maroon-600 hover:bg-maroon-50 transition-colors font-sans"
+            className="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
           >
-            Continue Session
+            Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors font-sans"
+            className="rounded-lg bg-maroon-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
           >
-            Submit
+            {isPractice ? 'Begin Q&A session' : 'Submit'}
           </button>
         </div>
       </div>

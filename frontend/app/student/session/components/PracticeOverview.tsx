@@ -4,12 +4,12 @@ import Link from 'next/link';
 import {
   Calendar,
   FileText,
-  BookOpen,
   ClipboardCheck,
-  Globe,
+  Sparkles,
   HelpCircle,
   ChevronRight,
   ArrowLeft,
+  Lock,
 } from 'lucide-react';
 
 interface PracticeOverviewProps {
@@ -33,24 +33,41 @@ export default function PracticeOverview({ sessionType, onStartAssessment }: Pra
           Assessment
         </Link>
         <span className="mx-2 text-gray-400">/</span>
-        <span className="text-maroon-600">{isPractice ? 'Practice session' : 'Graded session'}</span>
+        <span className="text-maroon-600">{isPractice ? 'Practice session' : 'Real session'}</span>
       </nav>
 
-      {/* Title */}
-      <h1 className="text-2xl font-bold text-gray-900 font-serif">
-        {isPractice ? 'Practice' : ''} Session: Real Estate Investment
-      </h1>
+      {/* Header with title and session type indicator */}
+      <div className="flex items-start justify-between">
+        <div>
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-gray-900 font-serif">
+            {isPractice ? 'Practice' : 'Real'} Session: Real Estate Investment
+          </h1>
 
-      {/* Meta badges */}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700">
-          <Calendar size={14} />
-          Due: Oct 24, 11:59 PM
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
-          <FileText size={14} />
-          Individual Assessment
-        </span>
+          {/* Meta badges */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-maroon-600 px-3 py-1.5 text-sm font-medium text-white">
+              <Calendar size={14} />
+              Due: Oct 24, 11:59 PM
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+              <FileText size={14} />
+              Individual Assessment
+            </span>
+          </div>
+        </div>
+
+        {/* Right side - Session type indicator */}
+        <div className="text-right">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-maroon-600" />
+            <span className="text-sm font-medium text-gray-900">Practice Session</span>
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-gray-500">
+            <Lock size={14} />
+            <span className="text-sm">Next Real Session</span>
+          </div>
+        </div>
       </div>
 
       {/* Main content grid */}
@@ -113,9 +130,9 @@ export default function PracticeOverview({ sessionType, onStartAssessment }: Pra
               </div>
               <div className="flex">
                 <dt className="w-32 text-gray-500">Scoring</dt>
-                <dd className="font-medium text-gray-900">
+                <dd className={`font-medium ${isPractice ? 'text-maroon-600' : 'text-gray-900'}`}>
                   {isPractice
-                    ? 'Your score will not count toward your final grading'
+                    ? 'This is a practice session — your score will not affect your final grade.'
                     : 'AI as well as human grading'}
                 </dd>
               </div>
@@ -125,7 +142,7 @@ export default function PracticeOverview({ sessionType, onStartAssessment }: Pra
               </div>
               <div className="flex">
                 <dt className="w-32 text-gray-500">Recording</dt>
-                <dd className="font-medium text-gray-900">
+                <dd className="font-medium text-maroon-600">
                   This session will be recorded for review and quality purposes
                 </dd>
               </div>
@@ -143,19 +160,16 @@ export default function PracticeOverview({ sessionType, onStartAssessment }: Pra
 
             <nav className="mt-4 space-y-1">
               {[
-                { label: 'Assignment instructions', icon: FileText },
-                { label: 'Presentation and Q&A guidelines.', icon: BookOpen },
                 { label: 'Evaluation Rubric', icon: ClipboardCheck },
-                { label: 'Generic practice session.', icon: Globe },
-                { label: 'Accessibility', icon: Globe },
+                { label: 'Accessibility', icon: Sparkles },
                 { label: 'Help Center', icon: HelpCircle },
               ].map((link) => (
                 <button
                   key={link.label}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans border-b border-gray-100 last:border-0"
                 >
-                  <span className="flex items-center gap-2">
-                    <link.icon size={16} className="text-maroon-600" />
+                  <span className="flex items-center gap-3">
+                    <link.icon size={18} className="text-maroon-600" />
                     {link.label}
                   </span>
                   <ChevronRight size={16} className="text-gray-400" />
@@ -167,10 +181,10 @@ export default function PracticeOverview({ sessionType, onStartAssessment }: Pra
       </div>
 
       {/* Bottom actions */}
-      <div className="mt-8 flex items-center justify-between">
+      <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
         <Link
           href="/student/dashboard"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
         >
           <ArrowLeft size={16} />
           Back

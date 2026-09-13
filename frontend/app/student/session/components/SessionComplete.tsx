@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { AssessmentReport } from '../../../config/config';
@@ -13,7 +14,7 @@ interface SessionCompleteProps {
 }
 
 /**
- * Session Complete — Shows success + assessment report (if available).
+ * Session Complete — Shows success modal + assessment report (if available).
  */
 export default function SessionComplete({
   sessionType,
@@ -21,12 +22,45 @@ export default function SessionComplete({
   transcript,
   onDone,
 }: SessionCompleteProps) {
+  const [showSuccessModal, setShowSuccessModal] = useState(true);
   const isPractice = sessionType === 'practice';
   const totalQuestions = transcript.filter((e) => e.role === 'assistant' && e.isFinal).length;
   const totalAnswers = transcript.filter((e) => e.role === 'user' && e.isFinal).length;
 
+  // Auto-hide success modal after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSuccessModal(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="mx-auto max-w-3xl animate-fade-in">
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl animate-fade-in text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
+              <CheckCircle size={40} className="text-green-500" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 font-serif mb-2">
+              Submission Successfully Submitted!
+            </h2>
+            <p className="text-sm text-gray-500 font-sans mb-6">
+              Your presentation and responses have been submitted for review. Your official grade will be communicated through Canvas after instructor/TA review.
+            </p>
+            <Link
+              href="/student/dashboard"
+              onClick={onDone}
+              className="inline-flex w-full items-center justify-center rounded-lg bg-maroon-600 px-6 py-3 text-white font-sans font-medium hover:bg-maroon-700 transition-colors"
+            >
+              Dashboard
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Success header */}
       <div className="text-center mb-8">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -86,10 +120,10 @@ export default function SessionComplete({
                   <div className="h-2 w-full rounded-full bg-gray-200">
                     <div
                       className={`h-full rounded-full transition-all ${data.score >= 80
-                          ? 'bg-green-500'
-                          : data.score >= 60
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
+                        ? 'bg-green-500'
+                        : data.score >= 60
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
                         }`}
                       style={{ width: `${data.score}%` }}
                     />
@@ -141,7 +175,7 @@ export default function SessionComplete({
           onClick={onDone}
           className="inline-flex items-center justify-center rounded-lg bg-maroon-600 px-8 py-3 text-white font-sans font-medium hover:bg-maroon-700 transition-colors"
         >
-          Done
+          Return to Dashboard
         </Link>
       </div>
     </div>

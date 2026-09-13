@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Clock, Flag, ChevronRight, Upload, Volume2 } from 'lucide-react';
+import { Clock, Flag, ChevronRight, Upload, Volume2, AlertCircle, Mic, Video } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
 import AnamAvatarPanel from './AnamAvatarPanel';
@@ -107,13 +107,13 @@ export default function LiveSession({
   return (
     <div className="flex flex-col h-[calc(100vh-140px)]">
       {/* Header bar */}
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white px-6 py-4 flex items-center justify-between shrink-0">
+      <div className="mb-3 rounded-xl border border-gray-200 bg-white px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold text-gray-900 font-serif">
             {sessionType === 'practice' ? 'Practice' : 'Real'} Session: Real Estate Investment
           </h1>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
-            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
             Recording
           </span>
         </div>
@@ -123,7 +123,7 @@ export default function LiveSession({
         </button>
       </div>
 
-      <p className="mb-4 text-xs text-gray-500 font-sans shrink-0">This session is being recorded</p>
+      <p className="mb-3 text-xs text-gray-400 font-sans shrink-0">This session is being recorded</p>
 
       {/* Main content: Spreadsheet LEFT, Q&A Panel RIGHT - side by side */}
       <div className="flex gap-4 flex-1 min-h-0">
@@ -151,11 +151,11 @@ export default function LiveSession({
           </div>
 
           {/* Transcript Viewer - Fixed height at bottom */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden h-[120px] shrink-0 flex flex-col">
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden h-[100px] shrink-0 flex flex-col">
             <div className="px-4 py-2 border-b border-gray-100 shrink-0 bg-gray-50">
               <span className="text-sm font-medium text-gray-700 font-sans">Live Transcript</span>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1 text-sm">
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
               {transcript.filter(e => e.isFinal).length === 0 ? (
                 <p className="text-gray-400 italic text-xs">Conversation will appear here...</p>
               ) : (
@@ -170,34 +170,44 @@ export default function LiveSession({
           </div>
         </div>
 
-        {/* RIGHT - Q&A Session Panel (Timer, Avatar, Camera, Submit) - fixed width */}
-        <div className="w-[300px] shrink-0 space-y-3 flex flex-col">
+        {/* RIGHT - Q&A Session Panel */}
+        <div className="w-[280px] shrink-0 space-y-3 flex flex-col">
           {/* Q&A Session Timer */}
-          <div className="rounded-xl bg-gray-100 p-4 shrink-0">
-            <h3 className="text-sm font-bold text-gray-900 font-sans mb-2">Q&A Session</h3>
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shrink-0">
+            <h3 className="text-sm font-semibold text-gray-900 font-sans mb-2">Q&A Session Timer</h3>
             <div className="flex items-center gap-2">
-              <Clock size={20} className="text-gray-600" />
+              <Clock size={20} className="text-gray-500" />
               <span className={`text-3xl font-bold font-sans ${isLowTime ? 'text-red-600' : 'text-gray-900'}`}>
                 {formattedTime}
               </span>
             </div>
-            <p className="mt-1 text-xs text-gray-500 font-sans">15-minute maximum session</p>
+            <p className="mt-1 text-xs text-gray-500 font-sans">
+              {isLowTime ? `${Math.ceil(timer.timeRemaining / 60)} minute${timer.timeRemaining > 60 ? 's' : ''} remaining` : '15-minute maximum session'}
+            </p>
           </div>
 
           {/* AI Avatar Card */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex-1 flex flex-col">
+          <div className="rounded-xl border-2 border-maroon-200 bg-maroon-50 overflow-hidden flex flex-col">
             {/* Avatar name header */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 shrink-0">
-              <span className="text-sm font-medium text-gray-900 font-sans">
-                {personaName || 'Mr. Clarkson'}
-              </span>
-              <button className="rounded-full p-1 hover:bg-gray-100">
-                <Volume2 size={16} className="text-gray-500" />
+            <div className="flex items-center justify-between px-3 py-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-maroon-600 flex items-center justify-center">
+                  <span className="text-xs text-white font-bold">
+                    {(personaName || 'Mr. Clarkson').charAt(0)}
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-900 font-sans">
+                  {personaName || 'Mr. Clarkson'}
+                </span>
+              </div>
+              <button className="rounded-full p-1 hover:bg-maroon-100">
+                <Volume2 size={14} className="text-gray-500" />
               </button>
             </div>
 
-            {!anamFailed && anamPersonaId ? (
-              <div className="relative flex-1">
+            {/* Avatar area */}
+            <div className="relative h-36 bg-gray-100">
+              {!anamFailed && anamPersonaId ? (
                 <AnamAvatarPanel
                   anamPersonaId={anamPersonaId}
                   sessionToken={anamSessionToken}
@@ -205,44 +215,54 @@ export default function LiveSession({
                   personaName={personaName || 'Mr. Clarkson'}
                   onAssistantTextRef={onAssistantTextRef}
                 />
-                {/* AI Speaking indicator */}
-                {isAISpeaking && currentAIText && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-maroon-600/90 px-3 py-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-white font-medium font-sans">🔊 AI Speaking</span>
-                    </div>
-                    <p className="text-xs text-white font-sans line-clamp-2">
-                      &quot;{currentAIText}&quot;
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="relative flex-1 bg-gray-900 flex items-center justify-center">
-                <div className="text-center">
-                  <div className={`mx-auto h-16 w-16 rounded-full border-4 ${isAISpeaking ? 'border-maroon-400 animate-pulse' : 'border-gray-700'} flex items-center justify-center bg-gray-800`}>
-                    <span className="text-2xl text-white font-bold font-serif">
-                      {(personaName || 'AI').charAt(0)}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-300 font-sans">{personaName || 'AI Stakeholder'}</p>
+              ) : (
+                <div className="h-full bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center">
+                  <img
+                    src="/avatar-placeholder.png"
+                    alt="AI Avatar"
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* AI Speaking indicator overlay */}
+              {isAISpeaking && currentAIText && (
+                <div className="absolute bottom-0 left-0 right-0 bg-amber-500 px-3 py-2">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="text-xs text-white font-medium">🎙️ AI Speaking</span>
+                  </div>
+                  <p className="text-xs text-white line-clamp-2">
+                    &quot;{currentAIText}&quot;
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Student Camera Card */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shrink-0">
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shrink-0 relative">
             <StudentCameraView
               studentName={studentInfo.name}
               compact
             />
+            {/* Mic and Video icons */}
+            <div className="absolute bottom-2 right-2 flex items-center gap-1">
+              <button className="rounded-full bg-gray-800/70 p-1.5 hover:bg-gray-800">
+                <Mic size={14} className="text-white" />
+              </button>
+              <button className="rounded-full bg-gray-800/70 p-1.5 hover:bg-gray-800">
+                <Video size={14} className="text-white" />
+              </button>
+            </div>
           </div>
 
           {/* Submit Button */}
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-400 px-6 py-3 text-sm font-medium text-white hover:bg-gray-500 transition-colors font-sans shrink-0"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-500 px-6 py-3 text-sm font-medium text-white hover:bg-gray-600 transition-colors font-sans shrink-0"
           >
             Submit
             <ChevronRight size={16} />
