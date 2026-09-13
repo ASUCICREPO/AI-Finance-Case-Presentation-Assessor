@@ -153,6 +153,63 @@ export class FinanceAssessorStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // TA Dashboard Tables
+    // Students Table - roster of all students with their info
+    const studentsTable = new dynamodb.Table(this, 'StudentsTable', {
+      partitionKey: { name: 'studentId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    // GSI for querying students by email
+    studentsTable.addGlobalSecondaryIndex({
+      indexName: 'email-index',
+      partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
+    });
+    // GSI for querying students by section
+    studentsTable.addGlobalSecondaryIndex({
+      indexName: 'section-index',
+      partitionKey: { name: 'section', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'lastName', type: dynamodb.AttributeType.STRING },
+    });
+
+    // Groups Table - groups within each assessment/session
+    const groupsTable = new dynamodb.Table(this, 'GroupsTable', {
+      partitionKey: { name: 'groupId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    // GSI for querying groups by assessment
+    groupsTable.addGlobalSecondaryIndex({
+      indexName: 'assessmentId-index',
+      partitionKey: { name: 'assessmentId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'groupName', type: dynamodb.AttributeType.STRING },
+    });
+
+    // Submissions Table - student submissions with AI and reviewer scores
+    const submissionsTable = new dynamodb.Table(this, 'SubmissionsTable', {
+      partitionKey: { name: 'submissionId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    // GSI for querying submissions by student
+    submissionsTable.addGlobalSecondaryIndex({
+      indexName: 'studentId-index',
+      partitionKey: { name: 'studentId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'submittedAt', type: dynamodb.AttributeType.STRING },
+    });
+    // GSI for querying submissions by assessment
+    submissionsTable.addGlobalSecondaryIndex({
+      indexName: 'assessmentId-index',
+      partitionKey: { name: 'assessmentId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'submittedAt', type: dynamodb.AttributeType.STRING },
+    });
+    // GSI for querying submissions by status (Pending, Reviewed, Overridden)
+    submissionsTable.addGlobalSecondaryIndex({
+      indexName: 'status-index',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'submittedAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // ──────────────────────────────────────────────────────────
     // Lambda Functions
     // ──────────────────────────────────────────────────────────
@@ -165,6 +222,9 @@ export class FinanceAssessorStack extends cdk.Stack {
         CASES_TABLE: casesTable.tableName,
         SESSIONS_TABLE: sessionsTable.tableName,
         ASSESSMENTS_TABLE: assessmentsTable.tableName,
+        STUDENTS_TABLE: studentsTable.tableName,
+        GROUPS_TABLE: groupsTable.tableName,
+        SUBMISSIONS_TABLE: submissionsTable.tableName,
         UPLOADS_BUCKET: this.uploadsBucket.bucketName,
       },
     };
@@ -243,6 +303,56 @@ export class FinanceAssessorStack extends cdk.Stack {
       },
     });
 
+    // TA Dashboard Lambda Functions
+    // Students CRUD Lambda
+    const studentsCrudFn = new lambda.Function(this, 'StudentsCrudFn', {
+      ...lambdaDefaults,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/students-crud'),
+      description: 'CRUD operations for student roster management',
+    } as lambda.FunctionProps);
+    studentsTable.grantReadWriteData(studentsCrudFn);
+    groupsTable.grantReadData(studentsCrudFn);
+
+    // Groups CRUD Lambda
+    const groupsCrudFn = new lambda.Function(this, 'GroupsCrudFn', {
+      ...lambdaDefaults,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/groups-crud'),
+      description: 'CRUD operations for assessment groups',
+    } as lambda.FunctionProps);
+    groupsTable.grantReadWriteData(groupsCrudFn);
+    studentsTable.grantReadData(groupsCrudFn);
+    assessmentsTable.grantReadData(groupsCrudFn);
+
+    // Submissions CRUD Lambda
+    const submissionsCrudFn = new lambda.Function(this, 'SubmissionsCrudFn', {
+      ...lambdaDefaults,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/submissions-crud'),
+      description: 'CRUD operations for student submissions and grading',
+      timeout: cdk.Duration.seconds(60),
+    } as lambda.FunctionProps);
+    submissionsTable.grantReadWriteData(submissionsCrudFn);
+    studentsTable.grantReadData(submissionsCrudFn);
+    assessmentsTable.grantReadData(submissionsCrudFn);
+    sessionsTable.grantReadData(submissionsCrudFn);
+    this.uploadsBucket.grantRead(submissionsCrudFn);
+
+    // Gradebook Lambda - for exporting grades and analytics
+    const gradebookFn = new lambda.Function(this, 'GradebookFn', {
+      ...lambdaDefaults,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/gradebook'),
+      description: 'Gradebook operations - export, analytics, bulk updates',
+      timeout: cdk.Duration.seconds(60),
+    } as lambda.FunctionProps);
+    submissionsTable.grantReadWriteData(gradebookFn);
+    studentsTable.grantReadData(gradebookFn);
+    groupsTable.grantReadData(gradebookFn);
+    assessmentsTable.grantReadData(gradebookFn);
+    this.uploadsBucket.grantReadWrite(gradebookFn);
+
     // ──────────────────────────────────────────────────────────
     // API Gateway
     // ──────────────────────────────────────────────────────────
@@ -285,6 +395,54 @@ export class FinanceAssessorStack extends cdk.Stack {
     const anamSessionResource = api.root.addResource('anam-session');
     anamSessionResource.addMethod('POST', new apigateway.LambdaIntegration(anamSessionTokenFn));
 
+    // TA Dashboard API Endpoints
+    // /students
+    const studentsResource = api.root.addResource('students');
+    studentsResource.addMethod('GET', new apigateway.LambdaIntegration(studentsCrudFn));
+    studentsResource.addMethod('POST', new apigateway.LambdaIntegration(studentsCrudFn));
+    const studentById = studentsResource.addResource('{studentId}');
+    studentById.addMethod('GET', new apigateway.LambdaIntegration(studentsCrudFn));
+    studentById.addMethod('PUT', new apigateway.LambdaIntegration(studentsCrudFn));
+    studentById.addMethod('DELETE', new apigateway.LambdaIntegration(studentsCrudFn));
+    // Bulk operations
+    const studentsBulk = studentsResource.addResource('bulk');
+    studentsBulk.addMethod('POST', new apigateway.LambdaIntegration(studentsCrudFn)); // Bulk import
+
+    // /groups
+    const groupsResource = api.root.addResource('groups');
+    groupsResource.addMethod('GET', new apigateway.LambdaIntegration(groupsCrudFn));
+    groupsResource.addMethod('POST', new apigateway.LambdaIntegration(groupsCrudFn));
+    const groupById = groupsResource.addResource('{groupId}');
+    groupById.addMethod('GET', new apigateway.LambdaIntegration(groupsCrudFn));
+    groupById.addMethod('PUT', new apigateway.LambdaIntegration(groupsCrudFn));
+    groupById.addMethod('DELETE', new apigateway.LambdaIntegration(groupsCrudFn));
+    // Group members management
+    const groupMembers = groupById.addResource('members');
+    groupMembers.addMethod('POST', new apigateway.LambdaIntegration(groupsCrudFn)); // Add members
+    groupMembers.addMethod('DELETE', new apigateway.LambdaIntegration(groupsCrudFn)); // Remove members
+
+    // /submissions
+    const submissionsResource = api.root.addResource('submissions');
+    submissionsResource.addMethod('GET', new apigateway.LambdaIntegration(submissionsCrudFn));
+    submissionsResource.addMethod('POST', new apigateway.LambdaIntegration(submissionsCrudFn));
+    const submissionById = submissionsResource.addResource('{submissionId}');
+    submissionById.addMethod('GET', new apigateway.LambdaIntegration(submissionsCrudFn));
+    submissionById.addMethod('PUT', new apigateway.LambdaIntegration(submissionsCrudFn));
+    // Grading endpoint
+    const submissionGrade = submissionById.addResource('grade');
+    submissionGrade.addMethod('POST', new apigateway.LambdaIntegration(submissionsCrudFn));
+    // Transcript endpoint
+    const submissionTranscript = submissionById.addResource('transcript');
+    submissionTranscript.addMethod('GET', new apigateway.LambdaIntegration(submissionsCrudFn));
+
+    // /gradebook
+    const gradebookResource = api.root.addResource('gradebook');
+    gradebookResource.addMethod('GET', new apigateway.LambdaIntegration(gradebookFn)); // Get grades summary
+    const gradebookExport = gradebookResource.addResource('export');
+    gradebookExport.addMethod('POST', new apigateway.LambdaIntegration(gradebookFn)); // Export to CSV
+    const gradebookStats = gradebookResource.addResource('stats');
+    gradebookStats.addMethod('GET', new apigateway.LambdaIntegration(gradebookFn)); // Analytics/stats
+
     this.apiUrl = api.url;
 
     // ──────────────────────────────────────────────────────────
@@ -302,5 +460,8 @@ export class FinanceAssessorStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'UserPoolClientId', { value: this.userPoolClientId });
     new cdk.CfnOutput(this, 'IdentityPoolId', { value: this.identityPoolId });
     new cdk.CfnOutput(this, 'UploadsBucketName', { value: this.uploadsBucket.bucketName });
+    new cdk.CfnOutput(this, 'StudentsTableName', { value: studentsTable.tableName });
+    new cdk.CfnOutput(this, 'GroupsTableName', { value: groupsTable.tableName });
+    new cdk.CfnOutput(this, 'SubmissionsTableName', { value: submissionsTable.tableName });
   }
 }
