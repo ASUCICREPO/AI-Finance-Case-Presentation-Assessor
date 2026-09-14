@@ -133,7 +133,7 @@ def create_group(body):
     """Create a new group."""
     try:
         # Validate required fields
-        required_fields = ['groupName', 'assessmentId']
+        required_fields = ['groupName', 'assessmentId', 'sessionNumber', 'groupNumber']
         for field in required_fields:
             if field not in body:
                 return response(400, {'error': f'Missing required field: {field}'})
@@ -145,6 +145,8 @@ def create_group(body):
             'groupId': group_id,
             'groupName': body['groupName'],
             'assessmentId': body['assessmentId'],
+            'sessionNumber': str(body['sessionNumber']),  # e.g., "1", "2" for Session 1, Session 2
+            'groupNumber': str(body['groupNumber']),      # e.g., "1", "2", "3" for Group 1, 2, 3
             'description': body.get('description', ''),
             'studentIds': body.get('studentIds', []),
             'maxSize': body.get('maxSize', 10),
@@ -161,9 +163,11 @@ def create_group(body):
                 try:
                     students_table.update_item(
                         Key={'studentId': student_id},
-                        UpdateExpression='SET groupId = :gid, updatedAt = :ts',
+                        UpdateExpression='SET groupId = :gid, sessionNumber = :sn, groupNumber = :gn, updatedAt = :ts',
                         ExpressionAttributeValues={
                             ':gid': group_id,
+                            ':sn': group['sessionNumber'],
+                            ':gn': group['groupNumber'],
                             ':ts': timestamp
                         }
                     )

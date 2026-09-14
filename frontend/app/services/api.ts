@@ -412,19 +412,44 @@ export interface Submission {
   studentId: string;
   assessmentId: string;
   sessionId: string;
+  groupId?: string;
+  sessionNumber?: string;
+  groupNumber?: string;
   status: 'Pending' | 'Reviewed' | 'Overridden';
   submittedAt: string;
+
+  // AI Analytics Results
   aiScore?: number;
   aiScoreBreakdown?: Record<string, number>;
+  aiAnalytics?: {
+    overallScore?: number;
+    categoryScores?: Record<string, number>;
+    feedback?: {
+      strengths?: string[];
+      improvements?: string[];
+      evidence?: string[];
+    };
+  };
+  transcript?: Array<{ role: string; text: string; timestamp?: string }>;
+  questionsAsked?: number;
+  responsesGiven?: number;
+  sessionDuration?: number;
+
+  // Reviewer Scores
   reviewerScore?: number;
   reviewerScoreBreakdown?: Record<string, number>;
   reviewerFeedback?: string;
   reviewedAt?: string;
   reviewedBy?: string;
+
+  // File references
   videoUrl?: string;
   transcriptUrl?: string;
   spreadsheetUrl?: string;
+  spreadsheetS3Key?: string;
   duration?: number;
+
+  // Related data
   student?: {
     studentId: string;
     firstName: string;
@@ -432,6 +457,8 @@ export interface Submission {
     email: string;
     section?: string;
     groupId?: string;
+    sessionNumber?: string;
+    groupNumber?: string;
   };
   assessment?: {
     assessmentId: string;
@@ -482,6 +509,40 @@ export async function getSubmissionTranscript(submissionId: string): Promise<{
   transcriptUrl?: string;
 }> {
   return fetchApi(`/submissions/${submissionId}/transcript`);
+}
+
+/**
+ * Create a new submission (called when student completes assessment).
+ * This stores the AI analytics results in DynamoDB.
+ */
+export async function createSubmission(data: {
+  studentId: string;
+  assessmentId: string;
+  sessionId: string;
+  groupId?: string;
+  sessionNumber?: string;
+  groupNumber?: string;
+  aiScore?: number;
+  aiScoreBreakdown?: Record<string, number>;
+  aiAnalytics?: object;
+  transcript?: Array<{ role: string; text: string; timestamp?: string }>;
+  questionsAsked?: number;
+  responsesGiven?: number;
+  sessionDuration?: number;
+  spreadsheetS3Key?: string;
+}): Promise<Submission> {
+  return fetchApi<Submission>('/submissions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Get submissions for a specific student (for student dashboard).
+ * Uses includeAiAnalytics=false to hide AI scores from students.
+ */
+export async function getStudentSubmissions(studentId: string): Promise<SubmissionsResponse> {
+  return fetchApi<SubmissionsResponse>(`/submissions?studentId=${encodeURIComponent(studentId)}&includeAiAnalytics=false`);
 }
 
 // ──────────────────────────────────────────────────────────

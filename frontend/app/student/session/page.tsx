@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { generateSessionId, config } from '../../config/config';
-import { uploadFile, parseExcel, listPersonas } from '../../services/api';
+import { uploadFile, parseExcel, listPersonas, createSubmission } from '../../services/api';
 import { Persona } from '../../config/config';
-import { saveCompletedSession, formatSubmissionTime } from '../../utils/sessionStorage';
 import PracticeOverview from './components/PracticeOverview';
 import CalibrationCheck from './components/CalibrationCheck';
 import DocumentUpload from './components/DocumentUpload';
@@ -19,7 +19,8 @@ export type SessionView = 'overview' | 'calibration' | 'upload' | 'live' | 'comp
 export type SessionType = 'practice' | 'graded';
 
 export default function SessionPage() {
-  const { userId, userName, userGroup, userCourse } = useAuth();
+  const searchParams = useSearchParams();
+  const { userId, userName, userGroup, userCourse, userSessionNumber, userGroupNumber } = useAuth();
   const agentCore = useAgentCore();
   const timer = useSessionTimer(() => {
     agentCore.endSession();
@@ -30,6 +31,11 @@ export default function SessionPage() {
   const [sessionId] = useState(() => generateSessionId());
   const [workbookSheets, setWorkbookSheets] = useState<string[]>([]);
   const [workbookData, setWorkbookData] = useState<Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>>({});
+  const [spreadsheetS3Key, setSpreadsheetS3Key] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Get assessmentId from URL params or default
+  const assessmentId = searchParams.get('assessmentId') || '1';
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -93,6 +99,9 @@ export default function SessionPage() {
         setUploadProgress(percent);
       });
 
+      // Save S3 key for submission
+      setSpreadsheetS3Key(s3Key);
+
       const parsed = await parseExcel(s3Key, sessionId);
       setWorkbookSheets(parsed.sheets);
       setWorkbookData(parsed.data);
@@ -131,27 +140,77 @@ export default function SessionPage() {
     setSessionView('live');
   };
 
-  // Submit session
-  const handleSubmitSession = () => {
-    agentCore.requestAnalytics();
-    agentCore.endSession();
-    timer.pause();
+  // Submit session - saves to DynamoDB
+  const handleSubmitSession = async () => {
+    if (submitting) return;
 
-    // Save completed session to localStorage
-    // Assessment ID "3" = "Real Estate Investment" (the one we're testing)
-    const questionsAsked = agentCore.transcript.filter(e => e.role === 'assistant' && e.isFinal).length;
-    const responsesGiven = agentCore.transcript.filter(e => e.role === 'user' && e.isFinal).length;
+    setSubmitting(true);
 
-    saveCompletedSession({
-      assessmentId: '3', // Real Estate Investment
-      sessionId,
-      submissionTime: formatSubmissionTime(),
-      questionsAsked,
-      responsesGiven,
-      aiScore: agentCore.assessmentReport?.overallScore,
-    });
+    try {
+      // Request analytics before ending session
+      agentCore.requestAnalytics();
+      agentCore.endSession();
+      timer.pause();
 
-    setSessionView('complete');
+      // Calculate session stats
+      const questionsAsked = agentCore.transcript.filter(e => e.role === 'assistant' && e.isFinal).length;
+      const responsesGiven = agentCore.transcript.filter(e => e.role === 'user' && e.isFinal).length;
+      const sessionDuration = 900 - timer.timeRemaining; // Time used
+
+      // Prepare transcript for storage
+      const transcriptData = agentCore.transcript
+        .filter(e => e.isFinal)
+        .map(e => ({
+          role: e.role,
+          text: e.text,
+          timestamp: new Date().toISOString(),
+        }));
+
+      // Create submission in DynamoDB with AI analytics
+      await createSubmission({
+        studentId: userId || 'anonymous',
+        assessmentId: assessmentId,
+        sessionId: sessionId,
+        sessionNumber: userSessionNumber || '1',
+        groupNumber: userGroupNumber || '1',
+
+        // AI Analytics from AgentCore - convert categoryScores to simple number map
+        aiScore: agentCore.assessmentReport?.overallScore,
+        aiScoreBreakdown: agentCore.assessmentReport?.categoryScores
+          ? Object.fromEntries(
+            Object.entries(agentCore.assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
+          )
+          : {},
+        aiAnalytics: {
+          overallScore: agentCore.assessmentReport?.overallScore,
+          categoryScores: agentCore.assessmentReport?.categoryScores
+            ? Object.fromEntries(
+              Object.entries(agentCore.assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
+            )
+            : {},
+          feedback: {
+            strengths: agentCore.assessmentReport?.strengths || [],
+            improvements: agentCore.assessmentReport?.improvements || [],
+            evidence: agentCore.assessmentReport?.evidenceCitations || [],
+          },
+        },
+
+        // Session data
+        transcript: transcriptData,
+        questionsAsked,
+        responsesGiven,
+        sessionDuration,
+        spreadsheetS3Key: spreadsheetS3Key || undefined,
+      });
+
+      console.log('[SessionPage] Submission saved to DynamoDB');
+    } catch (err) {
+      console.error('[SessionPage] Failed to save submission:', err);
+      // Continue to complete view even if save fails
+    } finally {
+      setSubmitting(false);
+      setSessionView('complete');
+    }
   };
 
   return (

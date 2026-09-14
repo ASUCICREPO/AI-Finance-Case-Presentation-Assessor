@@ -50,6 +50,8 @@ def get_all_submissions(query_params):
         assessment_id = query_params.get('assessmentId') if query_params else None
         student_id = query_params.get('studentId') if query_params else None
         status = query_params.get('status') if query_params else None
+        group_id = query_params.get('groupId') if query_params else None
+        session_number = query_params.get('sessionNumber') if query_params else None
         
         if assessment_id:
             result = submissions_table.query(
@@ -97,8 +99,16 @@ def get_all_submissions(query_params):
                 )
             submissions.extend(result.get('Items', []))
         
+        # Filter by groupId or sessionNumber if provided (post-query filtering)
+        if group_id:
+            submissions = [s for s in submissions if s.get('groupId') == group_id]
+        if session_number:
+            submissions = [s for s in submissions if s.get('sessionNumber') == session_number]
+        
         # Enrich with student details if requested
         include_student = query_params.get('includeStudent', 'true').lower() == 'true' if query_params else True
+        # Check if request is from TA (include AI scores) or student (exclude AI scores)
+        include_ai_analytics = query_params.get('includeAiAnalytics', 'true').lower() == 'true' if query_params else True
         
         if include_student:
             for sub in submissions:
@@ -109,8 +119,20 @@ def get_all_submissions(query_params):
                         'firstName': student['firstName'],
                         'lastName': student['lastName'],
                         'email': student['email'],
-                        'section': student.get('section')
+                        'section': student.get('section'),
+                        'sessionNumber': student.get('sessionNumber'),
+                        'groupNumber': student.get('groupNumber')
                     }
+        
+        # If not including AI analytics (student view), strip sensitive data
+        if not include_ai_analytics:
+            for sub in submissions:
+                sub.pop('aiScore', None)
+                sub.pop('aiScoreBreakdown', None)
+                sub.pop('aiAnalytics', None)
+                sub.pop('reviewerScore', None)
+                sub.pop('reviewerScoreBreakdown', None)
+                sub.pop('reviewerFeedback', None)
         
         return response(200, {'submissions': submissions, 'count': len(submissions)})
     except Exception as e:
@@ -165,24 +187,42 @@ def create_submission(body):
         submission_id = str(uuid.uuid4())
         timestamp = datetime.utcnow().isoformat() + 'Z'
         
+        # Get student info for session/group numbers
+        student = students_table.get_item(Key={'studentId': body['studentId']}).get('Item', {})
+        
         submission = {
             'submissionId': submission_id,
             'studentId': body['studentId'],
             'assessmentId': body['assessmentId'],
             'sessionId': body['sessionId'],
+            'groupId': body.get('groupId') or student.get('groupId'),
+            'sessionNumber': body.get('sessionNumber') or student.get('sessionNumber'),
+            'groupNumber': body.get('groupNumber') or student.get('groupNumber'),
             'status': 'Pending',  # Pending, Reviewed, Overridden
             'submittedAt': timestamp,
+            
+            # AI Analytics Results (from AgentCore/Nova Sonic)
             'aiScore': body.get('aiScore'),
             'aiScoreBreakdown': body.get('aiScoreBreakdown', {}),
+            'aiAnalytics': body.get('aiAnalytics', {}),  # Full AI assessment report
+            'transcript': body.get('transcript', []),     # Full Q&A transcript
+            'questionsAsked': body.get('questionsAsked', 0),
+            'responsesGiven': body.get('responsesGiven', 0),
+            'sessionDuration': body.get('sessionDuration', 0),  # in seconds
+            
+            # Reviewer (TA/Prof) Scores - populated later
             'reviewerScore': None,
             'reviewerScoreBreakdown': None,
             'reviewerFeedback': None,
             'reviewedAt': None,
             'reviewedBy': None,
+            
+            # File references
             'videoUrl': body.get('videoUrl'),
             'transcriptUrl': body.get('transcriptUrl'),
             'spreadsheetUrl': body.get('spreadsheetUrl'),
-            'duration': body.get('duration'),
+            'spreadsheetS3Key': body.get('spreadsheetS3Key'),
+            
             'createdAt': timestamp,
             'updatedAt': timestamp
         }

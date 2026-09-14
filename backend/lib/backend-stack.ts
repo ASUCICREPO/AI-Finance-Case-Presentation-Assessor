@@ -184,6 +184,12 @@ export class FinanceAssessorStack extends cdk.Stack {
       partitionKey: { name: 'assessmentId', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'groupName', type: dynamodb.AttributeType.STRING },
     });
+    // GSI for querying groups by sessionNumber and groupNumber (for assignment lookup)
+    groupsTable.addGlobalSecondaryIndex({
+      indexName: 'sessionGroup-index',
+      partitionKey: { name: 'sessionNumber', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'groupNumber', type: dynamodb.AttributeType.STRING },
+    });
 
     // Submissions Table - student submissions with AI and reviewer scores
     const submissionsTable = new dynamodb.Table(this, 'SubmissionsTable', {

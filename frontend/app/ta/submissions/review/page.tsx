@@ -177,13 +177,12 @@ export default function SubmissionReviewPage() {
             )}
           </div>
         </div>
-        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
-          submission.status === 'Reviewed'
+        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${submission.status === 'Reviewed'
             ? 'bg-green-100 text-green-700'
             : submission.status === 'Overridden'
-            ? 'bg-orange-100 text-orange-700'
-            : 'bg-yellow-100 text-yellow-700'
-        }`}>
+              ? 'bg-orange-100 text-orange-700'
+              : 'bg-yellow-100 text-yellow-700'
+          }`}>
           {submission.status === 'Reviewed' && <CheckCircle size={14} />}
           {submission.status === 'Overridden' && <AlertTriangle size={14} />}
           {submission.status}
@@ -197,33 +196,30 @@ export default function SubmissionReviewPage() {
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab('video')}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === 'video'
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${activeTab === 'video'
                   ? 'border-maroon-600 text-maroon-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <Play size={14} className="inline mr-1" />
               Recording
             </button>
             <button
               onClick={() => setActiveTab('transcript')}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === 'transcript'
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${activeTab === 'transcript'
                   ? 'border-maroon-600 text-maroon-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <MessageSquare size={14} className="inline mr-1" />
               Transcript
             </button>
             <button
               onClick={() => setActiveTab('rubric')}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === 'rubric'
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${activeTab === 'rubric'
                   ? 'border-maroon-600 text-maroon-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <FileSpreadsheet size={14} className="inline mr-1" />
               Rubric Grading
@@ -320,16 +316,30 @@ export default function SubmissionReviewPage() {
             <h3 className="text-sm font-medium text-gray-900 mb-4">Score Comparison</h3>
             <div className="space-y-4">
               {/* AI Score */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50">
-                <div className="flex items-center gap-2">
-                  <Bot size={18} className="text-blue-600" />
-                  <span className="text-sm font-medium text-gray-700">AI Score</span>
+              <div className="p-3 rounded-lg bg-blue-50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Bot size={18} className="text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">AI Score</span>
+                  </div>
+                  <span className="text-xl font-bold text-blue-600">
+                    {submission.aiScore !== undefined && submission.aiScore !== null
+                      ? `${submission.aiScore}%`
+                      : '—'}
+                  </span>
                 </div>
-                <span className="text-xl font-bold text-blue-600">
-                  {submission.aiScore !== undefined && submission.aiScore !== null
-                    ? `${submission.aiScore}%`
-                    : '—'}
-                </span>
+
+                {/* AI Score Breakdown */}
+                {submission.aiScoreBreakdown && Object.keys(submission.aiScoreBreakdown).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-blue-100 space-y-1">
+                    {Object.entries(submission.aiScoreBreakdown).map(([category, score]) => (
+                      <div key={category} className="flex justify-between text-xs">
+                        <span className="text-blue-700">{category}</span>
+                        <span className="font-medium text-blue-800">{score}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Reviewer Score */}
@@ -347,10 +357,64 @@ export default function SubmissionReviewPage() {
             </div>
           </div>
 
+          {/* AI Analytics Feedback */}
+          {submission.aiAnalytics?.feedback && (
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">AI Analysis</h3>
+              <div className="space-y-3 text-sm">
+                {submission.aiAnalytics.feedback.strengths && submission.aiAnalytics.feedback.strengths.length > 0 && (
+                  <div>
+                    <p className="font-medium text-green-700 mb-1">✓ Strengths</p>
+                    <ul className="list-disc list-inside text-gray-600 space-y-0.5">
+                      {submission.aiAnalytics.feedback.strengths.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {submission.aiAnalytics.feedback.improvements && submission.aiAnalytics.feedback.improvements.length > 0 && (
+                  <div>
+                    <p className="font-medium text-orange-700 mb-1">⚠ Areas for Improvement</p>
+                    <ul className="list-disc list-inside text-gray-600 space-y-0.5">
+                      {submission.aiAnalytics.feedback.improvements.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Session Stats */}
+          {(submission.questionsAsked || submission.responsesGiven || submission.sessionDuration) && (
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Session Stats</h3>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 bg-gray-50 rounded">
+                  <p className="text-lg font-bold text-gray-900">{submission.questionsAsked || 0}</p>
+                  <p className="text-xs text-gray-500">Questions</p>
+                </div>
+                <div className="p-2 bg-gray-50 rounded">
+                  <p className="text-lg font-bold text-gray-900">{submission.responsesGiven || 0}</p>
+                  <p className="text-xs text-gray-500">Responses</p>
+                </div>
+                <div className="p-2 bg-gray-50 rounded">
+                  <p className="text-lg font-bold text-gray-900">
+                    {submission.sessionDuration
+                      ? `${Math.floor(submission.sessionDuration / 60)}:${(submission.sessionDuration % 60).toString().padStart(2, '0')}`
+                      : '—'}
+                  </p>
+                  <p className="text-xs text-gray-500">Duration</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Grading Form */}
           <div className="rounded-xl border border-gray-200 bg-white p-4">
             <h3 className="text-sm font-medium text-gray-900 mb-4">Grade Submission</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

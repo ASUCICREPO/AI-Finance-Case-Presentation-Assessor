@@ -32,6 +32,8 @@ interface AuthContextType {
   userRole: UserRole;
   userGroup: string | null;
   userCourse: string | null;
+  userSessionNumber: string | null;
+  userGroupNumber: string | null;
   idToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -72,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>('student');
   const [userGroup, setUserGroup] = useState<string | null>(null);
   const [userCourse, setUserCourse] = useState<string | null>(null);
+  const [userSessionNumber, setUserSessionNumber] = useState<string | null>(null);
+  const [userGroupNumber, setUserGroupNumber] = useState<string | null>(null);
   const [idToken, setIdToken] = useState<string | null>(null);
 
   // ── Extract user attributes from session ────────────────
@@ -88,6 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserRole((payload['custom:role'] as UserRole) || 'student');
     setUserGroup(payload['custom:group'] || null);
     setUserCourse(payload['custom:course'] || null);
+    // Session and group numbers for assignment grouping
+    setUserSessionNumber(payload['custom:sessionNumber'] || '1');
+    setUserGroupNumber(payload['custom:groupNumber'] || '1');
     setIsAuthenticated(true);
 
     // Store token for API service layer
@@ -246,6 +253,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserRole('student');
     setUserGroup(null);
     setUserCourse(null);
+    setUserSessionNumber(null);
+    setUserGroupNumber(null);
   };
 
   return (
@@ -259,6 +268,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userRole,
         userGroup,
         userCourse,
+        userSessionNumber,
+        userGroupNumber,
         idToken,
         login,
         logout,

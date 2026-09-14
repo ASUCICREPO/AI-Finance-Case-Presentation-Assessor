@@ -153,8 +153,8 @@ export default function SubmissionsPage() {
                     setShowFilters(false);
                   }}
                   className={`w-full text-left px-3 py-1.5 text-sm rounded ${statusFilter === status
-                      ? 'bg-maroon-50 text-maroon-700'
-                      : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-maroon-50 text-maroon-700'
+                    : 'text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   {status === 'all' ? 'All Statuses' : status}
@@ -186,6 +186,7 @@ export default function SubmissionsPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session/Group</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Score</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviewer Score</th>
@@ -196,7 +197,7 @@ export default function SubmissionsPage() {
             <tbody className="divide-y divide-gray-100">
               {filteredSubmissions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery || statusFilter !== 'all'
                       ? 'No submissions match your filters'
                       : 'No submissions yet'}
@@ -220,10 +221,20 @@ export default function SubmissionsPage() {
                               : 'Unknown Student'}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {submission.student?.section || 'No section'}
+                            {submission.student?.email || ''}
                           </p>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      <div className="text-sm">
+                        <span className="font-medium">S{submission.sessionNumber || '?'}</span>
+                        <span className="text-gray-400 mx-1">/</span>
+                        <span className="font-medium">G{submission.groupNumber || '?'}</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        {submission.student?.section || 'No section'}
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       <div>
