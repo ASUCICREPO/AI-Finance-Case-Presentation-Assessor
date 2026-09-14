@@ -32,67 +32,97 @@ const AVATAR_OPTIONS: AvatarOption[] = [
   { id: 'avatar-6', url: '/avatars/avatar-6.png', name: 'Professional Female 3' },
 ];
 
-// Pre-built persona presets
+// Pre-built persona presets with Anam persona IDs
 const PERSONA_PRESETS: PersonaPreset[] = [
   {
-    id: 'preset-ceo',
-    anamPersonaId: '', // TODO: Add Anam persona ID after creation
-    name: 'Jordan Blake',
-    role: 'Chief Executive Officer (CEO)',
-    avatarUrl: '/avatars/avatar-3.png',
+    id: 'persona-1',
+    anamPersonaId: '36908df0-128e-48c6-b2f3-cbf007707d00',
+    name: 'Persona 1',
+    role: 'Stakeholder',
+    avatarUrl: '/avatars/avatar-1.png',
     expertiseLevel: 'INTERMEDIATE',
-    defaultKeyPriorities: ['Calculations', 'Assumptions', 'Financial reasoning', 'Missing analysis', 'Recommendation', 'Risks'],
+    defaultKeyPriorities: ['Calculations', 'Assumptions', 'Financial reasoning', 'Recommendation'],
     defaultCommunicationStyle: ['Moderately formal', 'Evidence-based'],
   },
   {
-    id: 'preset-cfo',
-    anamPersonaId: '', // TODO: Add Anam persona ID after creation
-    name: 'Dr. Maria Santos',
-    role: 'Chief Financial Officer (CFO)',
+    id: 'persona-2',
+    anamPersonaId: '855745e8-056d-4848-a5a0-3752e88cdecc',
+    name: 'Persona 2',
+    role: 'Stakeholder',
     avatarUrl: '/avatars/avatar-2.png',
-    expertiseLevel: 'ADVANCED',
-    defaultKeyPriorities: ['Financial models', 'Risk assessment', 'Cash flow', 'Assumptions', 'Sensitivity analysis'],
-    defaultCommunicationStyle: ['Highly formal', 'Detail-oriented', 'Analytical'],
+    expertiseLevel: 'INTERMEDIATE',
+    defaultKeyPriorities: ['Financial models', 'Risk assessment', 'Cash flow', 'Assumptions'],
+    defaultCommunicationStyle: ['Highly formal', 'Detail-oriented'],
   },
   {
-    id: 'preset-investor',
-    anamPersonaId: '', // TODO: Add Anam persona ID after creation
-    name: 'James Park',
-    role: 'Investor / Board Member',
-    avatarUrl: '/avatars/avatar-1.png',
+    id: 'persona-3',
+    anamPersonaId: '26981553-4601-4799-b64b-7dfa1580de8c',
+    name: 'Persona 3',
+    role: 'Stakeholder',
+    avatarUrl: '/avatars/avatar-3.png',
     expertiseLevel: 'ADVANCED',
-    defaultKeyPriorities: ['ROI', 'Exit strategy', 'Deal structure', 'Market positioning', 'Competitive analysis'],
+    defaultKeyPriorities: ['ROI', 'Exit strategy', 'Deal structure', 'Market positioning'],
     defaultCommunicationStyle: ['Direct', 'Strategic', 'Results-focused'],
   },
   {
-    id: 'preset-marketing',
-    anamPersonaId: '', // TODO: Add Anam persona ID after creation
-    name: 'Linda Torres',
-    role: 'VP of Marketing',
+    id: 'persona-4',
+    anamPersonaId: 'd60a575c-705f-46b0-9a15-7955feb6fbc9',
+    name: 'Persona 4',
+    role: 'Stakeholder',
     avatarUrl: '/avatars/avatar-4.png',
     expertiseLevel: 'INTERMEDIATE',
-    defaultKeyPriorities: ['Market demand', 'Tenant acquisition', 'Competitive landscape', 'Branding'],
-    defaultCommunicationStyle: ['Friendly', 'Curious', 'Market-focused'],
+    defaultKeyPriorities: ['Market demand', 'Competitive landscape', 'Analysis'],
+    defaultCommunicationStyle: ['Friendly', 'Curious'],
   },
   {
-    id: 'preset-risk',
-    anamPersonaId: '', // TODO: Add Anam persona ID after creation
-    name: 'Robert Chen',
-    role: 'Risk Analyst',
+    id: 'persona-5',
+    anamPersonaId: 'f060068b-9994-4efd-964c-4f1d40e57e7a',
+    name: 'Persona 5',
+    role: 'Stakeholder',
     avatarUrl: '/avatars/avatar-5.png',
     expertiseLevel: 'ADVANCED',
-    defaultKeyPriorities: ['Risk factors', 'Scenario analysis', 'Downside protection', 'Stress testing'],
-    defaultCommunicationStyle: ['Technical', 'Measured', 'Cautious'],
+    defaultKeyPriorities: ['Risk factors', 'Scenario analysis', 'Stress testing'],
+    defaultCommunicationStyle: ['Technical', 'Measured', 'Analytical'],
   },
   {
-    id: 'preset-legal',
-    anamPersonaId: '', // TODO: Add Anam persona ID after creation
-    name: 'Sarah Mitchell',
-    role: 'Legal Counsel',
+    id: 'persona-6',
+    anamPersonaId: '3a960932-c7d7-4463-ba71-a7507933b44a',
+    name: 'Persona 6',
+    role: 'Stakeholder',
     avatarUrl: '/avatars/avatar-6.png',
     expertiseLevel: 'INTERMEDIATE',
-    defaultKeyPriorities: ['Compliance', 'Contracts', 'Regulatory', 'Due diligence'],
+    defaultKeyPriorities: ['Compliance', 'Due diligence', 'Regulatory'],
     defaultCommunicationStyle: ['Formal', 'Precise', 'Thorough'],
+  },
+  {
+    id: 'persona-7',
+    anamPersonaId: 'b3851e7c-8679-4daa-870d-64ccde2f1c85',
+    name: 'Persona 7',
+    role: 'Stakeholder',
+    avatarUrl: '/avatars/avatar-1.png',
+    expertiseLevel: 'BEGINNER',
+    defaultKeyPriorities: ['Fundamentals', 'Basic analysis', 'Key metrics'],
+    defaultCommunicationStyle: ['Supportive', 'Educational'],
+  },
+  {
+    id: 'persona-8',
+    anamPersonaId: '2bc70732-e2c1-438e-94b6-9616f699cfe5',
+    name: 'Persona 8',
+    role: 'Stakeholder',
+    avatarUrl: '/avatars/avatar-2.png',
+    expertiseLevel: 'ADVANCED',
+    defaultKeyPriorities: ['Strategic vision', 'Long-term planning', 'Growth'],
+    defaultCommunicationStyle: ['Strategic', 'Big-picture'],
+  },
+  {
+    id: 'persona-9',
+    anamPersonaId: '5c14742f-47d9-5024-8d92-54edc29fc502',
+    name: 'Persona 9',
+    role: 'Stakeholder',
+    avatarUrl: '/avatars/avatar-3.png',
+    expertiseLevel: 'INTERMEDIATE',
+    defaultKeyPriorities: ['Operations', 'Implementation', 'Timeline'],
+    defaultCommunicationStyle: ['Pragmatic', 'Action-oriented'],
   },
 ];
 
@@ -380,8 +410,8 @@ export default function PersonaConfigurationPage() {
                           key={avatar.id}
                           onClick={() => setSelectedAvatar(avatar.url)}
                           className={`relative h-16 w-16 rounded-full overflow-hidden transition-all ${selectedAvatar === avatar.url
-                              ? 'ring-2 ring-maroon-500 ring-offset-2'
-                              : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-2'
+                            ? 'ring-2 ring-maroon-500 ring-offset-2'
+                            : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-2'
                             }`}
                         >
                           <div className="h-full w-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-white text-lg font-bold">
