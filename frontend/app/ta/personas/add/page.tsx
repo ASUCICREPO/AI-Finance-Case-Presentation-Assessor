@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -15,34 +15,38 @@ import {
   Brain,
   Bot,
   Check,
+  Loader2,
 } from 'lucide-react';
-import { createPersona } from '../../../services/api';
+import { createPersona, getAnamPersonaDetails } from '../../../services/api';
 
-// The 9 Anam avatars available
+// The 9 Anam persona IDs
+const ANAM_PERSONA_IDS = [
+  '36908df0-128e-48c6-b2f3-cbf007707d00',
+  '855745e8-056d-4848-a5a0-3752e88cdecc',
+  '26981553-4601-4799-b64b-7dfa1580de8c',
+  'd60a575c-705f-46b0-9a15-7955feb6fbc9',
+  'f060068b-9994-4efd-964c-4f1d40e57e7a',
+  '3a960932-c7d7-4463-ba71-a7507933b44a',
+  'b3851e7c-8679-4daa-870d-64ccde2f1c85',
+  '2bc70732-e2c1-438e-94b6-9616f699cfe5',
+  '5c14742f-47d9-5024-8d92-54edc29fc502',
+];
+
 interface AnamAvatar {
   id: string;
   anamPersonaId: string;
   name: string;
   description: string;
+  imageUrl?: string;
 }
-
-const ANAM_AVATARS: AnamAvatar[] = [
-  { id: 'avatar-1', anamPersonaId: '36908df0-128e-48c6-b2f3-cbf007707d00', name: 'Avatar 1', description: 'Professional, neutral' },
-  { id: 'avatar-2', anamPersonaId: '855745e8-056d-4848-a5a0-3752e88cdecc', name: 'Avatar 2', description: 'Friendly, approachable' },
-  { id: 'avatar-3', anamPersonaId: '26981553-4601-4799-b64b-7dfa1580de8c', name: 'Avatar 3', description: 'Authoritative, executive' },
-  { id: 'avatar-4', anamPersonaId: 'd60a575c-705f-46b0-9a15-7955feb6fbc9', name: 'Avatar 4', description: 'Warm, conversational' },
-  { id: 'avatar-5', anamPersonaId: 'f060068b-9994-4efd-964c-4f1d40e57e7a', name: 'Avatar 5', description: 'Technical, analytical' },
-  { id: 'avatar-6', anamPersonaId: '3a960932-c7d7-4463-ba71-a7507933b44a', name: 'Avatar 6', description: 'Formal, precise' },
-  { id: 'avatar-7', anamPersonaId: 'b3851e7c-8679-4daa-870d-64ccde2f1c85', name: 'Avatar 7', description: 'Supportive, encouraging' },
-  { id: 'avatar-8', anamPersonaId: '2bc70732-e2c1-438e-94b6-9616f699cfe5', name: 'Avatar 8', description: 'Strategic, big-picture' },
-  { id: 'avatar-9', anamPersonaId: '5c14742f-47d9-5024-8d92-54edc29fc502', name: 'Avatar 9', description: 'Pragmatic, action-oriented' },
-];
 
 export default function AddPersonaPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [avatarsLoading, setAvatarsLoading] = useState(true);
+  const [avatars, setAvatars] = useState<AnamAvatar[]>([]);
 
   // Form state
   const [selectedAvatar, setSelectedAvatar] = useState<AnamAvatar | null>(null);
@@ -53,6 +57,42 @@ export default function AddPersonaPage() {
   const [isActive, setIsActive] = useState(true);
   const [sampleQuestions, setSampleQuestions] = useState<string[]>(['']);
   const [personality, setPersonality] = useState('professional');
+
+  // Fetch avatar images on mount
+  useEffect(() => {
+    async function fetchAvatars() {
+      setAvatarsLoading(true);
+      const avatarInfos: AnamAvatar[] = [];
+
+      for (let i = 0; i < ANAM_PERSONA_IDS.length; i++) {
+        const personaId = ANAM_PERSONA_IDS[i];
+        try {
+          const details = await getAnamPersonaDetails(personaId);
+          avatarInfos.push({
+            id: `avatar-${i + 1}`,
+            anamPersonaId: personaId,
+            name: details.avatar?.displayName || `Avatar ${i + 1}`,
+            description: details.avatar?.description || details.description || '',
+            imageUrl: details.avatar?.imageUrl,
+          });
+        } catch (err) {
+          console.warn(`Failed to fetch avatar ${i + 1}:`, err);
+          avatarInfos.push({
+            id: `avatar-${i + 1}`,
+            anamPersonaId: personaId,
+            name: `Avatar ${i + 1}`,
+            description: 'Avatar image unavailable',
+            imageUrl: undefined,
+          });
+        }
+      }
+
+      setAvatars(avatarInfos);
+      setAvatarsLoading(false);
+    }
+
+    fetchAvatars();
+  }, []);
 
   const personalityOptions = [
     { value: 'professional', label: 'Professional', description: 'Formal and business-focused' },
@@ -163,33 +203,50 @@ export default function AddPersonaPage() {
             Choose a video avatar from Anam AI. This determines the visual appearance during Q&A sessions.
           </p>
 
-          <div className="grid grid-cols-3 gap-3">
-            {ANAM_AVATARS.map((avatar, index) => (
-              <button
-                key={avatar.id}
-                type="button"
-                onClick={() => setSelectedAvatar(avatar)}
-                className={`relative rounded-xl border p-4 text-center transition-all ${selectedAvatar?.id === avatar.id
+          {avatarsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={24} className="animate-spin text-maroon-600 mr-2" />
+              <span className="text-gray-500 text-sm">Loading avatars from Anam...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {avatars.map((avatar, index) => (
+                <button
+                  key={avatar.id}
+                  type="button"
+                  onClick={() => setSelectedAvatar(avatar)}
+                  className={`relative rounded-xl border p-4 text-center transition-all ${selectedAvatar?.id === avatar.id
                     ? 'border-maroon-500 bg-maroon-50 ring-2 ring-maroon-500'
                     : 'border-gray-200 hover:border-maroon-200 hover:bg-gray-50'
-                  }`}
-              >
-                <div className={`h-14 w-14 mx-auto rounded-full flex items-center justify-center text-xl font-bold mb-2 ${selectedAvatar?.id === avatar.id
-                    ? 'bg-maroon-600 text-white'
-                    : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'
-                  }`}>
-                  {index + 1}
-                </div>
-                <p className="text-xs font-medium text-gray-900">{avatar.name}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">{avatar.description}</p>
-                {selectedAvatar?.id === avatar.id && (
-                  <div className="absolute top-2 right-2">
-                    <Check size={16} className="text-maroon-600" />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+                    }`}
+                >
+                  {avatar.imageUrl ? (
+                    <div className={`h-14 w-14 mx-auto rounded-full overflow-hidden mb-2 ${selectedAvatar?.id === avatar.id ? 'ring-2 ring-maroon-500' : ''}`}>
+                      <img
+                        src={avatar.imageUrl}
+                        alt={avatar.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className={`h-14 w-14 mx-auto rounded-full flex items-center justify-center text-xl font-bold mb-2 ${selectedAvatar?.id === avatar.id
+                      ? 'bg-maroon-600 text-white'
+                      : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'
+                      }`}>
+                      {index + 1}
+                    </div>
+                  )}
+                  <p className="text-xs font-medium text-gray-900">{avatar.name}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2">{avatar.description}</p>
+                  {selectedAvatar?.id === avatar.id && (
+                    <div className="absolute top-2 right-2">
+                      <Check size={16} className="text-maroon-600" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
           {errors.avatar && (
             <p className="mt-3 text-xs text-red-500 flex items-center gap-1">
               <AlertCircle size={12} />
@@ -298,8 +355,8 @@ export default function AddPersonaPage() {
                 type="button"
                 onClick={() => setPersonality(option.value)}
                 className={`rounded-lg border p-3 text-left transition-all ${personality === option.value
-                    ? 'border-maroon-500 bg-maroon-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-maroon-500 bg-maroon-50'
+                  : 'border-gray-200 hover:border-gray-300'
                   }`}
               >
                 <p className={`text-sm font-medium ${personality === option.value ? 'text-maroon-700' : 'text-gray-900'}`}>
