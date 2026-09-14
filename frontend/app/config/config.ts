@@ -93,6 +93,7 @@ export interface Persona {
   assessmentFocus: string[];
   voiceId?: string;
   anamPersonaId?: string;
+  avatarId?: string;
   qaTimeLimitSec?: number;
   active: boolean;
   createdAt: string;

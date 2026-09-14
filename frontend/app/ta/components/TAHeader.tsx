@@ -14,7 +14,7 @@ export default function TAHeader() {
           <span className="text-xl font-bold text-maroon-600 font-serif">ASU</span>
           <span className="text-sm text-gray-600 font-sans">W. P. Carey</span>
           <span className="ml-2 rounded-full bg-maroon-100 px-2 py-0.5 text-xs font-medium text-maroon-700">
-            TA Dashboard
+            Admin Dashboard
           </span>
         </div>
       </div>
@@ -38,7 +38,7 @@ export default function TAHeader() {
             <p className="text-sm font-medium text-gray-900 font-sans">
               {userName || 'Teaching Assistant'}
             </p>
-            <p className="text-xs text-gray-500 font-sans">TA / Instructor</p>
+            <p className="text-xs text-gray-500 font-sans">Admin / Instructor</p>
           </div>
         </div>
         <button

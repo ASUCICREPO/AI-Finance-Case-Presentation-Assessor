@@ -18,9 +18,9 @@ const navItems = [
   { label: 'Dashboard', href: '/ta/dashboard', icon: LayoutDashboard },
   { label: 'Sessions', href: '/ta/sessions', icon: Calendar },
   { label: 'Students', href: '/ta/students', icon: Users },
-  { label: 'Case assessment', href: '/ta/assessments', icon: FileText },
-  { label: 'Persona configuration', href: '/ta/personas', icon: UserCog },
-  { label: 'Grade book', href: '/ta/gradebook', icon: BookOpen },
+  { label: 'Case Assessment', href: '/ta/assessments', icon: FileText },
+  { label: 'Avatar Configuration', href: '/ta/personas', icon: UserCog },
+  { label: 'Grade Book', href: '/ta/gradebook', icon: BookOpen },
 ];
 
 export default function TASidebar() {

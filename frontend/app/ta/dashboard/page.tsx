@@ -108,7 +108,7 @@ export default function TADashboard() {
   return (
     <div className="mx-auto max-w-6xl animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 font-serif">TA Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 font-serif">Admin Dashboard</h1>
         <p className="mt-1 text-sm text-gray-500 font-sans">
           FIN 502 - Real Estate Finance - Fall 2026
         </p>
@@ -246,7 +246,7 @@ export default function TADashboard() {
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
               >
                 <UserCircle size={18} className="text-maroon-600" />
-                Persona Config
+                Avatar Config
               </Link>
               <Link
                 href="/ta/gradebook"
