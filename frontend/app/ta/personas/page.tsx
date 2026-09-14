@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Edit, Trash2, User } from 'lucide-react';
 
 interface Persona {
@@ -17,6 +18,7 @@ interface Persona {
  * Personas are used for AI-generated stakeholder questioning.
  */
 export default function PersonasPage() {
+  const router = useRouter();
   const [personas] = useState<Persona[]>([
     {
       id: '1',
@@ -61,7 +63,10 @@ export default function PersonasPage() {
             Configure AI stakeholder personas for student Q&A sessions.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans">
+        <button
+          onClick={() => router.push('/ta/personas/add')}
+          className="inline-flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
+        >
           <Plus size={16} />
           Add Persona
         </button>
@@ -72,9 +77,8 @@ export default function PersonasPage() {
         {personas.map((persona) => (
           <div
             key={persona.id}
-            className={`rounded-xl border bg-white p-5 transition-shadow hover:shadow-md ${
-              persona.active ? 'border-gray-200' : 'border-gray-100 opacity-70'
-            }`}
+            className={`rounded-xl border bg-white p-5 transition-shadow hover:shadow-md ${persona.active ? 'border-gray-200' : 'border-gray-100 opacity-70'
+              }`}
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -105,11 +109,10 @@ export default function PersonasPage() {
                 {persona.questionsCount} questions configured
               </span>
               <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                  persona.active
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${persona.active
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-500'
+                  }`}
               >
                 {persona.active ? 'Active' : 'Inactive'}
               </span>
