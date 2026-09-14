@@ -45,8 +45,8 @@ export default function SessionPage() {
   // Modal state
   const [showStartModal, setShowStartModal] = useState(false);
 
-  // Hardcoded Anam persona ID
-  const ANAM_PERSONA_ID = '36908df0-128e-48c6-b2f3-cbf007707d00';
+  // Hardcoded Anam persona ID - Real Estate Agent
+  const ANAM_PERSONA_ID = '26981553-4601-4799-b64b-7dfa1580de8c';
 
   const [personaId, setPersonaId] = useState<string>(ANAM_PERSONA_ID);
   const [persona, setPersona] = useState<Persona | null>(null);

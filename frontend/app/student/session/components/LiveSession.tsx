@@ -226,11 +226,11 @@ export default function LiveSession({
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-maroon-600 flex items-center justify-center">
                   <span className="text-xs text-white font-bold">
-                    {(personaName || 'Mr. Clarkson').charAt(0)}
+                    {(personaName || 'Real Estate Agent').charAt(0)}
                   </span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 font-sans">
-                  {personaName || 'Mr. Clarkson'}
+                  {personaName || 'Real Estate Agent'}
                 </span>
               </div>
               <button className="rounded-full p-1 hover:bg-maroon-100">
@@ -245,7 +245,7 @@ export default function LiveSession({
                   anamPersonaId={anamPersonaId}
                   sessionToken={anamSessionToken}
                   isActive={status === 'active'}
-                  personaName={personaName || 'Mr. Clarkson'}
+                  personaName={personaName || 'Real Estate Agent'}
                   onAudioChunkRef={onAudioChunkRef}
                 />
               ) : (
