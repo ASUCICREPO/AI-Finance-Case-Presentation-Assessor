@@ -9,12 +9,14 @@ import {
   FileText,
   UserCog,
   BookOpen,
+  Calendar,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', href: '/ta/dashboard', icon: LayoutDashboard },
+  { label: 'Sessions', href: '/ta/sessions', icon: Calendar },
   { label: 'Students', href: '/ta/students', icon: Users },
   { label: 'Case assessment', href: '/ta/assessments', icon: FileText },
   { label: 'Persona configuration', href: '/ta/personas', icon: UserCog },
