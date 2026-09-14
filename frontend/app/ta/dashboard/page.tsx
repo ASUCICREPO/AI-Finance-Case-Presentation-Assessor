@@ -12,7 +12,7 @@ import {
   Loader2,
   AlertCircle,
   Eye,
-  UsersRound,
+  Calendar,
   BookOpen,
 } from 'lucide-react';
 import {
@@ -221,6 +221,13 @@ export default function TADashboard() {
             <h2 className="text-lg font-bold text-gray-900 font-serif">Quick Actions</h2>
             <div className="mt-4 space-y-2">
               <Link
+                href="/ta/sessions"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
+              >
+                <Calendar size={18} className="text-maroon-600" />
+                Manage Sessions
+              </Link>
+              <Link
                 href="/ta/students"
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
               >
@@ -228,25 +235,18 @@ export default function TADashboard() {
                 Manage Students
               </Link>
               <Link
-                href="/ta/groups"
+                href="/ta/assessments"
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
               >
-                <UsersRound size={18} className="text-maroon-600" />
-                Manage Groups
+                <FileText size={18} className="text-maroon-600" />
+                Case Assessments
               </Link>
               <Link
                 href="/ta/personas"
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
               >
                 <UserCircle size={18} className="text-maroon-600" />
-                Manage Personas
-              </Link>
-              <Link
-                href="/ta/submissions"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-              >
-                <ClipboardCheck size={18} className="text-maroon-600" />
-                Review Submissions
+                Persona Config
               </Link>
               <Link
                 href="/ta/gradebook"
