@@ -248,7 +248,7 @@ export default function CaseAssessmentPage() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</span>
                         <button
-                          onClick={() => router.push(`/ta/assessments/${assessment.assessmentId}/assign`)}
+                          onClick={() => router.push(`/ta/assessments/edit?id=${assessment.assessmentId}`)}
                           className="flex items-center gap-1 text-xs font-medium text-maroon-600 hover:underline"
                         >
                           <Users size={12} />

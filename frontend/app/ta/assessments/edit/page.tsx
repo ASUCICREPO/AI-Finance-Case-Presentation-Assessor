@@ -19,20 +19,11 @@ import {
   updateAssessment,
   listPersonas,
   Persona,
-  Assessment,
 } from '../../../services/api';
 
 // Session numbers and group numbers for assignment
 const sessionNumbers = ['1', '2', '3', '4', '5'];
 const groupNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-
-const modules = [
-  'Module 1: Introduction to Finance',
-  'Module 2: Investment Strategies',
-  'Module 3: Risk Analysis',
-  'Module 4: Portfolio Management',
-  'Module 5: Financial Modeling',
-];
 
 export default function EditAssessmentPage() {
   const router = useRouter();
@@ -49,7 +40,6 @@ export default function EditAssessmentPage() {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    module: '',
     personaId: '',
     dueDate: '',
     duration: 15,
@@ -61,7 +51,6 @@ export default function EditAssessmentPage() {
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
 
   // Dropdown states
-  const [moduleOpen, setModuleOpen] = useState(false);
   const [personaOpen, setPersonaOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [groupsOpen, setGroupsOpen] = useState(false);
@@ -87,7 +76,6 @@ export default function EditAssessmentPage() {
       setForm({
         title: assessment.title || assessment.caseName || '',
         description: assessment.description || '',
-        module: assessment.module || '',
         personaId: assessment.personaId || '',
         dueDate: assessment.dueDate ? assessment.dueDate.split('T')[0] : '',
         duration: assessment.duration || 15,
@@ -147,7 +135,6 @@ export default function EditAssessmentPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!form.title.trim()) newErrors.title = 'Title is required';
-    if (!form.module) newErrors.module = 'Module is required';
     if (!form.dueDate) newErrors.dueDate = 'Due date is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -159,7 +146,6 @@ export default function EditAssessmentPage() {
 
     setIsSubmitting(true);
     try {
-      // Combine existing and new materials
       const allMaterials = [
         ...existingFiles.map(f => ({
           name: f.name,
@@ -169,7 +155,7 @@ export default function EditAssessmentPage() {
         })),
         ...newFiles.map(f => ({
           name: f.name,
-          s3Key: '', // Would be populated after S3 upload
+          s3Key: '',
           type: f.type,
           uploadedAt: new Date().toISOString(),
         })),
@@ -179,7 +165,6 @@ export default function EditAssessmentPage() {
         title: form.title,
         description: form.description,
         caseName: form.title,
-        module: form.module,
         personaId: form.personaId || undefined,
         dueDate: form.dueDate,
         duration: form.duration,
@@ -203,8 +188,11 @@ export default function EditAssessmentPage() {
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setModuleOpen(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-dropdown]')) {
+        return;
+      }
       setPersonaOpen(false);
       setSessionsOpen(false);
       setGroupsOpen(false);
@@ -269,12 +257,12 @@ export default function EditAssessmentPage() {
           Back to Assessments
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 font-serif">Edit Assessment</h1>
-        <p className="text-sm text-gray-500 font-sans">Update assessment details</p>
+        <p className="text-sm text-gray-500 font-sans">Update assessment details and assignments</p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 overflow-visible">
           {/* Title */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -285,7 +273,7 @@ export default function EditAssessmentPage() {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="e.g., Real Estate Investment Analysis"
-              className={`w-full rounded-lg border ${errors.title ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
+              className={`w-full rounded-lg border ${errors.title ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
             />
             {errors.title && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -304,46 +292,8 @@ export default function EditAssessmentPage() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Brief description of the assessment..."
               rows={3}
-              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
             />
-          </div>
-
-          {/* Module */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Module <span className="text-red-500">*</span>
-            </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setModuleOpen(!moduleOpen)}
-                className={`w-full flex items-center justify-between rounded-lg border ${errors.module ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm`}
-              >
-                <span className={form.module ? 'text-gray-900' : 'text-gray-400'}>
-                  {form.module || 'Select module'}
-                </span>
-                <ChevronDown size={16} className="text-gray-400" />
-              </button>
-              {moduleOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
-                  {modules.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => { setForm({ ...form, module: m }); setModuleOpen(false); }}
-                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 ${form.module === m ? 'bg-maroon-50 text-maroon-700' : ''}`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {errors.module && (
-              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} /> {errors.module}
-              </p>
-            )}
           </div>
 
           {/* Persona */}
@@ -351,11 +301,11 @@ export default function EditAssessmentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               AI Persona (optional)
             </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <div className="relative" data-dropdown onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => setPersonaOpen(!personaOpen)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={form.personaId ? 'text-gray-900' : 'text-gray-400'}>
                   {personas.find(p => p.personaID === form.personaId)?.name || 'Select persona'}
@@ -363,7 +313,7 @@ export default function EditAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {personaOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
                   <button
                     type="button"
                     onClick={() => { setForm({ ...form, personaId: '' }); setPersonaOpen(false); }}
@@ -376,7 +326,7 @@ export default function EditAssessmentPage() {
                       key={p.personaID}
                       type="button"
                       onClick={() => { setForm({ ...form, personaId: p.personaID }); setPersonaOpen(false); }}
-                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 ${form.personaId === p.personaID ? 'bg-maroon-50 text-maroon-700' : ''}`}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-900 hover:bg-gray-50"
                     >
                       {p.name} - {p.role}
                     </button>
@@ -396,7 +346,7 @@ export default function EditAssessmentPage() {
                 type="date"
                 value={form.dueDate}
                 onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                className={`w-full rounded-lg border ${errors.dueDate ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm`}
+                className={`w-full rounded-lg border ${errors.dueDate ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
               />
               {errors.dueDate && (
                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -416,7 +366,7 @@ export default function EditAssessmentPage() {
                 onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) || 15 })}
                 min={5}
                 max={60}
-                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               />
             </div>
           </div>
@@ -426,11 +376,11 @@ export default function EditAssessmentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Assign to Session Numbers
             </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <div className="relative" data-dropdown onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => setSessionsOpen(!sessionsOpen)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={selectedSessions.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
                   {selectedSessions.length > 0
@@ -440,16 +390,26 @@ export default function EditAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {sessionsOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {sessionNumbers.map((num) => (
-                    <label key={num} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer">
+                    <label
+                      key={num}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedSessions.includes(num)}
-                        onChange={() => toggleSession(num)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSession(num);
+                        }}
                         className="h-4 w-4 rounded border-gray-300 text-maroon-600"
                       />
-                      <span className="text-sm">Session {num}</span>
+                      <span className="text-sm text-gray-900">Session {num}</span>
                     </label>
                   ))}
                 </div>
@@ -472,11 +432,11 @@ export default function EditAssessmentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Assign to Group Numbers
             </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <div className="relative" data-dropdown onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => setGroupsOpen(!groupsOpen)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={selectedGroups.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
                   {selectedGroups.length > 0
@@ -486,16 +446,26 @@ export default function EditAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {groupsOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {groupNumbers.map((num) => (
-                    <label key={num} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer">
+                    <label
+                      key={num}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedGroups.includes(num)}
-                        onChange={() => toggleGroup(num)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleGroup(num);
+                        }}
                         className="h-4 w-4 rounded border-gray-300 text-maroon-600"
                       />
-                      <span className="text-sm">Group {num}</span>
+                      <span className="text-sm text-gray-900">Group {num}</span>
                     </label>
                   ))}
                 </div>
@@ -527,7 +497,7 @@ export default function EditAssessmentPage() {
                   onChange={() => setForm({ ...form, status: 'draft' })}
                   className="h-4 w-4 border-gray-300 text-maroon-600"
                 />
-                <span className="text-sm">Draft</span>
+                <span className="text-sm text-gray-900">Draft</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -537,7 +507,7 @@ export default function EditAssessmentPage() {
                   onChange={() => setForm({ ...form, status: 'published' })}
                   className="h-4 w-4 border-gray-300 text-maroon-600"
                 />
-                <span className="text-sm">Published</span>
+                <span className="text-sm text-gray-900">Published</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -547,7 +517,7 @@ export default function EditAssessmentPage() {
                   onChange={() => setForm({ ...form, status: 'closed' })}
                   className="h-4 w-4 border-gray-300 text-maroon-600"
                 />
-                <span className="text-sm">Closed</span>
+                <span className="text-sm text-gray-900">Closed</span>
               </label>
             </div>
           </div>
