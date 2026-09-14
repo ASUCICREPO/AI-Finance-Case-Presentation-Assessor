@@ -5,6 +5,9 @@
 
 import { config, Persona, AssessmentReport, SessionInfo } from '../config/config';
 
+// Re-export types for convenience
+export type { Persona, AssessmentReport, SessionInfo };
+
 // ──────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────
