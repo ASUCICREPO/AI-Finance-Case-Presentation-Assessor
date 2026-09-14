@@ -18,6 +18,18 @@ export const config = {
   // AgentCore WebSocket
   agentCoreWsUrl: process.env.NEXT_PUBLIC_AGENTCORE_WS_URL || '',
 
+  // ──────────────────────────────────────────────────────────
+  // Voice Agent Configuration
+  // ──────────────────────────────────────────────────────────
+
+  // Anam AI Avatar (primary - requires API key)
+  anamEnabled: process.env.NEXT_PUBLIC_ANAM_ENABLED === 'true',
+
+  // Nova Sonic Voice Agent (fallback - AWS native)
+  novaSonicEnabled: process.env.NEXT_PUBLIC_NOVA_SONIC_ENABLED !== 'false', // Default true
+  novaSonicModelId: process.env.NEXT_PUBLIC_NOVA_SONIC_MODEL_ID || 'amazon.nova-sonic-v1:0',
+  kvsChannelName: process.env.NEXT_PUBLIC_KVS_CHANNEL_NAME || 'fin-assessor-voice',
+
   // Session defaults
   defaultSessionDuration: 900, // 15 minutes in seconds
   maxFileSize: 50 * 1024 * 1024, // 50MB
@@ -29,6 +41,29 @@ export const config = {
     'text/csv', // .csv
   ],
 } as const;
+
+/**
+ * Voice Agent Mode - determines which voice system to use.
+ * Priority: Anam (avatar) > Nova Sonic (voice-only) > Text Chat (fallback)
+ */
+export type VoiceAgentMode = 'anam' | 'nova-sonic' | 'text-chat';
+
+export function getVoiceAgentMode(): VoiceAgentMode {
+  if (config.anamEnabled) {
+    return 'anam';
+  }
+  if (config.novaSonicEnabled) {
+    return 'nova-sonic';
+  }
+  return 'text-chat';
+}
+
+/**
+ * Check if any voice agent is available.
+ */
+export function isVoiceAgentAvailable(): boolean {
+  return config.anamEnabled || config.novaSonicEnabled;
+}
 
 /**
  * Assessment rubric categories with default weights.
