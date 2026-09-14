@@ -12,7 +12,9 @@ import {
   Plus,
   X,
   Sparkles,
+  Brain,
 } from 'lucide-react';
+import { createPersona } from '../../../services/api';
 
 export default function AddPersonaPage() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function AddPersonaPage() {
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [description, setDescription] = useState('');
+  const [systemPrompt, setSystemPrompt] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [sampleQuestions, setSampleQuestions] = useState<string[]>(['']);
   const [personality, setPersonality] = useState('professional');
@@ -54,6 +57,7 @@ export default function AddPersonaPage() {
     if (!name.trim()) newErrors.name = 'Persona name is required';
     if (!role.trim()) newErrors.role = 'Role/Title is required';
     if (!description.trim()) newErrors.description = 'Description is required';
+    if (!systemPrompt.trim()) newErrors.systemPrompt = 'System prompt is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -66,24 +70,24 @@ export default function AddPersonaPage() {
     try {
       // Filter out empty questions
       const filteredQuestions = sampleQuestions.filter((q) => q.trim());
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Creating persona:', {
+
+      await createPersona({
         name,
         role,
         description,
-        personality,
-        isActive,
-        sampleQuestions: filteredQuestions,
+        systemPrompt,
+        questionBank: filteredQuestions,
+        assessmentFocus: [personality],
+        active: isActive,
       });
-      
+
       setShowSuccess(true);
       setTimeout(() => {
         router.push('/ta/personas');
       }, 2000);
     } catch (error) {
       console.error('Error creating persona:', error);
+      setErrors({ submit: 'Failed to create persona. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -206,14 +210,12 @@ export default function AddPersonaPage() {
             <button
               type="button"
               onClick={() => setIsActive(!isActive)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isActive ? 'bg-maroon-600' : 'bg-gray-300'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isActive ? 'bg-maroon-600' : 'bg-gray-300'
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isActive ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'
+                  }`}
               />
             </button>
           </div>
@@ -232,11 +234,10 @@ export default function AddPersonaPage() {
                 key={option.value}
                 type="button"
                 onClick={() => setPersonality(option.value)}
-                className={`rounded-lg border p-3 text-left transition-all ${
-                  personality === option.value
-                    ? 'border-maroon-500 bg-maroon-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`rounded-lg border p-3 text-left transition-all ${personality === option.value
+                  ? 'border-maroon-500 bg-maroon-50'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className={`text-sm font-medium ${personality === option.value ? 'text-maroon-700' : 'text-gray-900'}`}>
                   {option.label}
@@ -245,6 +246,41 @@ export default function AddPersonaPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* System Prompt / AI Instructions */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4 font-sans flex items-center gap-2">
+            <Brain size={16} className="text-maroon-600" />
+            AI System Prompt <span className="text-red-500">*</span>
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Define how the AI stakeholder should behave during Q&A sessions. Include specific instructions about questioning style, areas of focus, and how challenging the persona should be.
+          </p>
+
+          <textarea
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+            placeholder={`Example:
+You are a CFO evaluating an investment proposal. Focus on:
+- Financial projections and assumptions
+- Risk assessment and mitigation strategies
+- ROI calculations and payback period
+- Cash flow implications
+
+Be thorough but fair. Ask follow-up questions when answers are vague. Challenge assumptions that seem overly optimistic.`}
+            rows={8}
+            className={`w-full rounded-lg border ${errors.systemPrompt ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500 resize-none font-mono`}
+          />
+          {errors.systemPrompt && (
+            <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle size={12} />
+              {errors.systemPrompt}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-gray-400">
+            This prompt directly instructs the AI avatar how to conduct the Q&A session.
+          </p>
         </div>
 
         {/* Sample Questions */}
