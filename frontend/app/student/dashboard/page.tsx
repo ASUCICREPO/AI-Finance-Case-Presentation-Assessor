@@ -5,15 +5,12 @@ import { useAuth } from '../../context/AuthContext';
 import { getStudentSubmissions, listSubmissions, Submission } from '../../services/api';
 import Link from 'next/link';
 import {
-  FileText,
   CheckCircle,
   Clock,
   Filter,
   ChevronDown,
   Loader2,
   AlertCircle,
-  Play,
-  Infinity,
   GraduationCap,
 } from 'lucide-react';
 
@@ -32,9 +29,7 @@ interface AssessmentDisplay {
 
 /**
  * Student Dashboard - Assessments Overview
- * Shows:
- * 1. Practice Session card (unlimited attempts, no grades)
- * 2. Instructor-assigned assessments from DynamoDB (graded)
+ * Shows instructor-assigned assessments from DynamoDB (graded)
  */
 export default function StudentDashboard() {
   const { userName, userId } = useAuth();
@@ -213,47 +208,6 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* Practice Session Card - Always at top */}
-      <div className="mb-8">
-        <div className="rounded-xl border-2 border-dashed border-maroon-200 bg-gradient-to-r from-maroon-50 to-white p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
-              <div className="rounded-lg bg-maroon-100 p-3">
-                <Play size={24} className="text-maroon-600" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-gray-900 font-serif">Practice Session</h3>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                    <Infinity size={12} />
-                    Unlimited
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Practice your presentation skills with AI feedback. No grades, unlimited attempts.
-                </p>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock size={12} />
-                    15 min per session
-                  </span>
-                  <span className="text-green-600 font-medium">
-                    ✓ Does not affect your grade
-                  </span>
-                </div>
-              </div>
-            </div>
-            <Link
-              href="/student/session?type=practice"
-              className="inline-flex items-center gap-2 rounded-lg bg-maroon-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors"
-            >
-              <Play size={16} />
-              Start Practice
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Stats cards */}
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -384,8 +338,8 @@ export default function StudentDashboard() {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${assessment.status === 'Submitted'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-amber-100 text-amber-700'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-amber-100 text-amber-700'
                           }`}
                       >
                         {assessment.status}
