@@ -200,7 +200,7 @@ export default function AddAssessmentPage() {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="e.g., Real Estate Investment Analysis"
-              className={`w-full rounded-lg border ${errors.title ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
+              className={`w-full rounded-lg border ${errors.title ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
             />
             {errors.title && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -219,7 +219,7 @@ export default function AddAssessmentPage() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Brief description of the assessment..."
               rows={3}
-              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
             />
           </div>
 
@@ -232,7 +232,7 @@ export default function AddAssessmentPage() {
               <button
                 type="button"
                 onClick={() => setModuleOpen(!moduleOpen)}
-                className={`w-full flex items-center justify-between rounded-lg border ${errors.module ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm`}
+                className={`w-full flex items-center justify-between rounded-lg border ${errors.module ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
               >
                 <span className={form.module ? 'text-gray-900' : 'text-gray-400'}>
                   {form.module || 'Select module'}
@@ -270,7 +270,7 @@ export default function AddAssessmentPage() {
               <button
                 type="button"
                 onClick={() => setPersonaOpen(!personaOpen)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={form.personaId ? 'text-gray-900' : 'text-gray-400'}>
                   {personas.find(p => p.personaID === form.personaId)?.name || 'Select persona'}
@@ -311,7 +311,7 @@ export default function AddAssessmentPage() {
                 type="date"
                 value={form.dueDate}
                 onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                className={`w-full rounded-lg border ${errors.dueDate ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm`}
+                className={`w-full rounded-lg border ${errors.dueDate ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
               />
               {errors.dueDate && (
                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -331,7 +331,7 @@ export default function AddAssessmentPage() {
                 onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) || 15 })}
                 min={5}
                 max={60}
-                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               />
             </div>
           </div>
@@ -345,7 +345,7 @@ export default function AddAssessmentPage() {
               <button
                 type="button"
                 onClick={() => setSessionsOpen(!sessionsOpen)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={selectedSessions.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
                   {selectedSessions.length > 0
@@ -391,7 +391,7 @@ export default function AddAssessmentPage() {
               <button
                 type="button"
                 onClick={() => setGroupsOpen(!groupsOpen)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={selectedGroups.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
                   {selectedGroups.length > 0
