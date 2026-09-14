@@ -258,12 +258,44 @@ export async function triggerAnalytics(
 // Anam AI Avatar API
 // ──────────────────────────────────────────────────────────
 
+export interface AnamAvatar {
+  id: string;
+  displayName: string;
+  variantName?: string;
+  imageUrl: string;
+  videoUrl?: string;
+  description?: string;
+  displayTags?: string[];
+}
+
+export interface AnamPersonaDetails {
+  id: string;
+  name: string;
+  description: string;
+  avatar: {
+    id: string;
+    displayName: string;
+    imageUrl: string;
+    videoUrl?: string;
+    description?: string;
+  };
+}
+
 export async function getAnamSessionToken(anamPersonaId: string): Promise<string> {
   const data = await fetchApi<{ sessionToken: string }>('/anam-session', {
     method: 'POST',
     body: JSON.stringify({ anamPersonaId }),
   });
   return data.sessionToken;
+}
+
+export async function listAnamAvatars(): Promise<AnamAvatar[]> {
+  const data = await fetchApi<{ avatars: AnamAvatar[] }>('/anam-session?action=avatars');
+  return data.avatars;
+}
+
+export async function getAnamPersonaDetails(personaId: string): Promise<AnamPersonaDetails> {
+  return fetchApi<AnamPersonaDetails>(`/anam-session?action=persona&personaId=${personaId}`);
 }
 
 

@@ -416,6 +416,7 @@ export class FinanceAssessorStack extends cdk.Stack {
 
     // /anam-session
     const anamSessionResource = api.root.addResource('anam-session');
+    anamSessionResource.addMethod('GET', new apigateway.LambdaIntegration(anamSessionTokenFn));
     anamSessionResource.addMethod('POST', new apigateway.LambdaIntegration(anamSessionTokenFn));
 
     // TA Dashboard API Endpoints
