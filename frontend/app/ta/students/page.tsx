@@ -300,6 +300,7 @@ export default function StudentsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Login ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session / Group</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
               </tr>
@@ -307,7 +308,7 @@ export default function StudentsPage() {
             <tbody className="divide-y divide-gray-100">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? 'No students match your search' : 'No students found. Add students to get started.'}
                   </td>
                 </tr>
@@ -328,6 +329,15 @@ export default function StudentsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">{student.loginId || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{student.section || '—'}</td>
+                    <td className="px-4 py-3">
+                      {student.sessionNumber && student.groupNumber ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                          S{student.sessionNumber} / G{student.groupNumber}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">Not assigned</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-500">
                       {student.lastActivity
                         ? new Date(student.lastActivity).toLocaleDateString('en-US', {

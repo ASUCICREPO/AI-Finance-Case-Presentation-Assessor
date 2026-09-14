@@ -23,6 +23,10 @@ const sessions = [
   'Evening FIN 426',
 ];
 
+// Session numbers (class periods) and group numbers
+const sessionNumbers = ['1', '2', '3', '4', '5'];
+const groupNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+
 export default function AddStudentPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'individual' | 'upload'>('individual');
@@ -35,6 +39,8 @@ export default function AddStudentPage() {
     lastName: '',
     email: '',
     section: '',
+    sessionNumber: '',
+    groupNumber: '',
   });
 
   // Upload state
@@ -57,12 +63,14 @@ export default function AddStudentPage() {
         lastName: form.lastName,
         email: form.email,
         section: form.section,
+        sessionNumber: form.sessionNumber || undefined,
+        groupNumber: form.groupNumber || undefined,
         loginId: form.email.split('@')[0],
       });
       setSuccess(true);
       // Reset form after short delay
       setTimeout(() => {
-        setForm({ firstName: '', lastName: '', email: '', section: '' });
+        setForm({ firstName: '', lastName: '', email: '', section: '', sessionNumber: '', groupNumber: '' });
         setSuccess(false);
       }, 2000);
     } catch (err) {
@@ -109,7 +117,7 @@ export default function AddStudentPage() {
 
   async function handleUploadSubmit() {
     if (!uploadedFile) return;
-    
+
     setLoading(true);
     try {
       // In a real implementation, you'd parse the file and call bulkImportStudents
@@ -160,21 +168,19 @@ export default function AddStudentPage() {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setActiveTab('individual')}
-          className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-            activeTab === 'individual'
-              ? 'bg-maroon-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${activeTab === 'individual'
+            ? 'bg-maroon-600 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Add Individually
         </button>
         <button
           onClick={() => setActiveTab('upload')}
-          className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-            activeTab === 'upload'
-              ? 'bg-maroon-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${activeTab === 'upload'
+            ? 'bg-maroon-600 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Upload File
         </button>
@@ -228,7 +234,7 @@ export default function AddStudentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Session</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
                   <div className="relative">
                     <select
                       value={form.section}
@@ -238,6 +244,41 @@ export default function AddStudentPage() {
                       <option value="">e.g. Morning Section - FIN 421</option>
                       {sessions.map(s => (
                         <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Session Number</label>
+                  <div className="relative">
+                    <select
+                      value={form.sessionNumber}
+                      onChange={(e) => setForm({ ...form, sessionNumber: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500 appearance-none"
+                    >
+                      <option value="">Select session number</option>
+                      {sessionNumbers.map(n => (
+                        <option key={n} value={n}>Session {n}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Group Number</label>
+                  <div className="relative">
+                    <select
+                      value={form.groupNumber}
+                      onChange={(e) => setForm({ ...form, groupNumber: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500 appearance-none"
+                    >
+                      <option value="">Select group number</option>
+                      {groupNumbers.map(n => (
+                        <option key={n} value={n}>Group {n}</option>
                       ))}
                     </select>
                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />

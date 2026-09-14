@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   ArrowLeft,
   Upload,
@@ -11,87 +12,97 @@ import {
   Users,
   ChevronDown,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import { createAssessment, listPersonas, Persona } from '../../../services/api';
 
-const API_BASE = 'https://0q9blbq2gc.execute-api.us-east-1.amazonaws.com/prod';
+// Session numbers and group numbers for assignment
+const sessionNumbers = ['1', '2', '3', '4', '5'];
+const groupNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
-interface Group {
-  groupId: string;
-  groupName: string;
-  section: string;
-}
+const modules = [
+  'Module 1: Introduction to Finance',
+  'Module 2: Investment Strategies',
+  'Module 3: Risk Analysis',
+  'Module 4: Portfolio Management',
+  'Module 5: Financial Modeling',
+];
 
-export default function AddCasePage() {
+export default function AddAssessmentPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [personas, setPersonas] = useState<Persona[]>([]);
 
   // Form state
-  const [caseName, setCaseName] = useState('');
-  const [module, setModule] = useState('');
-  const [persona, setPersona] = useState('');
-  const [session, setSession] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    module: '',
+    personaId: '',
+    dueDate: '',
+    duration: 15,
+    status: 'draft' as 'draft' | 'published',
+  });
+
+  // Session/Group assignment
+  const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+
+  // Dropdown states
+  const [moduleOpen, setModuleOpen] = useState(false);
+  const [personaOpen, setPersonaOpen] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
+
+  // File upload
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
-  // Dropdown open states
-  const [sessionOpen, setSessionOpen] = useState(false);
-  const [groupsOpen, setGroupsOpen] = useState(false);
-  const [personaOpen, setPersonaOpen] = useState(false);
-  const [moduleOpen, setModuleOpen] = useState(false);
+  useEffect(() => {
+    fetchPersonas();
+  }, []);
 
-  // Available options
-  const sessions = ['Spring 2026', 'Fall 2026', 'Spring 2027'];
-  const modules = [
-    'Module 1: Introduction to Finance',
-    'Module 2: Investment Strategies',
-    'Module 3: Risk Analysis',
-    'Module 4: Portfolio Management',
-    'Module 5: Financial Modeling',
-  ];
-  const personas = [
-    'Financial Analyst',
-    'Investment Banker',
-    'Portfolio Manager',
-    'Risk Analyst',
-    'CFO',
-  ];
-  const availableGroups: Group[] = [
-    { groupId: 'g1', groupName: 'Group 1', section: 'Section A' },
-    { groupId: 'g2', groupName: 'Group 2', section: 'Section A' },
-    { groupId: 'g3', groupName: 'Group 3', section: 'Section A' },
-    { groupId: 'g4', groupName: 'Group 4', section: 'Section B' },
-    { groupId: 'g5', groupName: 'Group 5', section: 'Section B' },
-    { groupId: 'g6', groupName: 'Group 6', section: 'Section B' },
-  ];
+  async function fetchPersonas() {
+    try {
+      const data = await listPersonas();
+      setPersonas(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching personas:', err);
+    }
+  }
 
-  const toggleGroup = (groupId: string) => {
-    setSelectedGroups((prev) =>
-      prev.includes(groupId)
-        ? prev.filter((id) => id !== groupId)
-        : [...prev, groupId]
+  const toggleSession = (sessionNum: string) => {
+    setSelectedSessions(prev =>
+      prev.includes(sessionNum)
+        ? prev.filter(s => s !== sessionNum)
+        : [...prev, sessionNum]
+    );
+  };
+
+  const toggleGroup = (groupNum: string) => {
+    setSelectedGroups(prev =>
+      prev.includes(groupNum)
+        ? prev.filter(g => g !== groupNum)
+        : [...prev, groupNum]
     );
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setUploadedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+      setUploadedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
   };
 
   const removeFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!caseName.trim()) newErrors.caseName = 'Case name is required';
-    if (!module) newErrors.module = 'Module is required';
-    if (!session) newErrors.session = 'Session is required';
-    if (!dueDate) newErrors.dueDate = 'Due date is required';
-    if (selectedGroups.length === 0) newErrors.groups = 'At least one group must be selected';
+    if (!form.title.trim()) newErrors.title = 'Title is required';
+    if (!form.module) newErrors.module = 'Module is required';
+    if (!form.dueDate) newErrors.dueDate = 'Due date is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -102,14 +113,31 @@ export default function AddCasePage() {
 
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await createAssessment({
+        title: form.title,
+        description: form.description,
+        caseName: form.title,
+        module: form.module,
+        personaId: form.personaId || undefined,
+        dueDate: form.dueDate,
+        duration: form.duration,
+        assignedSessions: selectedSessions,
+        assignedGroups: selectedGroups,
+        status: form.status,
+        materials: uploadedFiles.map(f => ({
+          name: f.name,
+          s3Key: '', // Would be populated after S3 upload
+          type: f.type,
+          uploadedAt: new Date().toISOString(),
+        })),
+      });
       setShowSuccess(true);
       setTimeout(() => {
         router.push('/ta/assessments');
       }, 2000);
     } catch (error) {
-      console.error('Error creating case:', error);
+      console.error('Error creating assessment:', error);
+      alert('Failed to create assessment. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -118,10 +146,10 @@ export default function AddCasePage() {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
-      setSessionOpen(false);
-      setGroupsOpen(false);
-      setPersonaOpen(false);
       setModuleOpen(false);
+      setPersonaOpen(false);
+      setSessionsOpen(false);
+      setGroupsOpen(false);
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
@@ -132,12 +160,12 @@ export default function AddCasePage() {
       <div className="mx-auto max-w-2xl animate-fade-in">
         <div className="rounded-xl border border-green-200 bg-green-50 p-8 text-center">
           <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 font-serif">Case Created Successfully!</h2>
+          <h2 className="text-xl font-bold text-gray-900 font-serif">Assessment Created!</h2>
           <p className="mt-2 text-sm text-gray-600 font-sans">
-            Your case assessment has been created and assigned to the selected groups.
+            Your assessment has been created and assigned to the selected sessions/groups.
           </p>
           <p className="mt-4 text-sm text-gray-500 font-sans">
-            Redirecting to Case Assessments...
+            Redirecting to Assessments...
           </p>
         </div>
       </div>
@@ -147,55 +175,67 @@ export default function AddCasePage() {
   return (
     <div className="mx-auto max-w-2xl animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      <div className="mb-6">
+        <Link
+          href="/ta/assessments"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
         >
-          <ArrowLeft size={20} className="text-gray-600" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-serif">Add Case</h1>
-          <p className="text-sm text-gray-500 font-sans">Create a new case assessment</p>
-        </div>
+          <ArrowLeft size={16} />
+          Back to Assessments
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900 font-serif">Add Assessment</h1>
+        <p className="text-sm text-gray-500 font-sans">Create a new case assessment</p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-xl border border-gray-200 bg-white p-6">
-          {/* Case Name */}
+          {/* Title */}
           <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
-              Case Name <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Assessment Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={caseName}
-              onChange={(e) => setCaseName(e.target.value)}
-              placeholder="Enter case study name"
-              className={`w-full rounded-lg border ${errors.caseName ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="e.g., Real Estate Investment Analysis"
+              className={`w-full rounded-lg border ${errors.title ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
             />
-            {errors.caseName && (
+            {errors.title && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} />
-                {errors.caseName}
+                <AlertCircle size={12} /> {errors.title}
               </p>
             )}
           </div>
 
-          {/* Module Dropdown */}
+          {/* Description */}
           <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Brief description of the assessment..."
+              rows={3}
+              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+            />
+          </div>
+
+          {/* Module */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Module <span className="text-red-500">*</span>
             </label>
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => setModuleOpen(!moduleOpen)}
-                className={`w-full flex items-center justify-between rounded-lg border ${errors.module ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
+                className={`w-full flex items-center justify-between rounded-lg border ${errors.module ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm`}
               >
-                <span className={module ? 'text-gray-900' : 'text-gray-400'}>
-                  {module || 'Select module'}
+                <span className={form.module ? 'text-gray-900' : 'text-gray-400'}>
+                  {form.module || 'Select module'}
                 </span>
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
@@ -205,11 +245,8 @@ export default function AddCasePage() {
                     <button
                       key={m}
                       type="button"
-                      onClick={() => {
-                        setModule(m);
-                        setModuleOpen(false);
-                      }}
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 font-sans"
+                      onClick={() => { setForm({ ...form, module: m }); setModuleOpen(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50"
                     >
                       {m}
                     </button>
@@ -219,41 +256,44 @@ export default function AddCasePage() {
             </div>
             {errors.module && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} />
-                {errors.module}
+                <AlertCircle size={12} /> {errors.module}
               </p>
             )}
           </div>
 
-          {/* Persona Dropdown */}
+          {/* Persona */}
           <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
-              Persona
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              AI Persona (optional)
             </label>
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => setPersonaOpen(!personaOpen)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
               >
-                <span className={persona ? 'text-gray-900' : 'text-gray-400'}>
-                  {persona || 'Select persona (optional)'}
+                <span className={form.personaId ? 'text-gray-900' : 'text-gray-400'}>
+                  {personas.find(p => p.personaID === form.personaId)?.name || 'Select persona'}
                 </span>
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {personaOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => { setForm({ ...form, personaId: '' }); setPersonaOpen(false); }}
+                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 text-gray-400"
+                  >
+                    No persona
+                  </button>
                   {personas.map((p) => (
                     <button
-                      key={p}
+                      key={p.personaID}
                       type="button"
-                      onClick={() => {
-                        setPersona(p);
-                        setPersonaOpen(false);
-                      }}
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 font-sans"
+                      onClick={() => { setForm({ ...form, personaId: p.personaID }); setPersonaOpen(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50"
                     >
-                      {p}
+                      {p.name} - {p.role}
                     </button>
                   ))}
                 </div>
@@ -261,153 +301,172 @@ export default function AddCasePage() {
             </div>
           </div>
 
-          {/* Session Dropdown */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
-              Session <span className="text-red-500">*</span>
-            </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setSessionOpen(!sessionOpen)}
-                className={`w-full flex items-center justify-between rounded-lg border ${errors.session ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
-              >
-                <span className={session ? 'text-gray-900' : 'text-gray-400'}>
-                  {session || 'Select session'}
-                </span>
-                <ChevronDown size={16} className="text-gray-400" />
-              </button>
-              {sessionOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20">
-                  {sessions.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => {
-                        setSession(s);
-                        setSessionOpen(false);
-                      }}
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 font-sans"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
+          <div className="grid grid-cols-2 gap-4 mb-5">
+            {/* Due Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Due Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                className={`w-full rounded-lg border ${errors.dueDate ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm`}
+              />
+              {errors.dueDate && (
+                <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle size={12} /> {errors.dueDate}
+                </p>
               )}
             </div>
-            {errors.session && (
-              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} />
-                {errors.session}
-              </p>
-            )}
+
+            {/* Duration */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Duration (minutes)
+              </label>
+              <input
+                type="number"
+                value={form.duration}
+                onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) || 15 })}
+                min={5}
+                max={60}
+                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+              />
+            </div>
           </div>
 
-          {/* Due Date */}
+          {/* Session Numbers Assignment */}
           <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
-              Due Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className={`w-full rounded-lg border ${errors.dueDate ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
-            />
-            {errors.dueDate && (
-              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} />
-                {errors.dueDate}
-              </p>
-            )}
-          </div>
-
-          {/* Groups Selection */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
-              Assign Groups <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Assign to Session Numbers
             </label>
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={() => setGroupsOpen(!groupsOpen)}
-                className={`w-full flex items-center justify-between rounded-lg border ${errors.groups ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
+                onClick={() => setSessionsOpen(!sessionsOpen)}
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
               >
-                <span className={selectedGroups.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
-                  {selectedGroups.length > 0
-                    ? `${selectedGroups.length} group(s) selected`
-                    : 'Select groups'}
+                <span className={selectedSessions.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
+                  {selectedSessions.length > 0
+                    ? `${selectedSessions.length} session(s) selected`
+                    : 'All sessions (leave empty for all)'}
                 </span>
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
-              {groupsOpen && (
+              {sessionsOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
-                  {availableGroups.map((group) => (
-                    <label
-                      key={group.groupId}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer"
-                    >
+                  {sessionNumbers.map((num) => (
+                    <label key={num} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={selectedGroups.includes(group.groupId)}
-                        onChange={() => toggleGroup(group.groupId)}
-                        className="h-4 w-4 rounded border-gray-300 text-maroon-600 focus:ring-maroon-500"
+                        checked={selectedSessions.includes(num)}
+                        onChange={() => toggleSession(num)}
+                        className="h-4 w-4 rounded border-gray-300 text-maroon-600"
                       />
-                      <div className="flex items-center gap-2">
-                        <Users size={14} className="text-gray-400" />
-                        <span className="text-sm font-sans">{group.groupName}</span>
-                        <span className="text-xs text-gray-400">• {group.section}</span>
-                      </div>
+                      <span className="text-sm">Session {num}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
-            {errors.groups && (
-              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} />
-                {errors.groups}
-              </p>
-            )}
-            {/* Selected Groups Chips */}
-            {selectedGroups.length > 0 && (
+            {selectedSessions.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
-                {selectedGroups.map((groupId) => {
-                  const group = availableGroups.find((g) => g.groupId === groupId);
-                  return (
-                    <span
-                      key={groupId}
-                      className="inline-flex items-center gap-1 rounded-full bg-maroon-50 px-3 py-1 text-xs font-medium text-maroon-700"
-                    >
-                      {group?.groupName}
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(groupId)}
-                        className="ml-1 hover:text-maroon-900"
-                      >
-                        <X size={12} />
-                      </button>
-                    </span>
-                  );
-                })}
+                {selectedSessions.map(s => (
+                  <span key={s} className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                    Session {s}
+                    <button type="button" onClick={() => toggleSession(s)}><X size={12} /></button>
+                  </span>
+                ))}
               </div>
             )}
           </div>
 
+          {/* Group Numbers Assignment */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Assign to Group Numbers
+            </label>
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setGroupsOpen(!groupsOpen)}
+                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm"
+              >
+                <span className={selectedGroups.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
+                  {selectedGroups.length > 0
+                    ? `${selectedGroups.length} group(s) selected`
+                    : 'All groups (leave empty for all)'}
+                </span>
+                <ChevronDown size={16} className="text-gray-400" />
+              </button>
+              {groupsOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                  {groupNumbers.map((num) => (
+                    <label key={num} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedGroups.includes(num)}
+                        onChange={() => toggleGroup(num)}
+                        className="h-4 w-4 rounded border-gray-300 text-maroon-600"
+                      />
+                      <span className="text-sm">Group {num}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            {selectedGroups.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {selectedGroups.map(g => (
+                  <span key={g} className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                    Group {g}
+                    <button type="button" onClick={() => toggleGroup(g)}><X size={12} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Status */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Status
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  checked={form.status === 'draft'}
+                  onChange={() => setForm({ ...form, status: 'draft' })}
+                  className="h-4 w-4 border-gray-300 text-maroon-600"
+                />
+                <span className="text-sm">Draft</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  checked={form.status === 'published'}
+                  onChange={() => setForm({ ...form, status: 'published' })}
+                  className="h-4 w-4 border-gray-300 text-maroon-600"
+                />
+                <span className="text-sm">Published (visible to students)</span>
+              </label>
+            </div>
+          </div>
+
           {/* File Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Case Materials
             </label>
             <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-maroon-300 transition-colors">
               <Upload size={32} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-sm text-gray-600 font-sans mb-1">
-                Drag and drop files here, or
-              </p>
+              <p className="text-sm text-gray-600 mb-1">Drag and drop files here, or</p>
               <label className="cursor-pointer">
-                <span className="text-sm font-medium text-maroon-600 hover:underline">
-                  browse to upload
-                </span>
+                <span className="text-sm font-medium text-maroon-600 hover:underline">browse to upload</span>
                 <input
                   type="file"
                   multiple
@@ -416,30 +475,18 @@ export default function AddCasePage() {
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                 />
               </label>
-              <p className="text-xs text-gray-400 mt-2">
-                PDF, DOC, XLS, PPT up to 10MB each
-              </p>
+              <p className="text-xs text-gray-400 mt-2">PDF, DOC, XLS, PPT up to 10MB each</p>
             </div>
-            {/* Uploaded Files */}
             {uploadedFiles.length > 0 && (
               <div className="mt-3 space-y-2">
                 {uploadedFiles.map((file, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
-                  >
+                  <div key={idx} className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
                     <div className="flex items-center gap-2">
                       <FileText size={16} className="text-gray-400" />
-                      <span className="text-sm text-gray-700 font-sans">{file.name}</span>
-                      <span className="text-xs text-gray-400">
-                        ({(file.size / 1024).toFixed(1)} KB)
-                      </span>
+                      <span className="text-sm text-gray-700">{file.name}</span>
+                      <span className="text-xs text-gray-400">({(file.size / 1024).toFixed(1)} KB)</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(idx)}
-                      className="p-1 hover:bg-gray-200 rounded"
-                    >
+                    <button type="button" onClick={() => removeFile(idx)} className="p-1 hover:bg-gray-200 rounded">
                       <X size={14} className="text-gray-500" />
                     </button>
                   </div>
@@ -454,16 +501,17 @@ export default function AddCasePage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors font-sans"
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2.5 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 disabled:opacity-50 flex items-center gap-2"
           >
-            {isSubmitting ? 'Creating...' : 'Create Case'}
+            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+            Create Assessment
           </button>
         </div>
       </form>

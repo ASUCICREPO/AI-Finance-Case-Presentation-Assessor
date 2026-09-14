@@ -272,6 +272,8 @@ export interface Student {
   email: string;
   loginId?: string;
   section?: string;
+  sessionNumber?: string;
+  groupNumber?: string;
   groupId?: string;
   role: string;
   status: string;
@@ -741,6 +743,111 @@ export async function archiveCourseSession(sessionId: string): Promise<void> {
 // TA Dashboard API - Assessments (Case Assessments)
 // ──────────────────────────────────────────────────────────
 
+export interface Assessment {
+  assessmentId: string;
+  assessmentID?: string; // Backend uses assessmentID
+  title: string;
+  description?: string;
+  caseName?: string;
+  module?: string;
+  personaId?: string;
+  dueDate?: string;
+  duration?: number;
+  assignedSessions?: string[];
+  assignedGroups?: string[];
+  materials?: Array<{
+    name: string;
+    s3Key: string;
+    type: string;
+    uploadedAt: string;
+  }>;
+  rubric?: Record<string, number>;
+  status?: 'draft' | 'published' | 'closed';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AssessmentsResponse {
+  assessments: Assessment[];
+  count: number;
+}
+
+/**
+ * List all assessments (TA view).
+ */
+export async function listAssessments(filters?: {
+  status?: string;
+  sessionNumber?: string;
+}): Promise<AssessmentsResponse> {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.sessionNumber) params.set('sessionNumber', filters.sessionNumber);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchApi<AssessmentsResponse>(`/assessments${query}`);
+}
+
+/**
+ * Get a single assessment by ID.
+ */
+export async function getAssessment(assessmentId: string): Promise<Assessment> {
+  return fetchApi<Assessment>(`/assessments/${assessmentId}`);
+}
+
+/**
+ * Create a new assessment.
+ */
+export async function createAssessment(data: Partial<Assessment>): Promise<Assessment> {
+  return fetchApi<Assessment>('/assessments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Update an existing assessment.
+ */
+export async function updateAssessment(assessmentId: string, data: Partial<Assessment>): Promise<Assessment> {
+  return fetchApi<Assessment>(`/assessments/${assessmentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Delete an assessment.
+ */
+export async function deleteAssessment(assessmentId: string): Promise<void> {
+  await fetchApi(`/assessments/${assessmentId}`, { method: 'DELETE' });
+}
+
+/**
+ * Assign assessment to specific session/group combinations.
+ */
+export async function assignAssessmentToGroups(
+  assessmentId: string,
+  sessionNumbers: string[],
+  groupNumbers: string[]
+): Promise<Assessment> {
+  return fetchApi<Assessment>(`/assessments/${assessmentId}/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ sessionNumbers, groupNumbers }),
+  });
+}
+
+/**
+ * Get assessments assigned to a specific student (student dashboard).
+ * Returns only published assessments matching the student's session/group.
+ */
+export async function getStudentAssessments(studentId: string): Promise<{
+  assessments: Assessment[];
+  count: number;
+  sessionNumber: string;
+  groupNumber: string;
+}> {
+  return fetchApi(`/assessments/student?studentId=${encodeURIComponent(studentId)}`);
+}
+
+// Legacy interface for backward compatibility
 export interface CaseAssessment {
   assessmentId: string;
   caseName: string;
@@ -767,49 +874,54 @@ export interface CaseAssessmentsResponse {
 
 /**
  * List all case assessments with optional session filter.
+ * @deprecated Use listAssessments instead
  */
 export async function listCaseAssessments(sessionId?: string): Promise<CaseAssessmentsResponse> {
-  const params = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
-  // Mock implementation for frontend development
-  const mockAssessments: CaseAssessment[] = [
-    {
-      assessmentId: 'assess-1',
-      caseName: 'Case Study: Financial Analysis',
-      module: 'Module 1: Introduction to Finance',
-      sessionId: 'sess-1',
-      dueDate: '2026-09-15',
-      groups: ['g1', 'g2', 'g3'],
-      materials: [
-        { name: 'Case Study Brief.pdf', s3Key: 'cases/brief.pdf', type: 'pdf', uploadedAt: '2026-08-01' },
-      ],
-      status: 'published',
-      createdAt: '2026-08-01',
-      updatedAt: '2026-08-01',
-    },
-  ];
-
-  return { assessments: mockAssessments, count: mockAssessments.length };
+  const result = await listAssessments();
+  // Map to legacy format
+  const mapped: CaseAssessment[] = result.assessments.map(a => ({
+    assessmentId: a.assessmentId || a.assessmentID || '',
+    caseName: a.caseName || a.title,
+    module: a.module || '',
+    personaId: a.personaId,
+    sessionId: sessionId || '',
+    dueDate: a.dueDate || '',
+    groups: a.assignedGroups || [],
+    materials: a.materials || [],
+    status: a.status || 'draft',
+    createdAt: a.createdAt || '',
+    updatedAt: a.updatedAt || '',
+  }));
+  return { assessments: mapped, count: mapped.length };
 }
 
 /**
  * Create a new case assessment.
+ * @deprecated Use createAssessment instead
  */
 export async function createCaseAssessment(data: Partial<CaseAssessment>): Promise<CaseAssessment> {
-  // In production: return fetchApi<CaseAssessment>('/assessments', { method: 'POST', body: JSON.stringify(data) });
-
-  const newAssessment: CaseAssessment = {
-    assessmentId: `assess-${Date.now()}`,
-    caseName: data.caseName || 'New Case',
-    module: data.module || '',
+  const result = await createAssessment({
+    title: data.caseName,
+    caseName: data.caseName,
+    module: data.module,
     personaId: data.personaId,
-    sessionId: data.sessionId || '',
-    dueDate: data.dueDate || new Date().toISOString().split('T')[0],
-    groups: data.groups || [],
-    materials: data.materials || [],
-    status: 'draft',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+    dueDate: data.dueDate,
+    assignedGroups: data.groups,
+    materials: data.materials,
+    status: data.status,
+  });
 
-  return newAssessment;
+  return {
+    assessmentId: result.assessmentId || result.assessmentID || '',
+    caseName: result.caseName || result.title,
+    module: result.module || '',
+    personaId: result.personaId,
+    sessionId: data.sessionId || '',
+    dueDate: result.dueDate || '',
+    groups: result.assignedGroups || [],
+    materials: result.materials || [],
+    status: result.status || 'draft',
+    createdAt: result.createdAt || '',
+    updatedAt: result.updatedAt || '',
+  };
 }

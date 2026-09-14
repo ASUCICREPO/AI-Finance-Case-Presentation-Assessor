@@ -119,6 +119,8 @@ def create_student(body):
             'email': body['email'],
             'loginId': body.get('loginId', body['email'].split('@')[0]),
             'section': body.get('section', 'Default'),
+            'sessionNumber': body.get('sessionNumber'),  # e.g., "1", "2" for Session 1, Session 2
+            'groupNumber': body.get('groupNumber'),      # e.g., "1", "2", "3" for Group 1, 2, 3
             'groupId': body.get('groupId'),
             'role': 'student',
             'status': body.get('status', 'Active'),
@@ -151,7 +153,7 @@ def update_student(student_id, body):
         expr_names = {}
         
         allowed_fields = ['firstName', 'lastName', 'email', 'loginId', 'section', 
-                          'groupId', 'status', 'lastActivity']
+                          'sessionNumber', 'groupNumber', 'groupId', 'status', 'lastActivity']
         
         for field in allowed_fields:
             if field in body:
@@ -241,6 +243,8 @@ def bulk_import_students(body):
                         'email': student_data['email'],
                         'loginId': student_data.get('loginId', student_data['email'].split('@')[0]),
                         'section': student_data.get('section', 'Default'),
+                        'sessionNumber': student_data.get('sessionNumber'),
+                        'groupNumber': student_data.get('groupNumber'),
                         'groupId': student_data.get('groupId'),
                         'role': 'student',
                         'status': 'Active',

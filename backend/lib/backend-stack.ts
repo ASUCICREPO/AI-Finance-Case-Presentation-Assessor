@@ -171,6 +171,12 @@ export class FinanceAssessorStack extends cdk.Stack {
       partitionKey: { name: 'section', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'lastName', type: dynamodb.AttributeType.STRING },
     });
+    // GSI for querying students by sessionNumber and groupNumber (for assignment lookup)
+    studentsTable.addGlobalSecondaryIndex({
+      indexName: 'sessionGroup-index',
+      partitionKey: { name: 'sessionNumber', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'groupNumber', type: dynamodb.AttributeType.STRING },
+    });
 
     // Groups Table - groups within each assessment/session
     const groupsTable = new dynamodb.Table(this, 'GroupsTable', {
@@ -359,6 +365,17 @@ export class FinanceAssessorStack extends cdk.Stack {
     assessmentsTable.grantReadData(gradebookFn);
     this.uploadsBucket.grantReadWrite(gradebookFn);
 
+    // Assessments CRUD Lambda
+    const assessmentsCrudFn = new lambda.Function(this, 'AssessmentsCrudFn', {
+      ...lambdaDefaults,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/assessments-crud'),
+      description: 'CRUD operations for assessment management',
+    } as lambda.FunctionProps);
+    assessmentsTable.grantReadWriteData(assessmentsCrudFn);
+    groupsTable.grantReadData(assessmentsCrudFn);
+    studentsTable.grantReadData(assessmentsCrudFn);
+
     // ──────────────────────────────────────────────────────────
     // API Gateway
     // ──────────────────────────────────────────────────────────
@@ -448,6 +465,21 @@ export class FinanceAssessorStack extends cdk.Stack {
     gradebookExport.addMethod('POST', new apigateway.LambdaIntegration(gradebookFn)); // Export to CSV
     const gradebookStats = gradebookResource.addResource('stats');
     gradebookStats.addMethod('GET', new apigateway.LambdaIntegration(gradebookFn)); // Analytics/stats
+
+    // /assessments (TA Dashboard)
+    const assessmentsResource = api.root.addResource('assessments');
+    assessmentsResource.addMethod('GET', new apigateway.LambdaIntegration(assessmentsCrudFn));
+    assessmentsResource.addMethod('POST', new apigateway.LambdaIntegration(assessmentsCrudFn));
+    const assessmentById = assessmentsResource.addResource('{assessmentId}');
+    assessmentById.addMethod('GET', new apigateway.LambdaIntegration(assessmentsCrudFn));
+    assessmentById.addMethod('PUT', new apigateway.LambdaIntegration(assessmentsCrudFn));
+    assessmentById.addMethod('DELETE', new apigateway.LambdaIntegration(assessmentsCrudFn));
+    // Assign assessment to groups
+    const assessmentAssign = assessmentById.addResource('assign');
+    assessmentAssign.addMethod('POST', new apigateway.LambdaIntegration(assessmentsCrudFn));
+    // Get assessments for a student (student dashboard)
+    const studentAssessments = assessmentsResource.addResource('student');
+    studentAssessments.addMethod('GET', new apigateway.LambdaIntegration(assessmentsCrudFn));
 
     this.apiUrl = api.url;
 

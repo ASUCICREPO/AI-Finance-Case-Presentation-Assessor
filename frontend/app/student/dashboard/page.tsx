@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getStudentSubmissions, listSubmissions, Submission } from '../../services/api';
+import { getStudentSubmissions, getStudentAssessments, Submission, Assessment } from '../../services/api';
 import Link from 'next/link';
 import {
   CheckCircle,
@@ -12,11 +12,13 @@ import {
   Loader2,
   AlertCircle,
   GraduationCap,
+  Info,
 } from 'lucide-react';
 
 interface AssessmentDisplay {
   assessmentId: string;
   name: string;
+  description?: string;
   sessionNumber: string;
   groupNumber: string;
   deadline: string;
@@ -24,18 +26,18 @@ interface AssessmentDisplay {
   submissionTime: string | null;
   status: 'Submitted' | 'Not started' | 'In progress';
   submissionId?: string;
-  type: 'practice' | 'graded';
 }
 
 /**
  * Student Dashboard - Assessments Overview
- * Shows instructor-assigned assessments from DynamoDB (graded)
+ * Shows instructor-assigned assessments from DynamoDB based on student's session/group
  */
 export default function StudentDashboard() {
-  const { userName, userId } = useAuth();
+  const { userName, userId, userSessionNumber, userGroupNumber } = useAuth();
   const [assessments, setAssessments] = useState<AssessmentDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [studentInfo, setStudentInfo] = useState<{ sessionNumber?: string; groupNumber?: string }>({});
 
   // Filter state
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -44,7 +46,9 @@ export default function StudentDashboard() {
 
   // Load assessments on mount
   useEffect(() => {
-    fetchAssessments();
+    if (userId) {
+      fetchAssessments();
+    }
   }, [userId]);
 
   async function fetchAssessments() {
@@ -52,44 +56,61 @@ export default function StudentDashboard() {
       setLoading(true);
       setError(null);
 
-      // TODO: In production, fetch assigned assessments from API
-      // For now, using demo data for graded assessments
-      // The instructor assigns these via TA Dashboard → Groups → Assign to Group
+      // Fetch assessments assigned to this student's session/group
+      let assignedAssessments: Assessment[] = [];
+      let submittedAssessments: Map<string, Submission> = new Map();
 
-      let submittedAssessments: AssessmentDisplay[] = [];
-
-      if (userId) {
-        try {
-          const response = await getStudentSubmissions(userId);
-          submittedAssessments = response.submissions
-            .filter((sub: Submission) => sub.assessmentId !== 'practice') // Exclude practice sessions
-            .map((sub: Submission) => ({
-              assessmentId: sub.assessmentId,
-              name: sub.assessment?.title || 'Assessment',
-              sessionNumber: sub.sessionNumber || '1',
-              groupNumber: sub.groupNumber || '1',
-              deadline: sub.assessment?.dueDate || '',
-              duration: '15 min',
-              submissionTime: sub.submittedAt ? formatDate(sub.submittedAt) : null,
-              status: 'Submitted' as const,
-              submissionId: sub.submissionId,
-              type: 'graded' as const,
-            }));
-        } catch (err) {
-          console.error('Error fetching submissions:', err);
-        }
+      // Get student's assigned assessments based on their session/group
+      try {
+        const assessmentsResponse = await getStudentAssessments(userId!);
+        assignedAssessments = assessmentsResponse.assessments || [];
+        setStudentInfo({
+          sessionNumber: assessmentsResponse.sessionNumber,
+          groupNumber: assessmentsResponse.groupNumber,
+        });
+      } catch (err) {
+        console.error('Error fetching assigned assessments:', err);
+        // If API fails, student might not have session/group assigned
       }
 
-      // Demo graded assessments (these would come from instructor assignments)
-      const pendingAssessments = getDemoGradedAssessments().filter(
-        a => !submittedAssessments.find(s => s.assessmentId === a.assessmentId)
-      );
+      // Get student's submissions to check status
+      try {
+        const submissionsResponse = await getStudentSubmissions(userId!);
+        submissionsResponse.submissions.forEach((sub: Submission) => {
+          submittedAssessments.set(sub.assessmentId, sub);
+        });
+      } catch (err) {
+        console.error('Error fetching submissions:', err);
+      }
 
-      setAssessments([...submittedAssessments, ...pendingAssessments]);
+      // Map assessments to display format
+      const displayAssessments: AssessmentDisplay[] = assignedAssessments.map(assessment => {
+        const assessmentId = assessment.assessmentId || assessment.assessmentID || '';
+        const submission = submittedAssessments.get(assessmentId);
+
+        return {
+          assessmentId,
+          name: assessment.title || assessment.caseName || 'Assessment',
+          description: assessment.description,
+          sessionNumber: studentInfo.sessionNumber || userSessionNumber || '1',
+          groupNumber: studentInfo.groupNumber || userGroupNumber || '1',
+          deadline: assessment.dueDate ? formatDeadline(assessment.dueDate) : 'No deadline',
+          duration: `${assessment.duration || 15} min`,
+          submissionTime: submission?.submittedAt ? formatDate(submission.submittedAt) : null,
+          status: submission ? 'Submitted' : 'Not started',
+          submissionId: submission?.submissionId,
+        };
+      });
+
+      setAssessments(displayAssessments);
+
+      // Show message if no assessments assigned
+      if (displayAssessments.length === 0 && !error) {
+        setError('No assessments assigned to your group yet');
+      }
     } catch (err) {
       console.error('Error fetching assessments:', err);
       setError('Failed to load assessments');
-      setAssessments(getDemoGradedAssessments());
     } finally {
       setLoading(false);
     }
@@ -105,43 +126,14 @@ export default function StudentDashboard() {
     });
   }
 
-  function getDemoGradedAssessments(): AssessmentDisplay[] {
-    // These represent instructor-assigned assessments
-    return [
-      {
-        assessmentId: 'graded-1',
-        name: 'Real Estate Investment Analysis',
-        sessionNumber: '1',
-        groupNumber: '1',
-        deadline: 'Oct 24, 11:59 PM',
-        duration: '15 min',
-        submissionTime: null,
-        status: 'Not started',
-        type: 'graded'
-      },
-      {
-        assessmentId: 'graded-2',
-        name: 'Financial Modeling Case Study',
-        sessionNumber: '1',
-        groupNumber: '2',
-        deadline: 'Oct 28, 11:59 PM',
-        duration: '15 min',
-        submissionTime: null,
-        status: 'Not started',
-        type: 'graded'
-      },
-      {
-        assessmentId: 'graded-3',
-        name: 'Market Analysis Presentation',
-        sessionNumber: '2',
-        groupNumber: '1',
-        deadline: 'Nov 01, 11:59 PM',
-        duration: '15 min',
-        submissionTime: null,
-        status: 'Not started',
-        type: 'graded'
-      },
-    ];
+  function formatDeadline(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   }
 
   // Close dropdown when clicking outside
@@ -195,16 +187,38 @@ export default function StudentDashboard() {
         </h1>
         <p className="mt-1 text-gray-500 font-sans">
           {pendingAssessments > 0
-            ? `You have ${pendingAssessments} graded assessment${pendingAssessments > 1 ? 's' : ''} waiting for you.`
-            : 'All graded assessments completed. Great job!'}
+            ? `You have ${pendingAssessments} assessment${pendingAssessments > 1 ? 's' : ''} waiting for you.`
+            : totalAssessments > 0
+              ? 'All assessments completed. Great job!'
+              : 'No assessments assigned yet.'}
         </p>
+        {/* Show student's session/group info */}
+        {(studentInfo.sessionNumber || studentInfo.groupNumber) && (
+          <p className="mt-1 text-sm text-gray-400">
+            Session {studentInfo.sessionNumber || '—'}, Group {studentInfo.groupNumber || '—'}
+          </p>
+        )}
       </div>
 
+      {/* Info banner if no group assigned */}
+      {!studentInfo.sessionNumber && !studentInfo.groupNumber && assessments.length === 0 && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          <Info size={18} className="mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">No group assignment found</p>
+            <p className="mt-1 text-blue-600">
+              Your instructor needs to assign you to a session and group before assessments appear here.
+              Please contact your TA or instructor.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Error banner */}
-      {error && (
+      {error && assessments.length > 0 && (
         <div className="mb-4 flex items-center gap-2 rounded-lg bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
           <AlertCircle size={18} />
-          {error} - Showing sample data
+          {error}
         </div>
       )}
 
@@ -215,7 +229,7 @@ export default function StudentDashboard() {
             <div className="rounded-lg bg-blue-100 p-2.5">
               <GraduationCap size={18} className="text-blue-600" />
             </div>
-            <span className="text-sm text-gray-500 font-sans">Graded Assessments</span>
+            <span className="text-sm text-gray-500 font-sans">Total Assessments</span>
           </div>
           <p className="mt-4 text-4xl font-bold text-gray-900 font-sans">{totalAssessments}</p>
         </div>
@@ -241,9 +255,9 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Graded Assessments Section */}
+      {/* Assessments Section */}
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900 font-serif">Graded Assessments</h2>
+        <h2 className="text-lg font-bold text-gray-900 font-serif">Your Assessments</h2>
 
         {/* Filter dropdown */}
         <div className="relative" ref={filterRef}>
@@ -288,9 +302,6 @@ export default function StudentDashboard() {
                   Assessment
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Group
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Deadline
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -307,9 +318,9 @@ export default function StudentDashboard() {
             <tbody className="divide-y divide-gray-100">
               {filteredAssessments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                     {statusFilters.includes('All')
-                      ? 'No graded assessments assigned yet. Check back later!'
+                      ? 'No assessments assigned yet. Check back later!'
                       : 'No assessments match your filter.'}
                   </td>
                 </tr>
@@ -319,15 +330,17 @@ export default function StudentDashboard() {
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{assessment.name}</p>
+                        {assessment.description && (
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                            {assessment.description}
+                          </p>
+                        )}
                         {assessment.submissionTime && (
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-xs text-green-600 mt-0.5">
                             Submitted: {assessment.submissionTime}
                           </p>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      Session {assessment.sessionNumber}, Group {assessment.groupNumber}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {assessment.deadline}
@@ -370,7 +383,7 @@ export default function StudentDashboard() {
 
       {/* Note */}
       <p className="mt-4 text-xs text-gray-400 text-center">
-        Graded assessment scores will be available after review by your instructor.
+        Assessment scores will be available after review by your instructor.
       </p>
     </div>
   );
