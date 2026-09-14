@@ -1,52 +1,75 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
-  Users,
-  Plus,
-  Upload,
   Search,
+  Filter,
+  Plus,
   MoreVertical,
   Edit2,
   Trash2,
-  Mail,
   X,
   Loader2,
   AlertCircle,
-  CheckCircle,
+  Check,
+  ChevronDown,
 } from 'lucide-react';
 import {
   listStudents,
-  createStudent,
-  updateStudent,
+  listGroups,
   deleteStudent,
-  bulkImportStudents,
   Student,
+  Group,
 } from '../../services/api';
+
+// Avatar colors for students
+const avatarColors = [
+  'bg-red-100 text-red-700',
+  'bg-blue-100 text-blue-700',
+  'bg-green-100 text-green-700',
+  'bg-yellow-100 text-yellow-700',
+  'bg-purple-100 text-purple-700',
+  'bg-pink-100 text-pink-700',
+  'bg-indigo-100 text-indigo-700',
+  'bg-orange-100 text-orange-700',
+];
+
+function getAvatarColor(name: string) {
+  const index = name.charCodeAt(0) % avatarColors.length;
+  return avatarColors[index];
+}
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSection, setSelectedSection] = useState<string>('all');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
 
-  // Fetch students
-  useEffect(() => {
-    fetchStudents();
-  }, [selectedSection]);
+  // Filter state
+  const [filters, setFilters] = useState({
+    sections: [] as string[],
+    groups: [] as string[],
+    lastActivity: 'all' as 'all' | 'active' | 'inactive',
+  });
 
-  async function fetchStudents() {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  async function fetchData() {
     try {
       setLoading(true);
       setError(null);
-      const section = selectedSection === 'all' ? undefined : selectedSection;
-      const response = await listStudents(section);
-      setStudents(response.students);
+      const [studentsRes, groupsRes] = await Promise.all([
+        listStudents(),
+        listGroups(undefined, true),
+      ]);
+      setStudents(studentsRes.students);
+      setGroups(groupsRes.groups);
     } catch (err) {
       setError('Failed to load students. Please try again.');
       console.error('Error fetching students:', err);
@@ -55,51 +78,84 @@ export default function StudentsPage() {
     }
   }
 
-  // Get unique sections for filter
+  // Get unique sections
   const sections = [...new Set(students.map(s => s.section).filter((s): s is string => Boolean(s)))];
 
-  // Filter students by search
+  // Filter students
   const filteredStudents = students.filter(student => {
-    const search = searchQuery.toLowerCase();
-    return (
-      student.firstName.toLowerCase().includes(search) ||
-      student.lastName.toLowerCase().includes(search) ||
-      student.email.toLowerCase().includes(search) ||
-      student.loginId?.toLowerCase().includes(search)
-    );
+    // Search filter
+    if (searchQuery) {
+      const search = searchQuery.toLowerCase();
+      const matchesSearch =
+        student.firstName.toLowerCase().includes(search) ||
+        student.lastName.toLowerCase().includes(search) ||
+        student.email.toLowerCase().includes(search) ||
+        student.loginId?.toLowerCase().includes(search);
+      if (!matchesSearch) return false;
+    }
+
+    // Section filter
+    if (filters.sections.length > 0 && student.section) {
+      if (!filters.sections.includes(student.section)) return false;
+    }
+
+    // Group filter
+    if (filters.groups.length > 0 && student.groupId) {
+      if (!filters.groups.includes(student.groupId)) return false;
+    }
+
+    // Last activity filter
+    if (filters.lastActivity !== 'all') {
+      const hasRecentActivity = student.lastActivity &&
+        new Date(student.lastActivity) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      if (filters.lastActivity === 'active' && !hasRecentActivity) return false;
+      if (filters.lastActivity === 'inactive' && hasRecentActivity) return false;
+    }
+
+    return true;
   });
+
+  function clearFilters() {
+    setFilters({ sections: [], groups: [], lastActivity: 'all' });
+  }
+
+  function toggleSection(section: string) {
+    setFilters(prev => ({
+      ...prev,
+      sections: prev.sections.includes(section)
+        ? prev.sections.filter(s => s !== section)
+        : [...prev.sections, section]
+    }));
+  }
+
+  function toggleGroup(groupId: string) {
+    setFilters(prev => ({
+      ...prev,
+      groups: prev.groups.includes(groupId)
+        ? prev.groups.filter(g => g !== groupId)
+        : [...prev.groups, groupId]
+    }));
+  }
+
+  async function handleDelete(studentId: string) {
+    if (confirm('Are you sure you want to delete this student?')) {
+      await deleteStudent(studentId);
+      fetchData();
+    }
+    setActionMenuOpen(null);
+  }
 
   return (
     <div className="mx-auto max-w-6xl animate-fade-in">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-serif">Students</h1>
-          <p className="mt-1 text-sm text-gray-500 font-sans">
-            Manage your class roster and student information
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Upload size={16} />
-            Import CSV
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2 text-sm font-medium text-white hover:bg-maroon-700 transition-colors"
-          >
-            <Plus size={16} />
-            Add Student
-          </button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 font-serif">Students</h1>
+        <p className="mt-1 text-sm text-gray-500 font-sans">Student details</p>
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 flex gap-4">
-        <div className="relative flex-1">
+      {/* Search and Actions */}
+      <div className="mb-6 flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -109,16 +165,116 @@ export default function StudentsPage() {
             className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
           />
         </div>
-        <select
-          value={selectedSection}
-          onChange={(e) => setSelectedSection(e.target.value)}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+
+        {/* Filter Button */}
+        <div className="relative">
+          <button
+            onClick={() => setShowFilter(!showFilter)}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <Filter size={16} />
+            Filter
+          </button>
+
+          {/* Filter Dropdown */}
+          {showFilter && (
+            <div className="absolute right-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white shadow-lg z-20 p-4">
+              <h4 className="text-sm font-semibold text-maroon-600 mb-3">Filter By</h4>
+
+              {/* Section Filter */}
+              <div className="mb-4">
+                <p className="text-xs font-medium text-maroon-600 mb-2">Section</p>
+                <label className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.sections.length === 0 ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                    }`}>
+                    {filters.sections.length === 0 && <Check size={12} className="text-white" />}
+                  </div>
+                  <span className="text-sm text-gray-700">All Sections</span>
+                </label>
+                {sections.map(section => (
+                  <label key={section} className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.sections.includes(section) ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                      }`}>
+                      {filters.sections.includes(section) && <Check size={12} className="text-white" />}
+                    </div>
+                    <span className="text-sm text-gray-700">{section}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Group Filter */}
+              <div className="mb-4">
+                <p className="text-xs font-medium text-maroon-600 mb-2">Group</p>
+                <label className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.groups.length === 0 ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                    }`}>
+                    {filters.groups.length === 0 && <Check size={12} className="text-white" />}
+                  </div>
+                  <span className="text-sm text-gray-700">All groups</span>
+                </label>
+                {groups.slice(0, 4).map(group => (
+                  <label key={group.groupId} className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.groups.includes(group.groupId) ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                      }`}>
+                      {filters.groups.includes(group.groupId) && <Check size={12} className="text-white" />}
+                    </div>
+                    <span className="text-sm text-gray-700">{group.groupName}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Last Activity Filter */}
+              <div className="mb-4">
+                <p className="text-xs font-medium text-maroon-600 mb-2">Last Activity</p>
+                {[
+                  { value: 'all', label: 'All' },
+                  { value: 'active', label: 'Active recently' },
+                  { value: 'inactive', label: 'No recent activity' },
+                ].map(opt => (
+                  <label key={opt.value} className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.lastActivity === opt.value ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                      }`}>
+                      {filters.lastActivity === opt.value && <Check size={12} className="text-white" />}
+                    </div>
+                    <span className="text-sm text-gray-700">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex gap-2 pt-2 border-t border-gray-100">
+                <button
+                  onClick={clearFilters}
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowFilter(false)}
+                  className="flex-1 rounded-lg bg-maroon-600 px-3 py-1.5 text-sm text-white hover:bg-maroon-700"
+                >
+                  Apply Filter
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Add Buttons */}
+        <Link
+          href="/ta/students/add"
+          className="flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2 text-sm font-medium text-white hover:bg-maroon-700"
         >
-          <option value="all">All Sections</option>
-          {sections.map(section => (
-            <option key={section} value={section}>{section}</option>
-          ))}
-        </select>
+          <Plus size={16} />
+          Add student
+        </Link>
+        <Link
+          href="/ta/groups/add"
+          className="flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2 text-sm font-medium text-white hover:bg-maroon-700"
+        >
+          <Plus size={16} />
+          Add Group
+        </Link>
       </div>
 
       {/* Error State */}
@@ -126,7 +282,7 @@ export default function StudentsPage() {
         <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertCircle size={18} />
           {error}
-          <button onClick={fetchStudents} className="ml-auto underline">Retry</button>
+          <button onClick={fetchData} className="ml-auto underline">Retry</button>
         </div>
       )}
 
@@ -144,15 +300,14 @@ export default function StudentsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Login ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? 'No students match your search' : 'No students found. Add students to get started.'}
                   </td>
                 </tr>
@@ -161,29 +316,26 @@ export default function StudentsPage() {
                   <tr key={student.studentId} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-maroon-100 flex items-center justify-center">
-                          <span className="text-xs font-medium text-maroon-600">
+                        <div className={`h-9 w-9 rounded-full flex items-center justify-center ${getAvatarColor(student.firstName)}`}>
+                          <span className="text-sm font-medium">
                             {student.firstName[0]}{student.lastName[0]}
                           </span>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{student.firstName} {student.lastName}</p>
-                          <p className="text-xs text-gray-500">{student.email}</p>
-                        </div>
+                        <span className="font-medium text-gray-900">
+                          {student.firstName} {student.lastName}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{student.loginId || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{student.section || '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${student.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <td className="px-4 py-3 text-gray-500">
                       {student.lastActivity
-                        ? new Date(student.lastActivity).toLocaleDateString()
-                        : 'Never'}
+                        ? new Date(student.lastActivity).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })
+                        : '—'}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="relative">
@@ -195,24 +347,14 @@ export default function StudentsPage() {
                         </button>
                         {actionMenuOpen === student.studentId && (
                           <div className="absolute right-0 mt-1 w-36 rounded-lg border border-gray-200 bg-white shadow-lg z-10">
-                            <button
-                              onClick={() => {
-                                setEditingStudent(student);
-                                setShowAddModal(true);
-                                setActionMenuOpen(null);
-                              }}
+                            <Link
+                              href={`/ta/students/edit?id=${student.studentId}`}
                               className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             >
                               <Edit2 size={14} /> Edit
-                            </button>
+                            </Link>
                             <button
-                              onClick={async () => {
-                                if (confirm('Are you sure you want to delete this student?')) {
-                                  await deleteStudent(student.studentId);
-                                  fetchStudents();
-                                }
-                                setActionMenuOpen(null);
-                              }}
+                              onClick={() => handleDelete(student.studentId)}
                               className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                             >
                               <Trash2 size={14} /> Delete
@@ -228,345 +370,6 @@ export default function StudentsPage() {
           </table>
         </div>
       )}
-
-      {/* Summary */}
-      <div className="mt-4 text-sm text-gray-500">
-        Showing {filteredStudents.length} of {students.length} students
-      </div>
-
-      {/* Add/Edit Student Modal */}
-      {showAddModal && (
-        <StudentModal
-          student={editingStudent}
-          sections={sections}
-          onClose={() => {
-            setShowAddModal(false);
-            setEditingStudent(null);
-          }}
-          onSave={async (data) => {
-            if (editingStudent) {
-              await updateStudent(editingStudent.studentId, data);
-            } else {
-              await createStudent(data);
-            }
-            fetchStudents();
-            setShowAddModal(false);
-            setEditingStudent(null);
-          }}
-        />
-      )}
-
-      {/* Import Modal */}
-      {showImportModal && (
-        <ImportModal
-          onClose={() => setShowImportModal(false)}
-          onImport={async (students) => {
-            const result = await bulkImportStudents(students);
-            fetchStudents();
-            return result;
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-// Student Add/Edit Modal
-function StudentModal({
-  student,
-  sections,
-  onClose,
-  onSave,
-}: {
-  student: Student | null;
-  sections: string[];
-  onClose: () => void;
-  onSave: (data: Partial<Student>) => Promise<void>;
-}) {
-  const [form, setForm] = useState({
-    firstName: student?.firstName || '',
-    lastName: student?.lastName || '',
-    email: student?.email || '',
-    loginId: student?.loginId || '',
-    section: student?.section || '',
-    status: student?.status || 'Active',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.email) {
-      setError('Please fill in all required fields');
-      return;
-    }
-    try {
-      setSaving(true);
-      setError(null);
-      await onSave(form);
-    } catch (err: any) {
-      setError(err.message || 'Failed to save student');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900 font-serif">
-            {student ? 'Edit Student' : 'Add Student'}
-          </h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-              <input
-                type="text"
-                value={form.firstName}
-                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-              <input
-                type="text"
-                value={form.lastName}
-                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Login ID (ASURite)</label>
-            <input
-              type="text"
-              value={form.loginId}
-              onChange={(e) => setForm({ ...form, loginId: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              placeholder="e.g., jsmith42"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-              <input
-                type="text"
-                value={form.section}
-                onChange={(e) => setForm({ ...form, section: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-                placeholder="e.g., Section A"
-                list="sections"
-              />
-              <datalist id="sections">
-                {sections.map(s => <option key={s} value={s} />)}
-              </datalist>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2 text-sm font-medium text-white hover:bg-maroon-700 disabled:opacity-50"
-            >
-              {saving && <Loader2 size={16} className="animate-spin" />}
-              {student ? 'Save Changes' : 'Add Student'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// Import CSV Modal
-function ImportModal({
-  onClose,
-  onImport,
-}: {
-  onClose: () => void;
-  onImport: (students: Partial<Student>[]) => Promise<{
-    created: number;
-    errors: number;
-    errorDetails: Array<{ index: number; error: string }>;
-  }>;
-}) {
-  const [csvText, setCsvText] = useState('');
-  const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{
-    created: number;
-    errors: number;
-    errorDetails: Array<{ index: number; error: string }>;
-  } | null>(null);
-
-  function parseCSV(text: string): Partial<Student>[] {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
-
-    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-    const students: Partial<Student>[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      const student: Partial<Student> = {};
-
-      headers.forEach((header, idx) => {
-        const value = values[idx];
-        if (header.includes('first')) student.firstName = value;
-        else if (header.includes('last')) student.lastName = value;
-        else if (header.includes('email')) student.email = value;
-        else if (header.includes('login') || header.includes('asurite')) student.loginId = value;
-        else if (header.includes('section')) student.section = value;
-      });
-
-      if (student.firstName && student.lastName && student.email) {
-        students.push(student);
-      }
-    }
-
-    return students;
-  }
-
-  async function handleImport() {
-    const students = parseCSV(csvText);
-    if (students.length === 0) {
-      alert('No valid student data found. Please check your CSV format.');
-      return;
-    }
-
-    setImporting(true);
-    try {
-      const res = await onImport(students);
-      setResult(res);
-    } catch (err) {
-      alert('Import failed. Please try again.');
-    } finally {
-      setImporting(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900 font-serif">Import Students</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <X size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        {!result ? (
-          <>
-            <p className="text-sm text-gray-600 mb-4">
-              Paste CSV data with columns: <code className="bg-gray-100 px-1 rounded">firstName, lastName, email, loginId, section</code>
-            </p>
-
-            <textarea
-              value={csvText}
-              onChange={(e) => setCsvText(e.target.value)}
-              placeholder="firstName,lastName,email,loginId,section
-John,Doe,jdoe@asu.edu,jdoe42,Section A
-Jane,Smith,jsmith@asu.edu,jsmith1,Section B"
-              className="w-full h-48 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-            />
-
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleImport}
-                disabled={importing || !csvText.trim()}
-                className="flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2 text-sm font-medium text-white hover:bg-maroon-700 disabled:opacity-50"
-              >
-                {importing && <Loader2 size={16} className="animate-spin" />}
-                Import Students
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle size={20} />
-                <span className="font-medium">{result.created} students imported successfully</span>
-              </div>
-              {result.errors > 0 && (
-                <div className="text-red-600">
-                  <p className="font-medium mb-2">{result.errors} errors:</p>
-                  <ul className="text-sm space-y-1">
-                    {result.errorDetails.slice(0, 5).map((err, idx) => (
-                      <li key={idx}>Row {err.index + 2}: {err.error}</li>
-                    ))}
-                    {result.errorDetails.length > 5 && (
-                      <li>...and {result.errorDetails.length - 5} more</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end pt-4">
-              <button
-                onClick={onClose}
-                className="rounded-lg bg-maroon-600 px-4 py-2 text-sm font-medium text-white hover:bg-maroon-700"
-              >
-                Done
-              </button>
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 }
