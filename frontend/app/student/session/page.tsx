@@ -27,15 +27,15 @@ export default function SessionPage() {
   });
 
   const [sessionView, setSessionView] = useState<SessionView>('overview');
-  const [sessionType] = useState<SessionType>('practice');
   const [sessionId] = useState(() => generateSessionId());
   const [workbookSheets, setWorkbookSheets] = useState<string[]>([]);
   const [workbookData, setWorkbookData] = useState<Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>>({});
   const [spreadsheetS3Key, setSpreadsheetS3Key] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Get assessmentId from URL params or default
-  const assessmentId = searchParams.get('assessmentId') || '1';
+  // Get session type and assessmentId from URL params
+  const sessionType: SessionType = (searchParams.get('type') as SessionType) || 'practice';
+  const assessmentId = searchParams.get('assessmentId') || (sessionType === 'practice' ? 'practice' : '1');
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -140,7 +140,7 @@ export default function SessionPage() {
     setSessionView('live');
   };
 
-  // Submit session - saves to DynamoDB
+  // Submit session - saves to DynamoDB (only for graded sessions)
   const handleSubmitSession = async () => {
     if (submitting) return;
 
@@ -152,58 +152,63 @@ export default function SessionPage() {
       agentCore.endSession();
       timer.pause();
 
-      // Calculate session stats
-      const questionsAsked = agentCore.transcript.filter(e => e.role === 'assistant' && e.isFinal).length;
-      const responsesGiven = agentCore.transcript.filter(e => e.role === 'user' && e.isFinal).length;
-      const sessionDuration = 900 - timer.timeRemaining; // Time used
+      // Only save to DynamoDB for graded sessions
+      if (sessionType === 'graded') {
+        // Calculate session stats
+        const questionsAsked = agentCore.transcript.filter(e => e.role === 'assistant' && e.isFinal).length;
+        const responsesGiven = agentCore.transcript.filter(e => e.role === 'user' && e.isFinal).length;
+        const sessionDuration = 900 - timer.timeRemaining; // Time used
 
-      // Prepare transcript for storage
-      const transcriptData = agentCore.transcript
-        .filter(e => e.isFinal)
-        .map(e => ({
-          role: e.role,
-          text: e.text,
-          timestamp: new Date().toISOString(),
-        }));
+        // Prepare transcript for storage
+        const transcriptData = agentCore.transcript
+          .filter(e => e.isFinal)
+          .map(e => ({
+            role: e.role,
+            text: e.text,
+            timestamp: new Date().toISOString(),
+          }));
 
-      // Create submission in DynamoDB with AI analytics
-      await createSubmission({
-        studentId: userId || 'anonymous',
-        assessmentId: assessmentId,
-        sessionId: sessionId,
-        sessionNumber: userSessionNumber || '1',
-        groupNumber: userGroupNumber || '1',
+        // Create submission in DynamoDB with AI analytics
+        await createSubmission({
+          studentId: userId || 'anonymous',
+          assessmentId: assessmentId,
+          sessionId: sessionId,
+          sessionNumber: userSessionNumber || '1',
+          groupNumber: userGroupNumber || '1',
 
-        // AI Analytics from AgentCore - convert categoryScores to simple number map
-        aiScore: agentCore.assessmentReport?.overallScore,
-        aiScoreBreakdown: agentCore.assessmentReport?.categoryScores
-          ? Object.fromEntries(
-            Object.entries(agentCore.assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
-          )
-          : {},
-        aiAnalytics: {
-          overallScore: agentCore.assessmentReport?.overallScore,
-          categoryScores: agentCore.assessmentReport?.categoryScores
+          // AI Analytics from AgentCore - convert categoryScores to simple number map
+          aiScore: agentCore.assessmentReport?.overallScore,
+          aiScoreBreakdown: agentCore.assessmentReport?.categoryScores
             ? Object.fromEntries(
               Object.entries(agentCore.assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
             )
             : {},
-          feedback: {
-            strengths: agentCore.assessmentReport?.strengths || [],
-            improvements: agentCore.assessmentReport?.improvements || [],
-            evidence: agentCore.assessmentReport?.evidenceCitations || [],
+          aiAnalytics: {
+            overallScore: agentCore.assessmentReport?.overallScore,
+            categoryScores: agentCore.assessmentReport?.categoryScores
+              ? Object.fromEntries(
+                Object.entries(agentCore.assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
+              )
+              : {},
+            feedback: {
+              strengths: agentCore.assessmentReport?.strengths || [],
+              improvements: agentCore.assessmentReport?.improvements || [],
+              evidence: agentCore.assessmentReport?.evidenceCitations || [],
+            },
           },
-        },
 
-        // Session data
-        transcript: transcriptData,
-        questionsAsked,
-        responsesGiven,
-        sessionDuration,
-        spreadsheetS3Key: spreadsheetS3Key || undefined,
-      });
+          // Session data
+          transcript: transcriptData,
+          questionsAsked,
+          responsesGiven,
+          sessionDuration,
+          spreadsheetS3Key: spreadsheetS3Key || undefined,
+        });
 
-      console.log('[SessionPage] Submission saved to DynamoDB');
+        console.log('[SessionPage] Graded submission saved to DynamoDB');
+      } else {
+        console.log('[SessionPage] Practice session completed (not saved to gradebook)');
+      }
     } catch (err) {
       console.error('[SessionPage] Failed to save submission:', err);
       // Continue to complete view even if save fails

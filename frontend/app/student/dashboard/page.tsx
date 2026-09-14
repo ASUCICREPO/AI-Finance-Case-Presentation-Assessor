@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getStudentSubmissions, Submission } from '../../services/api';
+import { getStudentSubmissions, listSubmissions, Submission } from '../../services/api';
 import Link from 'next/link';
 import {
   FileText,
@@ -12,6 +12,9 @@ import {
   ChevronDown,
   Loader2,
   AlertCircle,
+  Play,
+  Infinity,
+  GraduationCap,
 } from 'lucide-react';
 
 interface AssessmentDisplay {
@@ -24,11 +27,14 @@ interface AssessmentDisplay {
   submissionTime: string | null;
   status: 'Submitted' | 'Not started' | 'In progress';
   submissionId?: string;
+  type: 'practice' | 'graded';
 }
 
 /**
  * Student Dashboard - Assessments Overview
- * Shows assigned assessments with submission status (NO AI scores visible to students).
+ * Shows:
+ * 1. Practice Session card (unlimited attempts, no grades)
+ * 2. Instructor-assigned assessments from DynamoDB (graded)
  */
 export default function StudentDashboard() {
   const { userName, userId } = useAuth();
@@ -39,53 +45,56 @@ export default function StudentDashboard() {
   // Filter state
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [statusFilters, setStatusFilters] = useState<string[]>(['All']);
-  const [groupFilters, setGroupFilters] = useState<string[]>(['All groups']);
   const filterRef = useRef<HTMLDivElement>(null);
 
-  // Load submissions from DynamoDB on mount
+  // Load assessments on mount
   useEffect(() => {
-    if (userId) {
-      fetchSubmissions();
-    } else {
-      // For demo, show placeholder data if no userId
-      setAssessments(getDemoAssessments());
-      setLoading(false);
-    }
+    fetchAssessments();
   }, [userId]);
 
-  async function fetchSubmissions() {
+  async function fetchAssessments() {
     try {
       setLoading(true);
       setError(null);
 
-      // Get student's submissions (AI scores are stripped by backend)
-      const response = await getStudentSubmissions(userId!);
+      // TODO: In production, fetch assigned assessments from API
+      // For now, using demo data for graded assessments
+      // The instructor assigns these via TA Dashboard → Groups → Assign to Group
 
-      // Transform submissions to assessment display format
-      const assessmentList: AssessmentDisplay[] = response.submissions.map((sub: Submission) => ({
-        assessmentId: sub.assessmentId,
-        name: sub.assessment?.title || 'Assessment',
-        sessionNumber: sub.sessionNumber || '1',
-        groupNumber: sub.groupNumber || '1',
-        deadline: sub.assessment?.dueDate || '',
-        duration: '15 min',
-        submissionTime: sub.submittedAt ? formatDate(sub.submittedAt) : null,
-        status: 'Submitted' as const,
-        submissionId: sub.submissionId,
-      }));
+      let submittedAssessments: AssessmentDisplay[] = [];
 
-      // Merge with any pending assessments the student is assigned to
-      // For now, add demo pending assessments
-      const pendingAssessments = getDemoAssessments().filter(
-        a => a.status !== 'Submitted' && !assessmentList.find(s => s.assessmentId === a.assessmentId)
+      if (userId) {
+        try {
+          const response = await getStudentSubmissions(userId);
+          submittedAssessments = response.submissions
+            .filter((sub: Submission) => sub.assessmentId !== 'practice') // Exclude practice sessions
+            .map((sub: Submission) => ({
+              assessmentId: sub.assessmentId,
+              name: sub.assessment?.title || 'Assessment',
+              sessionNumber: sub.sessionNumber || '1',
+              groupNumber: sub.groupNumber || '1',
+              deadline: sub.assessment?.dueDate || '',
+              duration: '15 min',
+              submissionTime: sub.submittedAt ? formatDate(sub.submittedAt) : null,
+              status: 'Submitted' as const,
+              submissionId: sub.submissionId,
+              type: 'graded' as const,
+            }));
+        } catch (err) {
+          console.error('Error fetching submissions:', err);
+        }
+      }
+
+      // Demo graded assessments (these would come from instructor assignments)
+      const pendingAssessments = getDemoGradedAssessments().filter(
+        a => !submittedAssessments.find(s => s.assessmentId === a.assessmentId)
       );
 
-      setAssessments([...assessmentList, ...pendingAssessments]);
+      setAssessments([...submittedAssessments, ...pendingAssessments]);
     } catch (err) {
-      console.error('Error fetching submissions:', err);
+      console.error('Error fetching assessments:', err);
       setError('Failed to load assessments');
-      // Fall back to demo data
-      setAssessments(getDemoAssessments());
+      setAssessments(getDemoGradedAssessments());
     } finally {
       setLoading(false);
     }
@@ -98,15 +107,45 @@ export default function StudentDashboard() {
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      timeZoneName: 'short',
     });
   }
 
-  function getDemoAssessments(): AssessmentDisplay[] {
+  function getDemoGradedAssessments(): AssessmentDisplay[] {
+    // These represent instructor-assigned assessments
     return [
-      { assessmentId: '1', name: 'Real Estate Investment Analysis', sessionNumber: '1', groupNumber: '1', deadline: 'Aug 25', duration: '15 min', submissionTime: null, status: 'Not started' },
-      { assessmentId: '2', name: 'Financial Modeling Exercise', sessionNumber: '1', groupNumber: '2', deadline: 'Aug 28', duration: '15 min', submissionTime: null, status: 'Not started' },
-      { assessmentId: '3', name: 'Market Analysis Case', sessionNumber: '2', groupNumber: '1', deadline: 'Sep 01', duration: '15 min', submissionTime: null, status: 'Not started' },
+      {
+        assessmentId: 'graded-1',
+        name: 'Real Estate Investment Analysis',
+        sessionNumber: '1',
+        groupNumber: '1',
+        deadline: 'Oct 24, 11:59 PM',
+        duration: '15 min',
+        submissionTime: null,
+        status: 'Not started',
+        type: 'graded'
+      },
+      {
+        assessmentId: 'graded-2',
+        name: 'Financial Modeling Case Study',
+        sessionNumber: '1',
+        groupNumber: '2',
+        deadline: 'Oct 28, 11:59 PM',
+        duration: '15 min',
+        submissionTime: null,
+        status: 'Not started',
+        type: 'graded'
+      },
+      {
+        assessmentId: 'graded-3',
+        name: 'Market Analysis Presentation',
+        sessionNumber: '2',
+        groupNumber: '1',
+        deadline: 'Nov 01, 11:59 PM',
+        duration: '15 min',
+        submissionTime: null,
+        status: 'Not started',
+        type: 'graded'
+      },
     ];
   }
 
@@ -125,15 +164,9 @@ export default function StudentDashboard() {
   const completedAssessments = assessments.filter(a => a.status === 'Submitted').length;
   const pendingAssessments = totalAssessments - completedAssessments;
 
-  // Get unique groups
-  const uniqueGroups = [...new Set(assessments.map(a => `S${a.sessionNumber}/G${a.groupNumber}`))];
-
   // Apply filters
   const filteredAssessments = assessments.filter(a => {
-    const statusMatch = statusFilters.includes('All') || statusFilters.includes(a.status);
-    const groupLabel = `S${a.sessionNumber}/G${a.groupNumber}`;
-    const groupMatch = groupFilters.includes('All groups') || groupFilters.includes(groupLabel);
-    return statusMatch && groupMatch;
+    return statusFilters.includes('All') || statusFilters.includes(a.status);
   });
 
   // Handle status filter change
@@ -148,41 +181,6 @@ export default function StudentDashboard() {
           : [...statusFilters, status];
       setStatusFilters(newFilters.length === 0 ? ['All'] : newFilters);
     }
-  };
-
-  // Handle group filter change
-  const handleGroupChange = (group: string) => {
-    if (group === 'All groups') {
-      setGroupFilters(['All groups']);
-    } else {
-      const newFilters = groupFilters.includes('All groups')
-        ? [group]
-        : groupFilters.includes(group)
-          ? groupFilters.filter(g => g !== group)
-          : [...groupFilters, group];
-      setGroupFilters(newFilters.length === 0 ? ['All groups'] : newFilters);
-    }
-  };
-
-  // Clear all filters
-  const clearFilters = () => {
-    setStatusFilters(['All']);
-    setGroupFilters(['All groups']);
-  };
-
-  // Get filter label
-  const getFilterLabel = () => {
-    if (statusFilters.includes('All') && groupFilters.includes('All groups')) {
-      return 'Filter by All';
-    }
-    const parts = [];
-    if (!statusFilters.includes('All')) {
-      parts.push(statusFilters.join(', '));
-    }
-    if (!groupFilters.includes('All groups')) {
-      parts.push(groupFilters.join(', '));
-    }
-    return parts.join(' • ') || 'Filter by All';
   };
 
   if (loading) {
@@ -202,8 +200,8 @@ export default function StudentDashboard() {
         </h1>
         <p className="mt-1 text-gray-500 font-sans">
           {pendingAssessments > 0
-            ? `You have ${pendingAssessments} assessment${pendingAssessments > 1 ? 's' : ''} waiting for you!`
-            : 'All assessments completed. Great job!'}
+            ? `You have ${pendingAssessments} graded assessment${pendingAssessments > 1 ? 's' : ''} waiting for you.`
+            : 'All graded assessments completed. Great job!'}
         </p>
       </div>
 
@@ -215,20 +213,59 @@ export default function StudentDashboard() {
         </div>
       )}
 
+      {/* Practice Session Card - Always at top */}
+      <div className="mb-8">
+        <div className="rounded-xl border-2 border-dashed border-maroon-200 bg-gradient-to-r from-maroon-50 to-white p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="rounded-lg bg-maroon-100 p-3">
+                <Play size={24} className="text-maroon-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-gray-900 font-serif">Practice Session</h3>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                    <Infinity size={12} />
+                    Unlimited
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">
+                  Practice your presentation skills with AI feedback. No grades, unlimited attempts.
+                </p>
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Clock size={12} />
+                    15 min per session
+                  </span>
+                  <span className="text-green-600 font-medium">
+                    ✓ Does not affect your grade
+                  </span>
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/student/session?type=practice"
+              className="inline-flex items-center gap-2 rounded-lg bg-maroon-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors"
+            >
+              <Play size={16} />
+              Start Practice
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Stats cards */}
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
-        {/* Total Assessments */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-blue-100 p-2.5">
-              <FileText size={18} className="text-blue-600" />
+              <GraduationCap size={18} className="text-blue-600" />
             </div>
-            <span className="text-sm text-gray-500 font-sans">Total Assessments</span>
+            <span className="text-sm text-gray-500 font-sans">Graded Assessments</span>
           </div>
           <p className="mt-4 text-4xl font-bold text-gray-900 font-sans">{totalAssessments}</p>
         </div>
 
-        {/* Completed Assessments */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-green-100 p-2.5">
@@ -239,7 +276,6 @@ export default function StudentDashboard() {
           <p className="mt-4 text-4xl font-bold text-gray-900 font-sans">{completedAssessments}</p>
         </div>
 
-        {/* Pending Assessments */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-amber-100 p-2.5">
@@ -251,9 +287,9 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Assigned assessments section */}
+      {/* Graded Assessments Section */}
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900 font-serif">Your Assessments</h2>
+        <h2 className="text-lg font-bold text-gray-900 font-serif">Graded Assessments</h2>
 
         {/* Filter dropdown */}
         <div className="relative" ref={filterRef}>
@@ -262,75 +298,26 @@ export default function StudentDashboard() {
             className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-sans"
           >
             <Filter size={16} className="text-gray-500" />
-            {getFilterLabel()}
+            {statusFilters.includes('All') ? 'All' : statusFilters.join(', ')}
             <ChevronDown size={16} className="text-gray-400" />
           </button>
 
           {showFilterDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-gray-200 bg-white shadow-lg z-50">
-              <div className="p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Filter By</h3>
-
-                {/* Status filters */}
-                <div className="mb-4">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Status</p>
-                  <div className="space-y-2">
-                    {['All', 'Not started', 'Submitted'].map((status) => (
-                      <label key={status} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={status === 'All' ? statusFilters.includes('All') : statusFilters.includes(status)}
-                          onChange={() => handleStatusChange(status)}
-                          className="h-4 w-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
-                        />
-                        <span className="text-sm text-gray-700">{status}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Group filters */}
-                <div className="mb-4">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Session/Group</p>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={groupFilters.includes('All groups')}
-                        onChange={() => handleGroupChange('All groups')}
-                        className="h-4 w-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
-                      />
-                      <span className="text-sm text-gray-700">All groups</span>
-                    </label>
-                    {uniqueGroups.map((group) => (
-                      <label key={group} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={groupFilters.includes(group)}
-                          onChange={() => handleGroupChange(group)}
-                          className="h-4 w-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
-                        />
-                        <span className="text-sm text-gray-700">{group}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gray-200 bg-white shadow-lg z-50">
+              <div className="p-3">
+                {['All', 'Not started', 'Submitted'].map((status) => (
                   <button
-                    onClick={clearFilters}
-                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-sans"
+                    key={status}
+                    onClick={() => {
+                      handleStatusChange(status);
+                      setShowFilterDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm rounded-lg ${statusFilters.includes(status) ? 'bg-maroon-50 text-maroon-700' : 'text-gray-700 hover:bg-gray-50'
+                      }`}
                   >
-                    Clear All
+                    {status}
                   </button>
-                  <button
-                    onClick={() => setShowFilterDropdown(false)}
-                    className="flex-1 rounded-lg bg-maroon-600 px-3 py-2 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
-                  >
-                    Apply Filter
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
           )}
@@ -342,12 +329,12 @@ export default function StudentDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Assessment Name
+                  Assessment
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Session/Group
+                  Group
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Deadline
@@ -356,12 +343,9 @@ export default function StudentDashboard() {
                   Duration
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Submission
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-4 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                   Action
                 </th>
               </tr>
@@ -369,52 +353,54 @@ export default function StudentDashboard() {
             <tbody className="divide-y divide-gray-100">
               {filteredAssessments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    No assessments match your filters
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    {statusFilters.includes('All')
+                      ? 'No graded assessments assigned yet. Check back later!'
+                      : 'No assessments match your filter.'}
                   </td>
                 </tr>
               ) : (
                 filteredAssessments.map((assessment) => (
                   <tr key={assessment.assessmentId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900 font-sans">
-                      {assessment.name}
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{assessment.name}</p>
+                        {assessment.submissionTime && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Submitted: {assessment.submissionTime}
+                          </p>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 font-sans">
-                      <span className="font-medium">S{assessment.sessionNumber}</span>
-                      <span className="text-gray-400 mx-1">/</span>
-                      <span className="font-medium">G{assessment.groupNumber}</span>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      Session {assessment.sessionNumber}, Group {assessment.groupNumber}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 font-sans">
+                    <td className="px-6 py-4 text-sm text-gray-500">
                       {assessment.deadline}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 font-sans">
+                    <td className="px-6 py-4 text-sm text-gray-500">
                       {assessment.duration}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 font-sans">
-                      {assessment.submissionTime || '—'}
                     </td>
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${assessment.status === 'Submitted'
-                          ? 'bg-green-100 text-green-700'
-                          : assessment.status === 'In progress'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-gray-100 text-gray-500'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-amber-100 text-amber-700'
                           }`}
                       >
                         {assessment.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 text-right">
                       {assessment.status === 'Submitted' ? (
                         <span className="inline-flex items-center gap-1 text-sm text-green-600">
                           <CheckCircle size={14} />
-                          Done
+                          Completed
                         </span>
                       ) : (
                         <Link
-                          href={`/student/session?assessmentId=${assessment.assessmentId}`}
-                          className="inline-flex rounded-lg bg-maroon-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
+                          href={`/student/session?type=graded&assessmentId=${assessment.assessmentId}`}
+                          className="inline-flex rounded-lg bg-maroon-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors"
                         >
                           Start
                         </Link>
@@ -428,9 +414,9 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Note about scores */}
+      {/* Note */}
       <p className="mt-4 text-xs text-gray-400 text-center">
-        Assessment scores will be available after review by your instructor.
+        Graded assessment scores will be available after review by your instructor.
       </p>
     </div>
   );
