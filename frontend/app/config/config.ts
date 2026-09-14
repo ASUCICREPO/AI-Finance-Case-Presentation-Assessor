@@ -66,19 +66,71 @@ export function isVoiceAgentAvailable(): boolean {
 }
 
 /**
- * Assessment rubric categories with default weights.
+ * Standardized 6-dimension assessment rubric with default weights.
+ * Based on Clarkson Lumber AI Avatar Development Specification.
  */
-export const DEFAULT_RUBRIC_WEIGHTS = {
-  financial_reasoning: 20,
-  understanding_calculations: 20,
-  assumption_validation: 15,
-  recommendation_defense: 15,
-  analytical_depth: 15,
-  decision_making_quality: 10,
-  communication_effectiveness: 5,
+export const DEFAULT_RUBRIC = {
+  problem_diagnosis: {
+    weight: 20,
+    name: 'Problem Diagnosis and Financial Reasoning',
+    description: 'Identifies the underlying problem; distinguishes causes from symptoms; connects evidence to business and financing consequences; explains concepts in practical terms.'
+  },
+  calculations_mechanics: {
+    weight: 20,
+    name: 'Understanding of Calculations and Model Mechanics',
+    description: 'Explains material formulas, methods, statement linkages, and outputs; traces numbers to assumptions; interprets calculations rather than reciting them.'
+  },
+  assumption_validation: {
+    weight: 20,
+    name: 'Assumption Validation and Analytical Judgment',
+    description: 'Identifies material assumptions; explains why they are reasonable; distinguishes facts from choices; considers alternatives, sensitivity, and uncertainty.'
+  },
+  integration_ownership: {
+    weight: 15,
+    name: 'Analytical Integration and Ownership',
+    description: 'Understands the entire submission; reconciles workbook, summary, and presentation; explains work beyond emphasized area; identifies inconsistencies.'
+  },
+  recommendation_defense: {
+    weight: 20,
+    name: 'Recommendation Defense and Decision Quality',
+    description: 'Provides feasible, evidence-based recommendations; quantifies impact; considers risks, trade-offs, implementation, and conditions that would change the decision.'
+  },
+  executive_communication: {
+    weight: 5,
+    name: 'Executive Communication',
+    description: 'Answers directly, organizes reasoning, explains technical concepts clearly, acknowledges uncertainty, and remains professional.'
+  }
 } as const;
 
-export type RubricCategory = keyof typeof DEFAULT_RUBRIC_WEIGHTS;
+export type RubricCategory = keyof typeof DEFAULT_RUBRIC;
+
+/**
+ * Performance level definitions for rubric scoring.
+ */
+export const PERFORMANCE_LEVELS = {
+  4: {
+    label: 'Strong Command',
+    description: 'Accurate, integrated, specific, and well supported. Can explain assumptions, respond to challenges, and identify trade-offs.',
+    scoreRange: [90, 100] as const
+  },
+  3: {
+    label: 'Competent Command',
+    description: 'Generally correct and adequately supported. Understands major elements but may omit secondary issues.',
+    scoreRange: [75, 89] as const
+  },
+  2: {
+    label: 'Partial Command',
+    description: 'Some relevant understanding, but explanations are incomplete, formulaic, weakly supported, or internally inconsistent.',
+    scoreRange: [50, 74] as const
+  },
+  1: {
+    label: 'Insufficient Evidence',
+    description: 'Cannot explain material elements, repeatedly contradicts the submission, relies on unsupported claims.',
+    scoreRange: [0, 49] as const
+  }
+} as const;
+
+export type PerformanceLevel = 1 | 2 | 3 | 4;
 
 /**
  * Persona interface matching DynamoDB schema.
@@ -101,18 +153,43 @@ export interface Persona {
 }
 
 /**
+ * Category score structure for each rubric dimension.
+ */
+export interface CategoryScore {
+  performanceLevel: PerformanceLevel;
+  score: number;
+  justification: string;
+  evidence?: string[];
+  confidence: 'high' | 'moderate' | 'low';
+}
+
+/**
  * Assessment report structure returned by AgentCore.
+ * Uses the standardized 6-dimension rubric with performance levels.
  */
 export interface AssessmentReport {
   overallScore: number;
   overallSummary: string;
-  categoryScores: Record<RubricCategory, {
-    score: number;
-    justification: string;
-  }>;
+  categoryScores: {
+    problem_diagnosis: CategoryScore;
+    calculations_mechanics: CategoryScore;
+    assumption_validation: CategoryScore;
+    integration_ownership: CategoryScore;
+    recommendation_defense: CategoryScore;
+    executive_communication: CategoryScore;
+  };
   strengths: string[];
   improvements: string[];
   evidenceCitations?: string[];
+  inconsistencies?: string[];
+  unansweredQuestions?: string[];
+  instructorReviewFlags?: string[];
+  overallConfidence: 'high' | 'moderate' | 'low';
+  rubricVersion?: string;
+  rubricName?: string;
+  rubricWeights?: Record<string, number>;
+  performanceLevels?: typeof PERFORMANCE_LEVELS;
+  provisionalLabel?: string;
 }
 
 /**

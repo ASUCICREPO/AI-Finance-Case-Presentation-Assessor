@@ -143,7 +143,12 @@ def handler(event, context):
 
 
 def create_session_token(event, headers):
-    """Generate an Anam session token for the given persona."""
+    """Generate an Anam session token for the given persona.
+    
+    When enableAudioPassthrough is true, the session is configured for
+    external audio input (lip-sync to Nova Sonic audio) instead of Anam's
+    built-in TTS. This prevents the muffled/echoed audio issue.
+    """
     if not ANAM_API_KEY:
         return response(500, {'error': 'ANAM_API_KEY not configured'}, headers)
 
@@ -153,13 +158,24 @@ def create_session_token(event, headers):
         return response(400, {'error': 'Invalid request body'}, headers)
 
     anam_persona_id = body.get('anamPersonaId', '')
+    enable_audio_passthrough = body.get('enableAudioPassthrough', False)
+    
     if not anam_persona_id:
         return response(400, {'error': 'Missing anamPersonaId'}, headers)
 
+    # Build persona config
+    persona_config = {
+        'personaId': anam_persona_id,
+    }
+    
+    # Enable audio passthrough mode when using external audio (Nova Sonic)
+    # This disables Anam's TTS - avatar will only lip-sync to audio we send
+    if enable_audio_passthrough:
+        persona_config['enableAudioPassthrough'] = True
+        logger.info(f'Creating Anam session with AUDIO PASSTHROUGH mode for persona {anam_persona_id}')
+    
     payload = json.dumps({
-        'personaConfig': {
-            'personaId': anam_persona_id,
-        },
+        'personaConfig': persona_config,
     }).encode('utf-8')
 
     req = urllib.request.Request(

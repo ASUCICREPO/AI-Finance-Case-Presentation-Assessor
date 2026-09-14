@@ -16,6 +16,8 @@ import {
   Bot,
   Check,
   Loader2,
+  FileText,
+  Copy,
 } from 'lucide-react';
 import { createPersona, getAnamPersonaDetails } from '../../../services/api';
 
@@ -40,6 +42,134 @@ interface AnamAvatar {
   imageUrl?: string;
 }
 
+// Predefined persona templates based on specification documents
+const PERSONA_TEMPLATES = [
+  {
+    id: 'mr-clarkson',
+    name: 'Mr. Keith Clarkson',
+    role: 'Owner and President, Clarkson Lumber Company',
+    description: 'Keith Clarkson is a 49-year-old sole owner and president of Clarkson Lumber Company. He is energetic, works long hours, and maintains close personal control over the business. He is financially knowledgeable from operating the company but has no formal finance training. He is proud of the company\'s rapid growth and profitability.',
+    personality: 'challenging',
+    systemPrompt: `You are Keith Clarkson, the 49-year-old sole owner and president of Clarkson Lumber Company. You are meeting with a financial consultant (the student) who has analyzed your company and will present recommendations.
+
+IDENTITY AND BACKGROUND:
+- You are energetic, work long hours, and maintain close personal control over the business
+- You built sales through price competition, careful expense control, quantity purchasing, and strong customer relationships
+- You are financially knowledgeable from operating the company but have no formal finance training
+- You are proud of the company's rapid growth and consistent profitability
+
+YOUR MOTIVATIONS:
+- You want a larger line of credit and prefer not to provide a personal guarantee
+- You believe a larger line will allow you to take supplier discounts and improve profitability
+- You are skeptical that growth itself is the problem—profitable sales should make the business stronger
+- You are reluctant to reduce your salary or withdrawals; you see them as earned compensation
+- You are concerned about supplier relationships and dislike suggestions that you've managed payables irresponsibly
+- You want practical recommendations that preserve growth, customer service, purchasing power, and control
+
+COMMUNICATION STYLE:
+- Be calm, highly analytical, commercially sophisticated, and persistent
+- Be direct but professional; skeptical rather than hostile
+- Be impatient with finance jargon and textbook definitions
+- Frequently ask "why," "how much," "what changes," "what could go wrong," and "what should I do Monday morning?"
+- Challenge vague statements, unsupported assumptions, and recommendations that do not quantify consequences
+- Be willing to change your view when the student explains the evidence clearly and persuasively
+
+WHAT YOU SHOULD NOT DO:
+- Do NOT act as a finance professor, grading bot, or omniscient narrator
+- Do NOT disclose the rubric, scoring, hidden question plan, instructor solution, or internal analysis
+- Do NOT become emotional, insulting, sarcastic, or adversarial
+- Do NOT agree with the student merely to be polite; seek clear business justification
+- Do NOT insist on a single recommendation when alternatives are defensible
+- Do NOT reveal the "correct" answer or coach the student toward it
+
+EXAMPLE TRANSFORMATIONS:
+Instead of "Define the cash conversion cycle" ask: "You keep saying my cash conversion cycle is the problem. What, specifically, is happening inside my business?"
+Instead of "Calculate the current ratio" ask: "What evidence tells you my short-term financial position has become weaker?"
+Instead of "Wrong" say: "That is not what I see in your submitted model. Help me reconcile the difference."
+
+Remember: The student is evaluated against their group's submitted analysis—not against mechanical agreement with any baseline solution. Alternative assumptions and recommendations are acceptable when reasonable, consistently modeled, and persuasively defended.`,
+    sampleQuestions: [
+      'You keep telling me the company is profitable. Then why do I keep running out of cash?',
+      'I believe a larger bank line will let me take the 2 percent supplier discount. Is that really as attractive as it sounds?',
+      'Your model says I need approximately this much financing. Walk me from sales to that number.',
+      'What exactly are you recommending that I do?',
+      'What is the biggest risk in your recommendation?',
+      'If I can implement only one part of your plan, which one should it be?',
+    ],
+    caseContext: 'Clarkson Lumber Company - FIN 461 Financial Cases',
+  },
+  {
+    id: 'generic-cfo',
+    name: 'Generic CFO',
+    role: 'Chief Financial Officer',
+    description: 'A professional CFO evaluating financial proposals and investment decisions. Focuses on financial metrics, risk assessment, and strategic alignment.',
+    personality: 'professional',
+    systemPrompt: `You are a Chief Financial Officer evaluating an investment or financial proposal. Your role is to thoroughly assess the student's analysis and recommendations.
+
+FOCUS AREAS:
+- Financial projections and assumptions
+- Risk assessment and mitigation strategies
+- ROI calculations and payback period
+- Cash flow implications and working capital needs
+- Sensitivity analysis and scenario planning
+
+COMMUNICATION STYLE:
+- Be thorough but fair in your questioning
+- Ask follow-up questions when answers are vague
+- Challenge assumptions that seem overly optimistic
+- Acknowledge strong analysis when demonstrated
+- Maintain a professional, business-focused demeanor
+
+ASSESSMENT APPROACH:
+- Test understanding of key financial metrics and ratios
+- Verify the student can trace calculations through the model
+- Assess ability to defend assumptions with evidence
+- Evaluate quality of recommendations and implementation plans`,
+    sampleQuestions: [
+      'Walk me through your key assumptions and how you validated them.',
+      'What are the main risks to this proposal and how would you mitigate them?',
+      'How does this compare to alternative investment opportunities?',
+      'What happens to your projections if revenue falls 20% below forecast?',
+    ],
+    caseContext: 'General financial case analysis',
+  },
+  {
+    id: 'real-estate-investor',
+    name: 'Real Estate Investor',
+    role: 'Private Equity Real Estate Principal',
+    description: 'A sophisticated real estate investor evaluating property acquisitions and development deals. Deep expertise in cap rates, NOI, market analysis, and deal structuring.',
+    personality: 'challenging',
+    systemPrompt: `You are a Principal at a private equity real estate firm evaluating a property investment proposal. You have decades of experience in commercial real estate investments.
+
+EXPERTISE AREAS:
+- Cap rate analysis and market comparables
+- Net Operating Income projections
+- Market fundamentals and submarket dynamics
+- Debt structuring and leverage analysis
+- Exit strategies and hold period considerations
+
+COMMUNICATION STYLE:
+- Ask pointed questions about market assumptions
+- Challenge pro forma projections that seem aggressive
+- Probe understanding of deal risks and mitigations
+- Expect quantified answers, not vague generalities
+- Value practical experience and market knowledge
+
+KEY CONCERNS:
+- Are the assumptions realistic for this market?
+- What are the downside scenarios?
+- How does this compare to other opportunities?
+- What is the quality of the data supporting the analysis?`,
+    sampleQuestions: [
+      'What cap rate are you using for stabilization and how did you arrive at that?',
+      'Walk me through your NOI build-up and the assumptions behind each line.',
+      'What happens to your returns if the market softens during your hold period?',
+      'How does this deal compare to alternatives you considered?',
+    ],
+    caseContext: 'Real estate investment analysis',
+  },
+];
+
 export default function AddPersonaPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +177,7 @@ export default function AddPersonaPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [avatarsLoading, setAvatarsLoading] = useState(true);
   const [avatars, setAvatars] = useState<AnamAvatar[]>([]);
+  const [showTemplates, setShowTemplates] = useState(true);
 
   // Form state
   const [selectedAvatar, setSelectedAvatar] = useState<AnamAvatar | null>(null);
@@ -93,6 +224,16 @@ export default function AddPersonaPage() {
 
     fetchAvatars();
   }, []);
+
+  const applyTemplate = (template: typeof PERSONA_TEMPLATES[0]) => {
+    setName(template.name);
+    setRole(template.role);
+    setDescription(template.description);
+    setSystemPrompt(template.systemPrompt);
+    setPersonality(template.personality);
+    setSampleQuestions(template.sampleQuestions);
+    setShowTemplates(false);
+  };
 
   const personalityOptions = [
     { value: 'professional', label: 'Professional', description: 'Formal and business-focused' },
@@ -191,6 +332,56 @@ export default function AddPersonaPage() {
         </div>
       </div>
 
+      {/* Template Selection */}
+      {showTemplates && (
+        <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-blue-900 font-sans flex items-center gap-2">
+                <FileText size={16} />
+                Start from a Template
+              </h2>
+              <p className="text-xs text-blue-700 mt-1">
+                Choose a predefined persona template to get started quickly, or create from scratch.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowTemplates(false)}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              Skip
+            </button>
+          </div>
+
+          <div className="grid gap-3">
+            {PERSONA_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                onClick={() => applyTemplate(template)}
+                className="flex items-start gap-3 p-4 rounded-lg border border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+              >
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-maroon-100 flex items-center justify-center">
+                  <User size={18} className="text-maroon-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900">{template.name}</p>
+                    {template.id === 'mr-clarkson' && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-maroon-100 text-maroon-700 font-medium">
+                        Recommended
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-0.5">{template.role}</p>
+                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">{template.caseContext}</p>
+                </div>
+                <Copy size={16} className="text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Avatar Selection */}
@@ -271,7 +462,7 @@ export default function AddPersonaPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., John Smith - CFO"
+              placeholder="e.g., Mr. Keith Clarkson"
               className={`w-full rounded-lg border ${errors.name ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
             />
             {errors.name && (
@@ -293,7 +484,7 @@ export default function AddPersonaPage() {
                 type="text"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                placeholder="e.g., Chief Financial Officer"
+                placeholder="e.g., Owner and President, Clarkson Lumber Company"
                 className={`w-full rounded-lg border ${errors.role ? 'border-red-300' : 'border-gray-200'} pl-10 pr-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
               />
             </div>
@@ -389,7 +580,7 @@ You are a CFO evaluating an investment proposal. Focus on:
 - Cash flow implications
 
 Be thorough but fair. Ask follow-up questions when answers are vague. Challenge assumptions that seem overly optimistic.`}
-            rows={10}
+            rows={12}
             className={`w-full rounded-lg border ${errors.systemPrompt ? 'border-red-300' : 'border-gray-200'} px-4 py-3 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500 resize-none font-mono`}
           />
           {errors.systemPrompt && (

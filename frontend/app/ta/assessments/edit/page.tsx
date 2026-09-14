@@ -67,7 +67,7 @@ export default function EditAssessmentPage() {
   const [groupsOpen, setGroupsOpen] = useState(false);
 
   // File upload
-  const [existingFiles, setExistingFiles] = useState<Array<{ name: string; s3Key: string; type: string }>>([]);
+  const [existingFiles, setExistingFiles] = useState<Array<{ name: string; s3Key: string; type: string; uploadedAt?: string }>>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function EditAssessmentPage() {
     try {
       setLoading(true);
       const assessment = await getAssessment(assessmentId!);
-      
+
       setForm({
         title: assessment.title || assessment.caseName || '',
         description: assessment.description || '',
@@ -93,7 +93,7 @@ export default function EditAssessmentPage() {
         duration: assessment.duration || 15,
         status: assessment.status || 'draft',
       });
-      
+
       setSelectedSessions(assessment.assignedSessions || []);
       setSelectedGroups(assessment.assignedGroups || []);
       setExistingFiles(assessment.materials || []);
@@ -161,7 +161,12 @@ export default function EditAssessmentPage() {
     try {
       // Combine existing and new materials
       const allMaterials = [
-        ...existingFiles,
+        ...existingFiles.map(f => ({
+          name: f.name,
+          s3Key: f.s3Key,
+          type: f.type,
+          uploadedAt: f.uploadedAt || new Date().toISOString(),
+        })),
         ...newFiles.map(f => ({
           name: f.name,
           s3Key: '', // Would be populated after S3 upload
@@ -183,7 +188,7 @@ export default function EditAssessmentPage() {
         status: form.status,
         materials: allMaterials,
       });
-      
+
       setShowSuccess(true);
       setTimeout(() => {
         router.push('/ta/assessments');

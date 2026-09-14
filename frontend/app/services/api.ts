@@ -281,10 +281,10 @@ export interface AnamPersonaDetails {
   };
 }
 
-export async function getAnamSessionToken(anamPersonaId: string): Promise<string> {
+export async function getAnamSessionToken(anamPersonaId: string, enableAudioPassthrough: boolean = false): Promise<string> {
   const data = await fetchApi<{ sessionToken: string }>('/anam-session', {
     method: 'POST',
-    body: JSON.stringify({ anamPersonaId }),
+    body: JSON.stringify({ anamPersonaId, enableAudioPassthrough }),
   });
   return data.sessionToken;
 }

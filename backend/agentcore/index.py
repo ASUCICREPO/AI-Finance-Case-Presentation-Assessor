@@ -61,15 +61,47 @@ _SENTENCE_TERMINATOR_RE = re.compile(r'[.!?]\s')
 
 _bedrock_runtime_client = boto3.client('bedrock-runtime', region_name=REGION)
 
-# Default rubric weights for assessment scoring
+# Default rubric weights for assessment scoring (6-dimension standardized rubric)
+# Based on Clarkson Lumber AI Avatar Development Specification
 DEFAULT_RUBRIC = {
-    'financial_reasoning': 20,
-    'understanding_calculations': 20,
-    'assumption_validation': 15,
-    'recommendation_defense': 15,
-    'analytical_depth': 15,
-    'decision_making_quality': 10,
-    'communication_effectiveness': 5,
+    'problem_diagnosis': {
+        'weight': 20,
+        'name': 'Problem Diagnosis and Financial Reasoning',
+        'description': 'Identifies the underlying problem; distinguishes causes from symptoms; connects evidence to business and financing consequences; explains concepts in practical terms.'
+    },
+    'calculations_mechanics': {
+        'weight': 20,
+        'name': 'Understanding of Calculations and Model Mechanics',
+        'description': 'Explains material formulas, methods, statement linkages, and outputs; traces numbers to assumptions; interprets calculations rather than reciting them.'
+    },
+    'assumption_validation': {
+        'weight': 20,
+        'name': 'Assumption Validation and Analytical Judgment',
+        'description': 'Identifies material assumptions; explains why they are reasonable; distinguishes facts from choices; considers alternatives, sensitivity, and uncertainty.'
+    },
+    'integration_ownership': {
+        'weight': 15,
+        'name': 'Analytical Integration and Ownership',
+        'description': 'Understands the entire submission; reconciles workbook, summary, and presentation; explains work beyond emphasized area; identifies inconsistencies.'
+    },
+    'recommendation_defense': {
+        'weight': 20,
+        'name': 'Recommendation Defense and Decision Quality',
+        'description': 'Provides feasible, evidence-based recommendations; quantifies impact; considers risks, trade-offs, implementation, and conditions that would change the decision.'
+    },
+    'executive_communication': {
+        'weight': 5,
+        'name': 'Executive Communication',
+        'description': 'Answers directly, organizes reasoning, explains technical concepts clearly, acknowledges uncertainty, and remains professional.'
+    }
+}
+
+# Performance level definitions for rubric scoring
+PERFORMANCE_LEVELS = {
+    4: {'label': 'Strong Command', 'description': 'Accurate, integrated, specific, and well supported. Can explain assumptions, respond to challenges, and identify trade-offs.'},
+    3: {'label': 'Competent Command', 'description': 'Generally correct and adequately supported. Understands major elements but may omit secondary issues.'},
+    2: {'label': 'Partial Command', 'description': 'Some relevant understanding, but explanations are incomplete, formulaic, weakly supported, or internally inconsistent.'},
+    1: {'label': 'Insufficient Evidence', 'description': 'Cannot explain material elements, repeatedly contradicts the submission, relies on unsupported claims.'}
 }
 
 
@@ -434,67 +466,239 @@ async def load_workbook_summary(user_id: str, session_id: str) -> str:
 # ── Assessment scoring (post-session) ────────────────────────────────
 
 async def generate_assessment_report(transcript_entries: list[dict], persona_data: dict, rubric_weights: dict = None) -> dict:
-    """Generate structured assessment report using Claude for rubric scoring."""
+    """Generate structured assessment report using Claude for rubric-based scoring.
+    
+    Uses a 6-dimension standardized rubric with 4 performance levels:
+    - Level 4 (Strong Command): 90-100 points
+    - Level 3 (Competent Command): 75-89 points  
+    - Level 2 (Partial Command): 50-74 points
+    - Level 1 (Insufficient Evidence): 0-49 points
+    
+    Each dimension is weighted and contributes to the overall score.
+    """
     if not transcript_entries:
         return {}
 
-    weights = rubric_weights or DEFAULT_RUBRIC
+    rubric = rubric_weights or DEFAULT_RUBRIC
     persona_name = persona_data.get('name', 'Stakeholder')
     persona_role = persona_data.get('role', 'Executive')
 
     conversation = "\n".join(
-        f"{'[{persona_name}]' if e['role'] == 'assistant' else '[Student]'}: {e['text']}"
+        f"[{persona_name}]: {e['text']}" if e['role'] == 'assistant' else f"[Student]: {e['text']}"
         for e in transcript_entries
     )
 
-    prompt = f"""You are evaluating a student's Q&A session where {persona_name} ({persona_role}) asked questions about the student's financial case analysis.
+    # Build rubric description for the prompt
+    rubric_description = ""
+    for key, config in rubric.items():
+        if isinstance(config, dict):
+            rubric_description += f"\n{key} (Weight: {config.get('weight', 0)}%):\n"
+            rubric_description += f"  Name: {config.get('name', key)}\n"
+            rubric_description += f"  Description: {config.get('description', '')}\n"
+        else:
+            # Handle legacy format (just weight numbers)
+            rubric_description += f"\n{key} (Weight: {config}%)\n"
 
-Q&A Transcript:
+    prompt = f"""You are an expert educational assessor evaluating a student's oral defense of their group's financial case analysis. The student was questioned by {persona_name} ({persona_role}).
+
+## ASSESSMENT INSTRUCTIONS
+
+You MUST evaluate the student using the 6-dimension standardized rubric below. For EACH dimension:
+
+1. Assign a PERFORMANCE LEVEL (1-4):
+   - Level 4 (Strong Command): Accurate, integrated, specific, well-supported. Can explain assumptions, respond to challenges, identify trade-offs.
+   - Level 3 (Competent Command): Generally correct and adequately supported. Understands major elements but may omit secondary issues.
+   - Level 2 (Partial Command): Some understanding, but incomplete, formulaic, weakly supported, or internally inconsistent.
+   - Level 1 (Insufficient Evidence): Cannot explain material elements, contradicts submission, relies on unsupported claims.
+
+2. Assign a SCORE within the level's range:
+   - Level 4: 90-100
+   - Level 3: 75-89
+   - Level 2: 50-74
+   - Level 1: 0-49
+
+3. Provide JUSTIFICATION with specific transcript evidence (quote or paraphrase student statements).
+
+4. Assess CONFIDENCE (high/moderate/low) based on whether sufficient evidence was observed.
+
+## RUBRIC DIMENSIONS
+{rubric_description}
+
+## PERFORMANCE LEVEL DESCRIPTIONS
+
+Level 4 - Strong Command:
+- Accurate, integrated, specific, and well supported
+- Can explain assumptions and calculations
+- Responds effectively to challenges
+- Identifies trade-offs and limitations
+
+Level 3 - Competent Command:
+- Generally correct and adequately supported
+- Understands major elements
+- May omit secondary issues or require clarification
+- Shows limited depth in one area
+
+Level 2 - Partial Command:
+- Some relevant understanding
+- Explanations incomplete, formulaic, or weakly supported
+- May be internally inconsistent
+- Understanding concentrated in only part of submission
+
+Level 1 - Insufficient Evidence:
+- Cannot explain material elements
+- Repeatedly contradicts the submission
+- Relies on unsupported claims
+- Fails to connect analysis with recommendation
+
+## Q&A TRANSCRIPT
+
 {conversation}
 
-Evaluate the student across these categories with the given weights:
-{json.dumps(weights, indent=2)}
+## EVALUATION REQUIREMENTS
 
-For each category, provide:
-1. A score from 0-100
-2. A brief justification citing specific evidence from the transcript
-3. Key strengths and areas for improvement
+IMPORTANT RULES:
+- The student is evaluated against their group's submitted analysis, NOT against a single "correct" answer
+- Alternative assumptions and recommendations are acceptable when reasonable, consistently modeled, and persuasively defended
+- Assess reasoning quality, not just answer correctness
+- Cite specific evidence from the transcript for each score
+- Flag if any dimension could not be adequately observed
 
-Also provide an overall assessment summary."""
+Provide your assessment now."""
 
     tool_config = {
         "tools": [{
             "toolSpec": {
                 "name": "provide_assessment",
-                "description": "Provide structured assessment scoring and feedback",
+                "description": "Provide structured rubric-based assessment with performance levels, scores, and evidence",
                 "inputSchema": {
                     "json": {
                         "type": "object",
                         "properties": {
-                            "overallScore": {"type": "number", "description": "Weighted overall score 0-100"},
-                            "overallSummary": {"type": "string"},
+                            "overallScore": {
+                                "type": "number", 
+                                "description": "Weighted overall score 0-100 calculated from dimension scores"
+                            },
+                            "overallSummary": {
+                                "type": "string",
+                                "description": "Concise narrative summary of demonstrated understanding"
+                            },
                             "categoryScores": {
                                 "type": "object",
+                                "description": "Scores for each rubric dimension",
                                 "properties": {
-                                    "financial_reasoning": {"type": "object", "properties": {"score": {"type": "number"}, "justification": {"type": "string"}}},
-                                    "understanding_calculations": {"type": "object", "properties": {"score": {"type": "number"}, "justification": {"type": "string"}}},
-                                    "assumption_validation": {"type": "object", "properties": {"score": {"type": "number"}, "justification": {"type": "string"}}},
-                                    "recommendation_defense": {"type": "object", "properties": {"score": {"type": "number"}, "justification": {"type": "string"}}},
-                                    "analytical_depth": {"type": "object", "properties": {"score": {"type": "number"}, "justification": {"type": "string"}}},
-                                    "decision_making_quality": {"type": "object", "properties": {"score": {"type": "number"}, "justification": {"type": "string"}}},
-                                    "communication_effectiveness": {"type": "object", "properties": {"score": {"type": "number"}, "justification": {"type": "string"}}},
+                                    "problem_diagnosis": {
+                                        "type": "object",
+                                        "properties": {
+                                            "performanceLevel": {"type": "integer", "minimum": 1, "maximum": 4},
+                                            "score": {"type": "number", "minimum": 0, "maximum": 100},
+                                            "justification": {"type": "string"},
+                                            "evidence": {"type": "array", "items": {"type": "string"}},
+                                            "confidence": {"type": "string", "enum": ["high", "moderate", "low"]}
+                                        },
+                                        "required": ["performanceLevel", "score", "justification", "confidence"]
+                                    },
+                                    "calculations_mechanics": {
+                                        "type": "object",
+                                        "properties": {
+                                            "performanceLevel": {"type": "integer", "minimum": 1, "maximum": 4},
+                                            "score": {"type": "number", "minimum": 0, "maximum": 100},
+                                            "justification": {"type": "string"},
+                                            "evidence": {"type": "array", "items": {"type": "string"}},
+                                            "confidence": {"type": "string", "enum": ["high", "moderate", "low"]}
+                                        },
+                                        "required": ["performanceLevel", "score", "justification", "confidence"]
+                                    },
+                                    "assumption_validation": {
+                                        "type": "object",
+                                        "properties": {
+                                            "performanceLevel": {"type": "integer", "minimum": 1, "maximum": 4},
+                                            "score": {"type": "number", "minimum": 0, "maximum": 100},
+                                            "justification": {"type": "string"},
+                                            "evidence": {"type": "array", "items": {"type": "string"}},
+                                            "confidence": {"type": "string", "enum": ["high", "moderate", "low"]}
+                                        },
+                                        "required": ["performanceLevel", "score", "justification", "confidence"]
+                                    },
+                                    "integration_ownership": {
+                                        "type": "object",
+                                        "properties": {
+                                            "performanceLevel": {"type": "integer", "minimum": 1, "maximum": 4},
+                                            "score": {"type": "number", "minimum": 0, "maximum": 100},
+                                            "justification": {"type": "string"},
+                                            "evidence": {"type": "array", "items": {"type": "string"}},
+                                            "confidence": {"type": "string", "enum": ["high", "moderate", "low"]}
+                                        },
+                                        "required": ["performanceLevel", "score", "justification", "confidence"]
+                                    },
+                                    "recommendation_defense": {
+                                        "type": "object",
+                                        "properties": {
+                                            "performanceLevel": {"type": "integer", "minimum": 1, "maximum": 4},
+                                            "score": {"type": "number", "minimum": 0, "maximum": 100},
+                                            "justification": {"type": "string"},
+                                            "evidence": {"type": "array", "items": {"type": "string"}},
+                                            "confidence": {"type": "string", "enum": ["high", "moderate", "low"]}
+                                        },
+                                        "required": ["performanceLevel", "score", "justification", "confidence"]
+                                    },
+                                    "executive_communication": {
+                                        "type": "object",
+                                        "properties": {
+                                            "performanceLevel": {"type": "integer", "minimum": 1, "maximum": 4},
+                                            "score": {"type": "number", "minimum": 0, "maximum": 100},
+                                            "justification": {"type": "string"},
+                                            "evidence": {"type": "array", "items": {"type": "string"}},
+                                            "confidence": {"type": "string", "enum": ["high", "moderate", "low"]}
+                                        },
+                                        "required": ["performanceLevel", "score", "justification", "confidence"]
+                                    }
                                 },
+                                "required": ["problem_diagnosis", "calculations_mechanics", "assumption_validation", 
+                                           "integration_ownership", "recommendation_defense", "executive_communication"]
                             },
-                            "strengths": {"type": "array", "items": {"type": "string"}},
-                            "improvements": {"type": "array", "items": {"type": "string"}},
-                            "evidenceCitations": {"type": "array", "items": {"type": "string"}},
+                            "strengths": {
+                                "type": "array", 
+                                "items": {"type": "string"},
+                                "description": "Key strengths demonstrated with transcript evidence"
+                            },
+                            "improvements": {
+                                "type": "array", 
+                                "items": {"type": "string"},
+                                "description": "Areas for improvement with specific recommendations"
+                            },
+                            "evidenceCitations": {
+                                "type": "array", 
+                                "items": {"type": "string"},
+                                "description": "Key transcript quotes supporting the assessment"
+                            },
+                            "inconsistencies": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Any inconsistencies between student answers and their submission"
+                            },
+                            "unansweredQuestions": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Questions the student could not adequately answer"
+                            },
+                            "instructorReviewFlags": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Items recommended for instructor review"
+                            },
+                            "overallConfidence": {
+                                "type": "string",
+                                "enum": ["high", "moderate", "low"],
+                                "description": "Overall confidence in the assessment based on evidence quality"
+                            }
                         },
-                        "required": ["overallScore", "overallSummary", "categoryScores", "strengths", "improvements"],
+                        "required": ["overallScore", "overallSummary", "categoryScores", "strengths", 
+                                   "improvements", "overallConfidence"]
                     }
-                },
+                }
             }
         }],
-        "toolChoice": {"tool": {"name": "provide_assessment"}},
+        "toolChoice": {"tool": {"name": "provide_assessment"}}
     }
 
     response = await asyncio.to_thread(
@@ -504,7 +708,17 @@ Also provide an overall assessment summary."""
             toolConfig=tool_config,
         )
     )
-    return response['output']['message']['content'][0]['toolUse']['input']
+    
+    assessment = response['output']['message']['content'][0]['toolUse']['input']
+    
+    # Add metadata
+    assessment['rubricVersion'] = '2.0'
+    assessment['rubricName'] = 'Standardized Cross-Case Assessment Rubric'
+    assessment['performanceLevels'] = PERFORMANCE_LEVELS
+    assessment['rubricWeights'] = {k: v.get('weight', v) if isinstance(v, dict) else v for k, v in rubric.items()}
+    assessment['provisionalLabel'] = 'AI-generated provisional assessment. The instructor retains final authority over the student\'s grade.'
+    
+    return assessment
 
 
 async def save_assessment(user_id: str, session_id: str, transcript_entries: list[dict], assessment: dict):

@@ -55,9 +55,10 @@ export default function LiveSession({
   const [anamFailed, setAnamFailed] = useState(false);
   const [voiceMode, setVoiceMode] = useState<'anam' | 'nova-sonic' | 'text-chat'>(() => getVoiceAgentMode());
 
-  const onAssistantTextRef = useRef<((text: string, isFinal: boolean) => void) | null>(null);
+  // Audio chunk callback ref for Anam lip-sync (not text for TTS)
+  const onAudioChunkRef = useRef<((audioBase64: string, isFinal: boolean) => void) | null>(null);
 
-  const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback } = agentCore;
+  const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback, onAudioChunk } = agentCore;
   const { formattedTime, isLowTime } = timer;
 
   // Fetch Anam session token on mount (only if Anam is enabled)
@@ -79,13 +80,15 @@ export default function LiveSession({
       return;
     }
 
-    // Try to get Anam session token
-    getAnamSessionToken(anamPersonaId)
+    // Try to get Anam session token with audio passthrough enabled
+    getAnamSessionToken(anamPersonaId, true) // enableAudioPassthrough = true
       .then((token) => {
         setAnamSessionToken(token);
         setVoiceMode('anam');
-        setMuteAudioPlayback(true); // Mute Nova Sonic, Anam handles TTS
-        console.log('[LiveSession] Anam token received, using Anam avatar mode');
+        // CRITICAL: Mute Nova Sonic audio playback - Anam will handle lip-sync
+        // Nova Sonic audio chunks are forwarded to Anam, not played in browser
+        setMuteAudioPlayback(true);
+        console.log('[LiveSession] Anam token received, using AUDIO PASSTHROUGH mode');
       })
       .catch((err) => {
         console.error('[LiveSession] Failed to get Anam token, falling back to Nova Sonic:', err);
@@ -95,21 +98,17 @@ export default function LiveSession({
       });
   }, [anamPersonaId, setMuteAudioPlayback]);
 
-  // Pipe assistant transcript to Anam for TTS
-  const lastFinalTextRef = useRef<string>('');
-
+  // Register audio chunk callback for forwarding Nova Sonic audio to Anam
   useEffect(() => {
-    const finalAssistantEntries = transcript.filter(e => e.role === 'assistant' && e.isFinal);
-    const latestFinal = finalAssistantEntries[finalAssistantEntries.length - 1];
-
-    if (latestFinal && latestFinal.text !== lastFinalTextRef.current && !anamFailed) {
-      lastFinalTextRef.current = latestFinal.text;
-      if (onAssistantTextRef.current) {
-        console.log('[LiveSession] Sending to Anam TTS:', latestFinal.text.substring(0, 50) + '...');
-        onAssistantTextRef.current(latestFinal.text, true);
-      }
+    if (!anamFailed && onAudioChunk) {
+      // Subscribe to Nova Sonic audio chunks and forward to Anam
+      onAudioChunk((audioBase64: string, isFinal: boolean) => {
+        if (onAudioChunkRef.current) {
+          onAudioChunkRef.current(audioBase64, isFinal);
+        }
+      });
     }
-  }, [transcript, anamFailed]);
+  }, [anamFailed, onAudioChunk]);
 
   // File upload handler
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,8 +134,8 @@ export default function LiveSession({
           </span>
           {/* Voice mode indicator */}
           <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${voiceMode === 'anam'
-              ? 'bg-purple-100 text-purple-700'
-              : 'bg-blue-100 text-blue-700'
+            ? 'bg-purple-100 text-purple-700'
+            : 'bg-blue-100 text-blue-700'
             }`}>
             {voiceMode === 'anam' ? (
               <>
@@ -247,7 +246,7 @@ export default function LiveSession({
                   sessionToken={anamSessionToken}
                   isActive={status === 'active'}
                   personaName={personaName || 'Mr. Clarkson'}
-                  onAssistantTextRef={onAssistantTextRef}
+                  onAudioChunkRef={onAudioChunkRef}
                 />
               ) : (
                 /* Nova Sonic Fallback - Voice-only mode with animated indicator */

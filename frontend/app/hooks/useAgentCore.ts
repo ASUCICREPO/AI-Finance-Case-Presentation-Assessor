@@ -35,6 +35,8 @@ export interface UseAgentCoreReturn {
   requestAnalytics: () => void;
   disconnect: () => void;
   setMuteAudioPlayback: (mute: boolean) => void;
+  /** Register callback to receive audio chunks for Anam lip-sync */
+  onAudioChunk: (callback: (audioBase64: string, isFinal: boolean) => void) => void;
 }
 
 export function useAgentCore(): UseAgentCoreReturn {
@@ -53,6 +55,9 @@ export function useAgentCore(): UseAgentCoreReturn {
   // Store mute flag - applies to client when created
   const muteAudioRef = useRef<boolean>(false);
 
+  // Audio chunk callback for Anam lip-sync
+  const audioChunkCallbackRef = useRef<((audioBase64: string, isFinal: boolean) => void) | null>(null);
+
   // Event handler
   const handleEvent = useCallback((event: AgentCoreEvent) => {
     switch (event.type) {
@@ -62,10 +67,24 @@ export function useAgentCore(): UseAgentCoreReturn {
         setSessionDuration(event.duration_sec);
         break;
 
+      case 'audio':
+        // Forward audio chunks to registered callback (for Anam lip-sync)
+        if (audioChunkCallbackRef.current && event.data) {
+          // isFinal is true when this is the last chunk of the current AI turn
+          audioChunkCallbackRef.current(event.data, false);
+        }
+        break;
+
       case 'transcript':
         if (event.role === 'assistant') {
-          setIsAISpeaking(!event.is_partial ? false : true);
+          setIsAISpeaking(event.is_partial); // Speaking while partial, done when final
           setCurrentAIText(event.text);
+
+          // When assistant transcript becomes final, signal end of audio sequence
+          if (!event.is_partial && audioChunkCallbackRef.current) {
+            // Send empty chunk with isFinal=true to signal end of sequence
+            audioChunkCallbackRef.current('', true);
+          }
         }
         // Update transcript from client's internal state
         if (clientRef.current) {
@@ -76,6 +95,10 @@ export function useAgentCore(): UseAgentCoreReturn {
       case 'interruption':
         setIsAISpeaking(false);
         setCurrentAIText('');
+        // Signal interruption to Anam
+        if (audioChunkCallbackRef.current) {
+          audioChunkCallbackRef.current('', true);
+        }
         break;
 
       case 'assessment_report':
@@ -172,6 +195,12 @@ export function useAgentCore(): UseAgentCoreReturn {
     }
   }, []);
 
+  // Register callback for audio chunks (for Anam lip-sync)
+  const onAudioChunk = useCallback((callback: (audioBase64: string, isFinal: boolean) => void) => {
+    audioChunkCallbackRef.current = callback;
+    console.log('[useAgentCore] Audio chunk callback registered for Anam lip-sync');
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -194,5 +223,6 @@ export function useAgentCore(): UseAgentCoreReturn {
     requestAnalytics,
     disconnect,
     setMuteAudioPlayback,
+    onAudioChunk,
   };
 }
