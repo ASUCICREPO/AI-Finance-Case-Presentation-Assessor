@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { AssessmentReport } from '../../../config/config';
 import { TranscriptEntry } from '../../../services/agentcore-ws';
@@ -14,7 +14,9 @@ interface SessionCompleteProps {
 }
 
 /**
- * Session Complete — Shows success modal + assessment report (if available).
+ * Session Complete — Shows success modal after submission.
+ * NOTE: Students do NOT see AI scores or detailed feedback.
+ * Only the instructor/TA can view results in the Admin Dashboard.
  */
 export default function SessionComplete({
   sessionType,
@@ -27,7 +29,7 @@ export default function SessionComplete({
   const totalQuestions = transcript.filter((e) => e.role === 'assistant' && e.isFinal).length;
   const totalAnswers = transcript.filter((e) => e.role === 'user' && e.isFinal).length;
 
-  // Auto-hide success modal after 3 seconds
+  // Auto-hide success modal after 5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSuccessModal(false);
@@ -45,10 +47,12 @@ export default function SessionComplete({
               <CheckCircle size={40} className="text-green-500" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 font-serif mb-2">
-              Submission Successfully Submitted!
+              {isPractice ? 'Practice Complete!' : 'Submission Successfully Submitted!'}
             </h2>
             <p className="text-sm text-gray-500 font-sans mb-6">
-              Your presentation and responses have been submitted for review. Your official grade will be communicated through Canvas after instructor/TA review.
+              {isPractice
+                ? 'Great practice session! Feel free to try again anytime.'
+                : 'Your presentation and responses have been submitted for review. Your official grade will be communicated through Canvas after instructor/TA review.'}
             </p>
             <Link
               href="/student/dashboard"
@@ -72,12 +76,12 @@ export default function SessionComplete({
         <p className="mt-2 text-sm text-gray-500 font-sans">
           {isPractice
             ? 'This was a practice session and will not count toward your final grade.'
-            : 'Your assessment has been submitted. Your instructor will review the results.'}
+            : 'Your assessment has been submitted. Your instructor will review the results and post your grade to Canvas.'}
         </p>
       </div>
 
-      {/* Session stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      {/* Session stats - only show counts, NOT scores */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
           <p className="text-2xl font-bold text-gray-900 font-sans">{totalQuestions}</p>
           <p className="text-xs text-gray-500 font-sans">Questions Asked</p>
@@ -86,87 +90,26 @@ export default function SessionComplete({
           <p className="text-2xl font-bold text-gray-900 font-sans">{totalAnswers}</p>
           <p className="text-xs text-gray-500 font-sans">Responses Given</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900 font-sans">
-            {assessmentReport ? `${Math.round(assessmentReport.overallScore)}%` : '--'}
-          </p>
-          <p className="text-xs text-gray-500 font-sans">AI Score</p>
-        </div>
       </div>
 
-      {/* Assessment Report */}
-      {assessmentReport ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 font-serif mb-4">Assessment Feedback</h2>
-
-          {/* Overall summary */}
-          <p className="text-sm text-gray-700 font-sans leading-relaxed mb-6">
-            {assessmentReport.overallSummary}
-          </p>
-
-          {/* Category scores */}
-          <div className="space-y-3 mb-6">
-            {Object.entries(assessmentReport.categoryScores).map(([category, data]) => (
-              <div key={category} className="flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-gray-700 font-sans capitalize">
-                      {category.replace(/_/g, ' ')}
-                    </span>
-                    <span className="text-xs font-bold text-gray-900 font-sans">
-                      {data.score}/100
-                    </span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className={`h-full rounded-full transition-all ${data.score >= 80
-                        ? 'bg-green-500'
-                        : data.score >= 60
-                          ? 'bg-yellow-500'
-                          : 'bg-red-500'
-                        }`}
-                      style={{ width: `${data.score}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Strengths & Improvements */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <h3 className="text-sm font-bold text-green-700 font-sans mb-2">Strengths</h3>
-              <ul className="space-y-1">
-                {assessmentReport.strengths.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-gray-700 font-sans">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-orange-700 font-sans mb-2">Areas to Improve</h3>
-              <ul className="space-y-1">
-                {assessmentReport.improvements.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-gray-700 font-sans">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 mb-6 text-center">
-          <Loader2 size={24} className="mx-auto animate-spin text-maroon-600" />
-          <p className="mt-3 text-sm text-gray-500 font-sans">
-            Generating assessment report...
-          </p>
-        </div>
-      )}
+      {/* Info box - no scores shown to students */}
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 mb-6">
+        <h2 className="text-lg font-bold text-blue-900 font-serif mb-2">What's Next?</h2>
+        <ul className="space-y-2 text-sm text-blue-800 font-sans">
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+            Your submission has been recorded and sent to your instructor for review.
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+            The AI has generated an initial assessment that your instructor will review.
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+            Your final grade will be posted to Canvas after instructor review.
+          </li>
+        </ul>
+      </div>
 
       {/* Done button */}
       <div className="flex justify-center">
