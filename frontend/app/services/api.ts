@@ -556,3 +556,199 @@ export async function exportGradebook(options: {
     body: JSON.stringify(options),
   });
 }
+
+
+// ──────────────────────────────────────────────────────────
+// TA Dashboard API - Sessions (Course Semesters)
+// ──────────────────────────────────────────────────────────
+
+export interface CourseSession {
+  sessionId: string;
+  name: string;
+  courseName: string;
+  courseCode: string;
+  semester: 'Spring' | 'Summer' | 'Fall' | 'Winter';
+  year: number;
+  startDate: string;
+  endDate: string;
+  studentCount: number;
+  groupCount: number;
+  status: 'active' | 'upcoming' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CourseSessionsResponse {
+  sessions: CourseSession[];
+  count: number;
+}
+
+/**
+ * List all course sessions with optional status filter.
+ */
+export async function listCourseSessions(status?: string): Promise<CourseSessionsResponse> {
+  const params = status ? `?status=${encodeURIComponent(status)}` : '';
+  // Note: Backend may use /sessions or a dedicated /course-sessions endpoint
+  // For now, returning mock data as sessions API isn't fully implemented
+  // In production, this would be: return fetchApi<CourseSessionsResponse>(`/course-sessions${params}`);
+
+  // Mock implementation for frontend development
+  const mockSessions: CourseSession[] = [
+    {
+      sessionId: 'sess-1',
+      name: 'Spring 2026',
+      courseName: 'Real Estate Finance',
+      courseCode: 'FIN 502',
+      semester: 'Spring',
+      year: 2026,
+      startDate: '2026-01-15',
+      endDate: '2026-05-15',
+      studentCount: 45,
+      groupCount: 12,
+      status: 'active',
+      createdAt: '2025-12-01',
+      updatedAt: '2025-12-01',
+    },
+    {
+      sessionId: 'sess-2',
+      name: 'Fall 2026',
+      courseName: 'Real Estate Finance',
+      courseCode: 'FIN 502',
+      semester: 'Fall',
+      year: 2026,
+      startDate: '2026-08-20',
+      endDate: '2026-12-15',
+      studentCount: 0,
+      groupCount: 0,
+      status: 'upcoming',
+      createdAt: '2026-06-01',
+      updatedAt: '2026-06-01',
+    },
+  ];
+
+  const filtered = status
+    ? mockSessions.filter(s => s.status === status)
+    : mockSessions;
+
+  return { sessions: filtered, count: filtered.length };
+}
+
+/**
+ * Create a new course session.
+ */
+export async function createCourseSession(data: Partial<CourseSession>): Promise<CourseSession> {
+  // In production: return fetchApi<CourseSession>('/course-sessions', { method: 'POST', body: JSON.stringify(data) });
+
+  // Mock implementation
+  const newSession: CourseSession = {
+    sessionId: `sess-${Date.now()}`,
+    name: `${data.semester} ${data.year}`,
+    courseName: data.courseName || 'Real Estate Finance',
+    courseCode: data.courseCode || 'FIN 502',
+    semester: data.semester || 'Spring',
+    year: data.year || new Date().getFullYear(),
+    startDate: data.startDate || new Date().toISOString().split('T')[0],
+    endDate: data.endDate || new Date().toISOString().split('T')[0],
+    studentCount: 0,
+    groupCount: 0,
+    status: 'upcoming',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return newSession;
+}
+
+/**
+ * Update a course session.
+ */
+export async function updateCourseSession(sessionId: string, data: Partial<CourseSession>): Promise<CourseSession> {
+  return fetchApi<CourseSession>(`/course-sessions/${sessionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Delete/archive a course session.
+ */
+export async function archiveCourseSession(sessionId: string): Promise<void> {
+  await fetchApi(`/course-sessions/${sessionId}/archive`, { method: 'POST' });
+}
+
+// ──────────────────────────────────────────────────────────
+// TA Dashboard API - Assessments (Case Assessments)
+// ──────────────────────────────────────────────────────────
+
+export interface CaseAssessment {
+  assessmentId: string;
+  caseName: string;
+  module: string;
+  personaId?: string;
+  sessionId: string;
+  dueDate: string;
+  groups: string[]; // Group IDs
+  materials: Array<{
+    name: string;
+    s3Key: string;
+    type: string;
+    uploadedAt: string;
+  }>;
+  status: 'draft' | 'published' | 'closed';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CaseAssessmentsResponse {
+  assessments: CaseAssessment[];
+  count: number;
+}
+
+/**
+ * List all case assessments with optional session filter.
+ */
+export async function listCaseAssessments(sessionId?: string): Promise<CaseAssessmentsResponse> {
+  const params = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
+  // Mock implementation for frontend development
+  const mockAssessments: CaseAssessment[] = [
+    {
+      assessmentId: 'assess-1',
+      caseName: 'Case Study: Financial Analysis',
+      module: 'Module 1: Introduction to Finance',
+      sessionId: 'sess-1',
+      dueDate: '2026-09-15',
+      groups: ['g1', 'g2', 'g3'],
+      materials: [
+        { name: 'Case Study Brief.pdf', s3Key: 'cases/brief.pdf', type: 'pdf', uploadedAt: '2026-08-01' },
+      ],
+      status: 'published',
+      createdAt: '2026-08-01',
+      updatedAt: '2026-08-01',
+    },
+  ];
+
+  return { assessments: mockAssessments, count: mockAssessments.length };
+}
+
+/**
+ * Create a new case assessment.
+ */
+export async function createCaseAssessment(data: Partial<CaseAssessment>): Promise<CaseAssessment> {
+  // In production: return fetchApi<CaseAssessment>('/assessments', { method: 'POST', body: JSON.stringify(data) });
+
+  const newAssessment: CaseAssessment = {
+    assessmentId: `assess-${Date.now()}`,
+    caseName: data.caseName || 'New Case',
+    module: data.module || '',
+    personaId: data.personaId,
+    sessionId: data.sessionId || '',
+    dueDate: data.dueDate || new Date().toISOString().split('T')[0],
+    groups: data.groups || [],
+    materials: data.materials || [],
+    status: 'draft',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return newAssessment;
+}
