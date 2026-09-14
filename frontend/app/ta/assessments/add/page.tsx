@@ -20,14 +20,6 @@ import { createAssessment, listPersonas, Persona } from '../../../services/api';
 const sessionNumbers = ['1', '2', '3', '4', '5'];
 const groupNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
-const modules = [
-  'Module 1: Introduction to Finance',
-  'Module 2: Investment Strategies',
-  'Module 3: Risk Analysis',
-  'Module 4: Portfolio Management',
-  'Module 5: Financial Modeling',
-];
-
 export default function AddAssessmentPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +31,6 @@ export default function AddAssessmentPage() {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    module: '',
     personaId: '',
     dueDate: '',
     duration: 15,
@@ -51,7 +42,6 @@ export default function AddAssessmentPage() {
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
 
   // Dropdown states
-  const [moduleOpen, setModuleOpen] = useState(false);
   const [personaOpen, setPersonaOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [groupsOpen, setGroupsOpen] = useState(false);
@@ -101,7 +91,6 @@ export default function AddAssessmentPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!form.title.trim()) newErrors.title = 'Title is required';
-    if (!form.module) newErrors.module = 'Module is required';
     if (!form.dueDate) newErrors.dueDate = 'Due date is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -117,7 +106,6 @@ export default function AddAssessmentPage() {
         title: form.title,
         description: form.description,
         caseName: form.title,
-        module: form.module,
         personaId: form.personaId || undefined,
         dueDate: form.dueDate,
         duration: form.duration,
@@ -145,8 +133,12 @@ export default function AddAssessmentPage() {
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setModuleOpen(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't close if clicking inside a dropdown area
+      if (target.closest('[data-dropdown]')) {
+        return;
+      }
       setPersonaOpen(false);
       setSessionsOpen(false);
       setGroupsOpen(false);
@@ -189,7 +181,7 @@ export default function AddAssessmentPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 overflow-visible">
           {/* Title */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -223,53 +215,12 @@ export default function AddAssessmentPage() {
             />
           </div>
 
-          {/* Module */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Module <span className="text-red-500">*</span>
-            </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setModuleOpen(!moduleOpen)}
-                className={`w-full flex items-center justify-between rounded-lg border ${errors.module ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
-              >
-                <span className={form.module ? 'text-gray-900' : 'text-gray-400'}>
-                  {form.module || 'Select module'}
-                </span>
-                <ChevronDown size={16} className="text-gray-400" />
-              </button>
-              {moduleOpen && (
-                <div
-                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {modules.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => { setForm({ ...form, module: m }); setModuleOpen(false); }}
-                      className="w-full px-4 py-2.5 text-left text-sm text-gray-900 hover:bg-gray-50"
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {errors.module && (
-              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle size={12} /> {errors.module}
-              </p>
-            )}
-          </div>
-
           {/* Persona */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               AI Persona (optional)
             </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <div className="relative" data-dropdown onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => setPersonaOpen(!personaOpen)}
