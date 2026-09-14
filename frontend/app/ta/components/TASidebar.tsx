@@ -6,12 +6,9 @@ import Link from 'next/link';
 import {
   LayoutDashboard,
   Users,
-  UsersRound,
-  ClipboardCheck,
-  UserCircle,
-  Scale,
+  FileText,
+  UserCog,
   BookOpen,
-  Settings,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -19,12 +16,9 @@ import {
 const navItems = [
   { label: 'Dashboard', href: '/ta/dashboard', icon: LayoutDashboard },
   { label: 'Students', href: '/ta/students', icon: Users },
-  { label: 'Groups', href: '/ta/groups', icon: UsersRound },
-  { label: 'Submissions', href: '/ta/submissions', icon: ClipboardCheck },
-  { label: 'Personas', href: '/ta/personas', icon: UserCircle },
-  { label: 'Rubrics', href: '/ta/rubrics', icon: Scale },
-  { label: 'Grade Book', href: '/ta/gradebook', icon: BookOpen },
-  { label: 'Settings', href: '/ta/settings', icon: Settings },
+  { label: 'Case assessment', href: '/ta/assessments', icon: FileText },
+  { label: 'Persona configuration', href: '/ta/personas', icon: UserCog },
+  { label: 'Grade book', href: '/ta/gradebook', icon: BookOpen },
 ];
 
 export default function TASidebar() {
@@ -44,8 +38,8 @@ export default function TASidebar() {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                  ? 'bg-maroon-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                ? 'bg-maroon-600 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 } ${collapsed ? 'justify-center' : ''}`}
               title={collapsed ? item.label : undefined}
             >
