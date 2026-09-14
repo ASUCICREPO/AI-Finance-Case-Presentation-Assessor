@@ -240,13 +240,16 @@ export default function AddAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {moduleOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {modules.map((m) => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => { setForm({ ...form, module: m }); setModuleOpen(false); }}
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50"
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-900 hover:bg-gray-50"
                     >
                       {m}
                     </button>
@@ -278,7 +281,10 @@ export default function AddAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {personaOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     type="button"
                     onClick={() => { setForm({ ...form, personaId: '' }); setPersonaOpen(false); }}
@@ -291,7 +297,7 @@ export default function AddAssessmentPage() {
                       key={p.personaID}
                       type="button"
                       onClick={() => { setForm({ ...form, personaId: p.personaID }); setPersonaOpen(false); }}
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50"
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-900 hover:bg-gray-50"
                     >
                       {p.name} - {p.role}
                     </button>
@@ -355,16 +361,26 @@ export default function AddAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {sessionsOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {sessionNumbers.map((num) => (
-                    <label key={num} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer">
+                    <label
+                      key={num}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedSessions.includes(num)}
-                        onChange={() => toggleSession(num)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSession(num);
+                        }}
                         className="h-4 w-4 rounded border-gray-300 text-maroon-600"
                       />
-                      <span className="text-sm">Session {num}</span>
+                      <span className="text-sm text-gray-900">Session {num}</span>
                     </label>
                   ))}
                 </div>
@@ -401,16 +417,26 @@ export default function AddAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {groupsOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-20 max-h-48 overflow-y-auto">
+                <div
+                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {groupNumbers.map((num) => (
-                    <label key={num} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer">
+                    <label
+                      key={num}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedGroups.includes(num)}
-                        onChange={() => toggleGroup(num)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleGroup(num);
+                        }}
                         className="h-4 w-4 rounded border-gray-300 text-maroon-600"
                       />
-                      <span className="text-sm">Group {num}</span>
+                      <span className="text-sm text-gray-900">Group {num}</span>
                     </label>
                   ))}
                 </div>
