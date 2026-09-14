@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Clock, Flag, ChevronRight, Upload, Volume2, AlertCircle, Mic, Video } from 'lucide-react';
+import { Clock, Flag, ChevronRight, Upload, Volume2, AlertCircle, Mic, Video, VolumeX } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
 import AnamAvatarPanel from './AnamAvatarPanel';
 import StudentCameraView from './StudentCameraView';
 import { getAnamSessionToken } from '../../../services/api';
+import { config, getVoiceAgentMode } from '../../../config/config';
 import type { UseAgentCoreReturn } from '../../../hooks/useAgentCore';
 
 interface TimerState {
@@ -52,29 +53,45 @@ export default function LiveSession({
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [anamSessionToken, setAnamSessionToken] = useState<string | null>(null);
   const [anamFailed, setAnamFailed] = useState(false);
+  const [voiceMode, setVoiceMode] = useState<'anam' | 'nova-sonic' | 'text-chat'>(() => getVoiceAgentMode());
 
   const onAssistantTextRef = useRef<((text: string, isFinal: boolean) => void) | null>(null);
 
   const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback } = agentCore;
   const { formattedTime, isLowTime } = timer;
 
-  // Fetch Anam session token on mount
+  // Fetch Anam session token on mount (only if Anam is enabled)
   useEffect(() => {
-    if (!anamPersonaId) {
+    // If Anam is not enabled globally, use Nova Sonic
+    if (!config.anamEnabled) {
+      console.log('[LiveSession] Anam disabled globally, using Nova Sonic voice');
+      setVoiceMode('nova-sonic');
       setAnamFailed(true);
+      setMuteAudioPlayback(false); // Let Nova Sonic handle audio
       return;
     }
 
+    if (!anamPersonaId) {
+      console.log('[LiveSession] No Anam persona ID, falling back to Nova Sonic');
+      setVoiceMode('nova-sonic');
+      setAnamFailed(true);
+      setMuteAudioPlayback(false);
+      return;
+    }
+
+    // Try to get Anam session token
     getAnamSessionToken(anamPersonaId)
       .then((token) => {
         setAnamSessionToken(token);
-        setMuteAudioPlayback(true);
-        console.log('[LiveSession] Anam token received, Nova Sonic audio MUTED');
+        setVoiceMode('anam');
+        setMuteAudioPlayback(true); // Mute Nova Sonic, Anam handles TTS
+        console.log('[LiveSession] Anam token received, using Anam avatar mode');
       })
       .catch((err) => {
-        console.error('[LiveSession] Failed to get Anam token:', err);
+        console.error('[LiveSession] Failed to get Anam token, falling back to Nova Sonic:', err);
+        setVoiceMode('nova-sonic');
         setAnamFailed(true);
-        setMuteAudioPlayback(false);
+        setMuteAudioPlayback(false); // Let Nova Sonic handle audio
       });
   }, [anamPersonaId, setMuteAudioPlayback]);
 
@@ -115,6 +132,23 @@ export default function LiveSession({
           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
             <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
             Recording
+          </span>
+          {/* Voice mode indicator */}
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${voiceMode === 'anam'
+              ? 'bg-purple-100 text-purple-700'
+              : 'bg-blue-100 text-blue-700'
+            }`}>
+            {voiceMode === 'anam' ? (
+              <>
+                <Video size={12} />
+                Avatar Mode
+              </>
+            ) : (
+              <>
+                <Volume2 size={12} />
+                Voice Mode
+              </>
+            )}
           </span>
         </div>
         <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors font-sans">
@@ -207,7 +241,7 @@ export default function LiveSession({
 
             {/* Avatar area */}
             <div className="relative h-36 bg-gray-100">
-              {!anamFailed && anamPersonaId ? (
+              {voiceMode === 'anam' && !anamFailed && anamPersonaId ? (
                 <AnamAvatarPanel
                   anamPersonaId={anamPersonaId}
                   sessionToken={anamSessionToken}
@@ -216,15 +250,17 @@ export default function LiveSession({
                   onAssistantTextRef={onAssistantTextRef}
                 />
               ) : (
-                <div className="h-full bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center">
-                  <img
-                    src="/avatar-placeholder.png"
-                    alt="AI Avatar"
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                /* Nova Sonic Fallback - Voice-only mode with animated indicator */
+                <div className="h-full bg-gradient-to-b from-maroon-50 to-maroon-100 flex flex-col items-center justify-center">
+                  {/* Animated voice indicator */}
+                  <div className={`relative w-20 h-20 rounded-full bg-maroon-200 flex items-center justify-center ${isAISpeaking ? 'animate-pulse' : ''}`}>
+                    <div className={`absolute inset-0 rounded-full bg-maroon-300 ${isAISpeaking ? 'animate-ping opacity-30' : 'opacity-0'}`} />
+                    <Volume2 size={32} className={`text-maroon-600 ${isAISpeaking ? 'animate-bounce' : ''}`} />
+                  </div>
+                  <p className="mt-2 text-xs text-maroon-600 font-medium">
+                    {isAISpeaking ? 'AI Speaking...' : 'Voice Mode'}
+                  </p>
+                  <p className="text-[10px] text-maroon-500">Nova Sonic</p>
                 </div>
               )}
 
