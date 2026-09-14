@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
-import { generateSessionId } from '../../config/config';
+import { generateSessionId, config } from '../../config/config';
 import { uploadFile, parseExcel, listPersonas } from '../../services/api';
 import { Persona } from '../../config/config';
 import { saveCompletedSession, formatSubmissionTime } from '../../utils/sessionStorage';
@@ -110,10 +110,15 @@ export default function SessionPage() {
   const handleConfirmStart = async () => {
     setShowStartModal(false);
 
-    // CRITICAL: Mute Nova Sonic audio playback BEFORE starting session
-    // Anam avatar will handle TTS with lip sync
-    agentCore.setMuteAudioPlayback(true);
-    console.log('[SessionPage] Nova Sonic audio MUTED before session start');
+    // Only mute Nova Sonic audio if Anam avatar is enabled
+    // When Anam is disabled, Nova Sonic handles all audio
+    if (config.anamEnabled) {
+      agentCore.setMuteAudioPlayback(true);
+      console.log('[SessionPage] Anam enabled - Nova Sonic audio MUTED');
+    } else {
+      agentCore.setMuteAudioPlayback(false);
+      console.log('[SessionPage] Anam disabled - Nova Sonic audio ENABLED');
+    }
 
     await agentCore.startSession({
       personaId,
