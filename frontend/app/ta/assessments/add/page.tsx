@@ -116,9 +116,10 @@ export default function AddAssessmentPage() {
       setTimeout(() => {
         router.push('/ta/assessments');
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating assessment:', error);
-      alert('Failed to create assessment. Please try again.');
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to create assessment: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

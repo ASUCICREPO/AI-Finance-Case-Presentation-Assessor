@@ -172,9 +172,10 @@ export default function EditAssessmentPage() {
       setTimeout(() => {
         router.push('/ta/assessments');
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating assessment:', error);
-      setErrors({ submit: 'Failed to update assessment. Please try again.' });
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      setErrors({ submit: `Failed to update assessment: ${errorMessage}` });
     } finally {
       setIsSubmitting(false);
     }
