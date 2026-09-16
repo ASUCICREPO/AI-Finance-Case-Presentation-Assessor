@@ -136,15 +136,21 @@ export default function AddAssessmentPage() {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       // Don't close if clicking inside a dropdown area
-      if (target.closest('[data-dropdown]')) {
+      if (target.closest('[data-dropdown-persona]')) {
+        return;
+      }
+      if (target.closest('[data-dropdown-sessions]')) {
+        return;
+      }
+      if (target.closest('[data-dropdown-groups]')) {
         return;
       }
       setPersonaOpen(false);
       setSessionsOpen(false);
       setGroupsOpen(false);
     };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   if (showSuccess) {
@@ -220,10 +226,16 @@ export default function AddAssessmentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               AI Persona (optional)
             </label>
-            <div className="relative" data-dropdown onClick={(e) => e.stopPropagation()}>
+            <div className="relative" data-dropdown-persona>
               <button
                 type="button"
-                onClick={() => setPersonaOpen(!personaOpen)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPersonaOpen(!personaOpen);
+                  setSessionsOpen(false);
+                  setGroupsOpen(false);
+                }}
                 className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={form.personaId ? 'text-gray-900' : 'text-gray-400'}>
@@ -232,10 +244,7 @@ export default function AddAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {personaOpen && (
-                <div
-                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
                   <button
                     type="button"
                     onClick={() => { setForm({ ...form, personaId: '' }); setPersonaOpen(false); }}
@@ -298,10 +307,16 @@ export default function AddAssessmentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Assign to Session Numbers
             </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <div className="relative" data-dropdown-sessions>
               <button
                 type="button"
-                onClick={() => setSessionsOpen(!sessionsOpen)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSessionsOpen(!sessionsOpen);
+                  setPersonaOpen(false);
+                  setGroupsOpen(false);
+                }}
                 className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={selectedSessions.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
@@ -312,23 +327,16 @@ export default function AddAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {sessionsOpen && (
-                <div
-                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
                   {sessionNumbers.map((num) => (
                     <label
                       key={num}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
-                      onClick={(e) => e.stopPropagation()}
                     >
                       <input
                         type="checkbox"
                         checked={selectedSessions.includes(num)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleSession(num);
-                        }}
+                        onChange={() => toggleSession(num)}
                         className="h-4 w-4 rounded border-gray-300 text-maroon-600"
                       />
                       <span className="text-sm text-gray-900">Session {num}</span>
@@ -354,10 +362,16 @@ export default function AddAssessmentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Assign to Group Numbers
             </label>
-            <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <div className="relative" data-dropdown-groups>
               <button
                 type="button"
-                onClick={() => setGroupsOpen(!groupsOpen)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setGroupsOpen(!groupsOpen);
+                  setPersonaOpen(false);
+                  setSessionsOpen(false);
+                }}
                 className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
               >
                 <span className={selectedGroups.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
@@ -368,23 +382,16 @@ export default function AddAssessmentPage() {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {groupsOpen && (
-                <div
-                  className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
                   {groupNumbers.map((num) => (
                     <label
                       key={num}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
-                      onClick={(e) => e.stopPropagation()}
                     >
                       <input
                         type="checkbox"
                         checked={selectedGroups.includes(num)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleGroup(num);
-                        }}
+                        onChange={() => toggleGroup(num)}
                         className="h-4 w-4 rounded border-gray-300 text-maroon-600"
                       />
                       <span className="text-sm text-gray-900">Group {num}</span>
