@@ -9,8 +9,6 @@ import {
   X,
   FileText,
   CheckCircle,
-  Users,
-  ChevronDown,
   AlertCircle,
   Loader2,
 } from 'lucide-react';
@@ -40,11 +38,6 @@ export default function AddAssessmentPage() {
   // Session/Group assignment
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
-
-  // Dropdown states
-  const [personaOpen, setPersonaOpen] = useState(false);
-  const [sessionsOpen, setSessionsOpen] = useState(false);
-  const [groupsOpen, setGroupsOpen] = useState(false);
 
   // File upload
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -114,7 +107,7 @@ export default function AddAssessmentPage() {
         status: form.status,
         materials: uploadedFiles.map(f => ({
           name: f.name,
-          s3Key: '', // Would be populated after S3 upload
+          s3Key: '',
           type: f.type,
           uploadedAt: new Date().toISOString(),
         })),
@@ -130,28 +123,6 @@ export default function AddAssessmentPage() {
       setIsSubmitting(false);
     }
   };
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      // Don't close if clicking inside a dropdown area
-      if (target.closest('[data-dropdown-persona]')) {
-        return;
-      }
-      if (target.closest('[data-dropdown-sessions]')) {
-        return;
-      }
-      if (target.closest('[data-dropdown-groups]')) {
-        return;
-      }
-      setPersonaOpen(false);
-      setSessionsOpen(false);
-      setGroupsOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   if (showSuccess) {
     return (
@@ -187,7 +158,7 @@ export default function AddAssessmentPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 overflow-visible">
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
           {/* Title */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -221,50 +192,23 @@ export default function AddAssessmentPage() {
             />
           </div>
 
-          {/* Persona */}
+          {/* Persona - Native Select */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               AI Persona (optional)
             </label>
-            <div className="relative" data-dropdown-persona>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setPersonaOpen(!personaOpen);
-                  setSessionsOpen(false);
-                  setGroupsOpen(false);
-                }}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              >
-                <span className={form.personaId ? 'text-gray-900' : 'text-gray-400'}>
-                  {personas.find(p => p.personaID === form.personaId)?.name || 'Select persona'}
-                </span>
-                <ChevronDown size={16} className="text-gray-400" />
-              </button>
-              {personaOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
-                  <button
-                    type="button"
-                    onClick={() => { setForm({ ...form, personaId: '' }); setPersonaOpen(false); }}
-                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 text-gray-400"
-                  >
-                    No persona
-                  </button>
-                  {personas.map((p) => (
-                    <button
-                      key={p.personaID}
-                      type="button"
-                      onClick={() => { setForm({ ...form, personaId: p.personaID }); setPersonaOpen(false); }}
-                      className="w-full px-4 py-2.5 text-left text-sm text-gray-900 hover:bg-gray-50"
-                    >
-                      {p.name} - {p.role}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <select
+              value={form.personaId}
+              onChange={(e) => setForm({ ...form, personaId: e.target.value })}
+              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+            >
+              <option value="">Select persona (optional)</option>
+              {personas.map((p) => (
+                <option key={p.personaID} value={p.personaID}>
+                  {p.name} - {p.role}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-5">
@@ -302,113 +246,61 @@ export default function AddAssessmentPage() {
             </div>
           </div>
 
-          {/* Session Numbers Assignment */}
+          {/* Session Numbers - Checkbox Grid */}
           <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Assign to Session Numbers
             </label>
-            <div className="relative" data-dropdown-sessions>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSessionsOpen(!sessionsOpen);
-                  setPersonaOpen(false);
-                  setGroupsOpen(false);
-                }}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              >
-                <span className={selectedSessions.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
-                  {selectedSessions.length > 0
-                    ? `${selectedSessions.length} session(s) selected`
-                    : 'All sessions (leave empty for all)'}
-                </span>
-                <ChevronDown size={16} className="text-gray-400" />
-              </button>
-              {sessionsOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
-                  {sessionNumbers.map((num) => (
-                    <label
-                      key={num}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSessions.includes(num)}
-                        onChange={() => toggleSession(num)}
-                        className="h-4 w-4 rounded border-gray-300 text-maroon-600"
-                      />
-                      <span className="text-sm text-gray-900">Session {num}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+            <p className="text-xs text-gray-500 mb-2">Leave all unchecked to assign to all sessions</p>
+            <div className="flex flex-wrap gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              {sessionNumbers.map((num) => (
+                <label
+                  key={num}
+                  className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-md border border-gray-200 hover:border-maroon-300 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSessions.includes(num)}
+                    onChange={() => toggleSession(num)}
+                    className="h-4 w-4 rounded border-gray-300 text-maroon-600 focus:ring-maroon-500"
+                  />
+                  <span className="text-sm text-gray-900">Session {num}</span>
+                </label>
+              ))}
             </div>
             {selectedSessions.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {selectedSessions.map(s => (
-                  <span key={s} className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                    Session {s}
-                    <button type="button" onClick={() => toggleSession(s)}><X size={12} /></button>
-                  </span>
-                ))}
-              </div>
+              <p className="mt-2 text-xs text-blue-600">
+                Selected: {selectedSessions.map(s => `Session ${s}`).join(', ')}
+              </p>
             )}
           </div>
 
-          {/* Group Numbers Assignment */}
+          {/* Group Numbers - Checkbox Grid */}
           <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Assign to Group Numbers
             </label>
-            <div className="relative" data-dropdown-groups>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setGroupsOpen(!groupsOpen);
-                  setPersonaOpen(false);
-                  setSessionsOpen(false);
-                }}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              >
-                <span className={selectedGroups.length > 0 ? 'text-gray-900' : 'text-gray-400'}>
-                  {selectedGroups.length > 0
-                    ? `${selectedGroups.length} group(s) selected`
-                    : 'All groups (leave empty for all)'}
-                </span>
-                <ChevronDown size={16} className="text-gray-400" />
-              </button>
-              {groupsOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg z-50 max-h-48 overflow-y-auto">
-                  {groupNumbers.map((num) => (
-                    <label
-                      key={num}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-900"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedGroups.includes(num)}
-                        onChange={() => toggleGroup(num)}
-                        className="h-4 w-4 rounded border-gray-300 text-maroon-600"
-                      />
-                      <span className="text-sm text-gray-900">Group {num}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+            <p className="text-xs text-gray-500 mb-2">Leave all unchecked to assign to all groups</p>
+            <div className="flex flex-wrap gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              {groupNumbers.map((num) => (
+                <label
+                  key={num}
+                  className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-md border border-gray-200 hover:border-maroon-300 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedGroups.includes(num)}
+                    onChange={() => toggleGroup(num)}
+                    className="h-4 w-4 rounded border-gray-300 text-maroon-600 focus:ring-maroon-500"
+                  />
+                  <span className="text-sm text-gray-900">Group {num}</span>
+                </label>
+              ))}
             </div>
             {selectedGroups.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {selectedGroups.map(g => (
-                  <span key={g} className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                    Group {g}
-                    <button type="button" onClick={() => toggleGroup(g)}><X size={12} /></button>
-                  </span>
-                ))}
-              </div>
+              <p className="mt-2 text-xs text-green-600">
+                Selected: {selectedGroups.map(g => `Group ${g}`).join(', ')}
+              </p>
             )}
           </div>
 
@@ -426,7 +318,7 @@ export default function AddAssessmentPage() {
                   onChange={() => setForm({ ...form, status: 'draft' })}
                   className="h-4 w-4 border-gray-300 text-maroon-600"
                 />
-                <span className="text-sm">Draft</span>
+                <span className="text-sm text-gray-900">Draft</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -436,7 +328,7 @@ export default function AddAssessmentPage() {
                   onChange={() => setForm({ ...form, status: 'published' })}
                   className="h-4 w-4 border-gray-300 text-maroon-600"
                 />
-                <span className="text-sm">Published (visible to students)</span>
+                <span className="text-sm text-gray-900">Published (visible to students)</span>
               </label>
             </div>
           </div>
