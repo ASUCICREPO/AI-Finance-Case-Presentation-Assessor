@@ -14,6 +14,7 @@ import {
 
 interface PracticeOverviewProps {
   sessionType: 'practice' | 'graded';
+  assessmentTitle?: string;
   onStartAssessment: () => void;
 }
 
@@ -22,8 +23,9 @@ interface PracticeOverviewProps {
  * Shows assessment expectations, how to complete Q&A, details, and quick links.
  * Matches Figma design.
  */
-export default function PracticeOverview({ sessionType, onStartAssessment }: PracticeOverviewProps) {
+export default function PracticeOverview({ sessionType, assessmentTitle, onStartAssessment }: PracticeOverviewProps) {
   const isPractice = sessionType === 'practice';
+  const title = assessmentTitle || 'Assessment';
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -41,7 +43,7 @@ export default function PracticeOverview({ sessionType, onStartAssessment }: Pra
         <div>
           {/* Title */}
           <h1 className="text-2xl font-bold text-gray-900 font-serif">
-            {isPractice ? 'Practice' : 'Real'} Session: Real Estate Investment
+            {isPractice ? 'Practice' : 'Real'} Session: {title}
           </h1>
 
           {/* Meta badges */}

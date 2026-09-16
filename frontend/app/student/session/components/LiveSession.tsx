@@ -26,6 +26,7 @@ interface StudentInfo {
 interface LiveSessionProps {
   studentInfo: StudentInfo;
   sessionType: 'practice' | 'graded';
+  assessmentTitle?: string;
   agentCore: UseAgentCoreReturn;
   timer: TimerState;
   workbookSheets: string[];
@@ -42,6 +43,7 @@ interface LiveSessionProps {
 export default function LiveSession({
   studentInfo,
   sessionType,
+  assessmentTitle,
   agentCore,
   timer,
   workbookSheets,
@@ -126,7 +128,7 @@ export default function LiveSession({
       <div className="mb-3 rounded-xl border border-gray-200 bg-white px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold text-gray-900 font-serif">
-            {sessionType === 'practice' ? 'Practice' : 'Real'} Session: Real Estate Investment
+            {sessionType === 'practice' ? 'Practice' : 'Real'} Session: {assessmentTitle || 'Assessment'}
           </h1>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
             <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />

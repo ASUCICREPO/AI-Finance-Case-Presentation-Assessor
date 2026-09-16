@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { generateSessionId, config } from '../../config/config';
-import { uploadFile, parseExcel, listPersonas, createSubmission } from '../../services/api';
+import { uploadFile, parseExcel, listPersonas, createSubmission, getAssessment } from '../../services/api';
 import { Persona } from '../../config/config';
 import PracticeOverview from './components/PracticeOverview';
 import CalibrationCheck from './components/CalibrationCheck';
@@ -17,6 +17,9 @@ import StartSessionModal from './components/StartSessionModal';
 
 export type SessionView = 'overview' | 'calibration' | 'upload' | 'live' | 'complete';
 export type SessionType = 'practice' | 'graded';
+
+// Default Anam persona ID (fallback for practice sessions)
+const DEFAULT_ANAM_PERSONA_ID = '26981553-4601-4799-b64b-7dfa1580de8c';
 
 export default function SessionPage() {
   const searchParams = useSearchParams();
@@ -45,20 +48,44 @@ export default function SessionPage() {
   // Modal state
   const [showStartModal, setShowStartModal] = useState(false);
 
-  // Hardcoded Anam persona ID - Real Estate Agent
-  const ANAM_PERSONA_ID = '26981553-4601-4799-b64b-7dfa1580de8c';
-
-  const [personaId, setPersonaId] = useState<string>(ANAM_PERSONA_ID);
+  // Assessment and persona state
+  const [assessmentTitle, setAssessmentTitle] = useState<string>('');
+  const [personaId, setPersonaId] = useState<string>(DEFAULT_ANAM_PERSONA_ID);
   const [persona, setPersona] = useState<Persona | null>(null);
 
-  // Load persona details on mount
+  // Load assessment details and its persona
   useEffect(() => {
-    listPersonas()
-      .then((personas) => {
-        const anamPersona = personas.find((p) => p.personaID === ANAM_PERSONA_ID);
-        if (anamPersona) {
-          setPersonaId(anamPersona.personaID);
-          setPersona(anamPersona);
+    async function loadAssessmentAndPersona() {
+      try {
+        // First load personas
+        const personas = await listPersonas();
+
+        // For graded sessions, get the assessment's persona
+        if (sessionType === 'graded' && assessmentId && assessmentId !== 'practice') {
+          try {
+            const assessment = await getAssessment(assessmentId);
+            setAssessmentTitle(assessment.title || assessment.caseName || 'Assessment');
+
+            // If assessment has a persona assigned, use it
+            if (assessment.personaId) {
+              const assessmentPersona = personas.find((p) => p.personaID === assessment.personaId);
+              if (assessmentPersona) {
+                setPersonaId(assessmentPersona.personaID);
+                setPersona(assessmentPersona);
+                console.log('[SessionPage] Using assessment persona:', assessmentPersona.name);
+                return;
+              }
+            }
+          } catch (err) {
+            console.error('Failed to load assessment:', err);
+          }
+        }
+
+        // Fallback: use default Anam persona or first active persona
+        const defaultPersona = personas.find((p) => p.personaID === DEFAULT_ANAM_PERSONA_ID);
+        if (defaultPersona) {
+          setPersonaId(defaultPersona.personaID);
+          setPersona(defaultPersona);
         } else {
           const active = personas.find((p) => p.active);
           if (active) {
@@ -66,9 +93,13 @@ export default function SessionPage() {
             setPersona(active);
           }
         }
-      })
-      .catch((err) => console.error('Failed to load personas:', err));
-  }, []);
+      } catch (err) {
+        console.error('Failed to load personas:', err);
+      }
+    }
+
+    loadAssessmentAndPersona();
+  }, [sessionType, assessmentId]);
 
   const studentInfo = {
     name: userName || 'Student',
@@ -223,6 +254,7 @@ export default function SessionPage() {
       {sessionView === 'overview' && (
         <PracticeOverview
           sessionType={sessionType}
+          assessmentTitle={assessmentTitle}
           onStartAssessment={handleStartAssessment}
         />
       )}
@@ -248,11 +280,12 @@ export default function SessionPage() {
         <LiveSession
           studentInfo={studentInfo}
           sessionType={sessionType}
+          assessmentTitle={assessmentTitle}
           agentCore={agentCore}
           timer={timer}
           workbookSheets={workbookSheets}
           workbookData={workbookData}
-          anamPersonaId={persona?.anamPersonaId || ANAM_PERSONA_ID}
+          anamPersonaId={persona?.anamPersonaId || DEFAULT_ANAM_PERSONA_ID}
           onSubmit={handleSubmitSession}
         />
       )}
