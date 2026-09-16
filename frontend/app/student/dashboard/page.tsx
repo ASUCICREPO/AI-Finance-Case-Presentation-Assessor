@@ -33,7 +33,7 @@ interface AssessmentDisplay {
  * Shows instructor-assigned assessments from DynamoDB based on student's session/group
  */
 export default function StudentDashboard() {
-  const { userName, userId, userSessionNumber, userGroupNumber } = useAuth();
+  const { userName, userId, userEmail, userSessionNumber, userGroupNumber } = useAuth();
   const [assessments, setAssessments] = useState<AssessmentDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +46,10 @@ export default function StudentDashboard() {
 
   // Load assessments on mount
   useEffect(() => {
-    if (userId) {
+    if (userId || userEmail) {
       fetchAssessments();
     }
-  }, [userId]);
+  }, [userId, userEmail]);
 
   async function fetchAssessments() {
     try {
@@ -62,7 +62,7 @@ export default function StudentDashboard() {
 
       // Get student's assigned assessments based on their session/group
       try {
-        const assessmentsResponse = await getStudentAssessments(userId!);
+        const assessmentsResponse = await getStudentAssessments(userId || '', userEmail || undefined);
         assignedAssessments = assessmentsResponse.assessments || [];
         setStudentInfo({
           sessionNumber: assessmentsResponse.sessionNumber,

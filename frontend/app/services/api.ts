@@ -876,13 +876,16 @@ export async function assignAssessmentToGroups(
  * Get assessments assigned to a specific student (student dashboard).
  * Returns only published assessments matching the student's session/group.
  */
-export async function getStudentAssessments(studentId: string): Promise<{
+export async function getStudentAssessments(studentId: string, email?: string): Promise<{
   assessments: Assessment[];
   count: number;
   sessionNumber: string;
   groupNumber: string;
 }> {
-  return fetchApi(`/assessments/student?studentId=${encodeURIComponent(studentId)}`);
+  const params = new URLSearchParams();
+  if (studentId) params.append('studentId', studentId);
+  if (email) params.append('email', email);
+  return fetchApi(`/assessments/student?${params.toString()}`);
 }
 
 // Legacy interface for backward compatibility
