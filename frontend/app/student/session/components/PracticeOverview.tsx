@@ -4,9 +4,6 @@ import Link from 'next/link';
 import {
   Calendar,
   FileText,
-  ClipboardCheck,
-  Sparkles,
-  HelpCircle,
   ChevronRight,
   ArrowLeft,
   Clock,
@@ -102,10 +99,10 @@ export default function PracticeOverview({
         </div>
       </div>
 
-      {/* Main content grid */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        {/* Left column - Assessment info */}
-        <div className="lg:col-span-2">
+      {/* Main content */}
+      <div className="mt-8">
+        {/* Assessment info */}
+        <div>
           <div className="rounded-xl border border-gray-200 bg-white p-6">
             {/* Assessment expectations */}
             <h2 className="text-lg font-bold text-gray-900 font-serif">
@@ -179,34 +176,7 @@ export default function PracticeOverview({
           </div>
         </div>
 
-        {/* Right column - Quick Links */}
-        <div>
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-gray-900 font-serif">Quick Links</h2>
-            <p className="mt-1 text-sm text-gray-500 font-sans">
-              Jump to key resources and support in one place.
-            </p>
 
-            <nav className="mt-4 space-y-1">
-              {[
-                { label: 'Evaluation Rubric', icon: ClipboardCheck },
-                { label: 'Accessibility', icon: Sparkles },
-                { label: 'Help Center', icon: HelpCircle },
-              ].map((link) => (
-                <button
-                  key={link.label}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans border-b border-gray-100 last:border-0"
-                >
-                  <span className="flex items-center gap-3">
-                    <link.icon size={18} className="text-maroon-600" />
-                    {link.label}
-                  </span>
-                  <ChevronRight size={16} className="text-gray-400" />
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
       </div>
 
       {/* Bottom actions */}
