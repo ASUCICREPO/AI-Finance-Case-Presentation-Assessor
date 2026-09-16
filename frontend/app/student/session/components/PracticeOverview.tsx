@@ -9,23 +9,51 @@ import {
   HelpCircle,
   ChevronRight,
   ArrowLeft,
-  Lock,
+  Clock,
 } from 'lucide-react';
 
 interface PracticeOverviewProps {
   sessionType: 'practice' | 'graded';
   assessmentTitle?: string;
+  assessmentDescription?: string;
+  dueDate?: string;
+  duration?: number;
   onStartAssessment: () => void;
 }
 
 /**
  * Practice Session Overview
  * Shows assessment expectations, how to complete Q&A, details, and quick links.
- * Matches Figma design.
+ * All content is dynamically loaded from the assessment.
  */
-export default function PracticeOverview({ sessionType, assessmentTitle, onStartAssessment }: PracticeOverviewProps) {
+export default function PracticeOverview({
+  sessionType,
+  assessmentTitle,
+  assessmentDescription,
+  dueDate,
+  duration,
+  onStartAssessment,
+}: PracticeOverviewProps) {
   const isPractice = sessionType === 'practice';
   const title = assessmentTitle || 'Assessment';
+  const description = assessmentDescription || 'Complete this assessment by answering questions from the AI interviewer about your analysis and recommendations.';
+  const durationMinutes = duration || 15;
+
+  // Format due date for display
+  const formatDueDate = (dateString?: string) => {
+    if (!dateString) return 'No deadline';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -50,7 +78,11 @@ export default function PracticeOverview({ sessionType, assessmentTitle, onStart
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-maroon-600 px-3 py-1.5 text-sm font-medium text-white">
               <Calendar size={14} />
-              Due: Oct 24, 11:59 PM
+              Due: {formatDueDate(dueDate)}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700">
+              <Clock size={14} />
+              {durationMinutes} min
             </span>
             <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
               <FileText size={14} />
@@ -62,12 +94,10 @@ export default function PracticeOverview({ sessionType, assessmentTitle, onStart
         {/* Right side - Session type indicator */}
         <div className="text-right">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-maroon-600" />
-            <span className="text-sm font-medium text-gray-900">Practice Session</span>
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-gray-500">
-            <Lock size={14} />
-            <span className="text-sm">Next Real Session</span>
+            <span className={`h-2 w-2 rounded-full ${isPractice ? 'bg-blue-500' : 'bg-maroon-600'}`} />
+            <span className="text-sm font-medium text-gray-900">
+              {isPractice ? 'Practice Session' : 'Graded Session'}
+            </span>
           </div>
         </div>
       </div>
@@ -77,33 +107,30 @@ export default function PracticeOverview({ sessionType, assessmentTitle, onStart
         {/* Left column - Assessment info */}
         <div className="lg:col-span-2">
           <div className="rounded-xl border border-gray-200 bg-white p-6">
-            {/* Practice assessment expectations */}
+            {/* Assessment expectations */}
             <h2 className="text-lg font-bold text-gray-900 font-serif">
               {isPractice ? 'Practice assessment' : 'Assessment'} expectations
             </h2>
             <p className="mt-3 text-sm text-gray-600 font-sans leading-relaxed">
-              You will analyze a commercial real estate investment opportunity for a mixed-use
-              development in downtown Phoenix. You will be assessed on the depth of your analysis,
-              the quality of your financial modeling, and your ability to present a clear,
-              well-supported investment recommendation.
+              {description}
             </p>
 
             {/* How to complete */}
             <h3 className="mt-6 text-base font-bold text-gray-900 font-serif">
-              How to complete {isPractice ? 'practice' : ''} Q&A session
+              How to complete {isPractice ? 'practice ' : ''}Q&A session
             </h3>
             <ul className="mt-3 space-y-2 text-sm text-gray-600 font-sans">
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Review each topic and prepare concise, data-backed responses.
+                Review the case materials and prepare concise, data-backed responses.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Know your financial model inside out — assumptions, metrics, and outputs.
+                Know your analysis inside out — assumptions, metrics, and outputs.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Support your analysis with market evidence and comparable deals.
+                Support your analysis with evidence and comparable examples.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
@@ -115,7 +142,7 @@ export default function PracticeOverview({ sessionType, assessmentTitle, onStart
               </li>
             </ul>
 
-            {/* Practice assessment Details */}
+            {/* Assessment Details */}
             <h3 className="mt-6 text-base font-bold text-gray-900 font-serif">
               {isPractice ? 'Practice assessment' : 'Assessment'} Details
             </h3>
@@ -140,7 +167,7 @@ export default function PracticeOverview({ sessionType, assessmentTitle, onStart
               </div>
               <div className="flex">
                 <dt className="w-32 text-gray-500">Duration</dt>
-                <dd className="font-medium text-gray-900">15 minutes timer</dd>
+                <dd className="font-medium text-gray-900">{durationMinutes} minutes</dd>
               </div>
               <div className="flex">
                 <dt className="w-32 text-gray-500">Recording</dt>

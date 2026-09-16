@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { generateSessionId, config } from '../../config/config';
-import { uploadFile, parseExcel, listPersonas, createSubmission, getAssessment } from '../../services/api';
+import { uploadFile, parseExcel, listPersonas, createSubmission, getAssessment, Assessment } from '../../services/api';
 import { Persona } from '../../config/config';
 import PracticeOverview from './components/PracticeOverview';
 import CalibrationCheck from './components/CalibrationCheck';
@@ -49,6 +49,7 @@ export default function SessionPage() {
   const [showStartModal, setShowStartModal] = useState(false);
 
   // Assessment and persona state
+  const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [assessmentTitle, setAssessmentTitle] = useState<string>('');
   const [personaId, setPersonaId] = useState<string>(DEFAULT_ANAM_PERSONA_ID);
   const [persona, setPersona] = useState<Persona | null>(null);
@@ -63,12 +64,13 @@ export default function SessionPage() {
         // For graded sessions, get the assessment's persona
         if (sessionType === 'graded' && assessmentId && assessmentId !== 'practice') {
           try {
-            const assessment = await getAssessment(assessmentId);
-            setAssessmentTitle(assessment.title || assessment.caseName || 'Assessment');
+            const loadedAssessment = await getAssessment(assessmentId);
+            setAssessment(loadedAssessment);
+            setAssessmentTitle(loadedAssessment.title || loadedAssessment.caseName || 'Assessment');
 
             // If assessment has a persona assigned, use it
-            if (assessment.personaId) {
-              const assessmentPersona = personas.find((p) => p.personaID === assessment.personaId);
+            if (loadedAssessment.personaId) {
+              const assessmentPersona = personas.find((p) => p.personaID === loadedAssessment.personaId);
               if (assessmentPersona) {
                 setPersonaId(assessmentPersona.personaID);
                 setPersona(assessmentPersona);
@@ -255,6 +257,9 @@ export default function SessionPage() {
         <PracticeOverview
           sessionType={sessionType}
           assessmentTitle={assessmentTitle}
+          assessmentDescription={assessment?.description}
+          dueDate={assessment?.dueDate}
+          duration={assessment?.duration}
           onStartAssessment={handleStartAssessment}
         />
       )}
