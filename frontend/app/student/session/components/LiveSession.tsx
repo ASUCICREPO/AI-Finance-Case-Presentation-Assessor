@@ -87,10 +87,10 @@ export default function LiveSession({
       .then((token) => {
         setAnamSessionToken(token);
         setVoiceMode('anam');
-        // CRITICAL: Mute Nova Sonic audio playback - Anam will handle lip-sync
-        // Nova Sonic audio chunks are forwarded to Anam, not played in browser
-        setMuteAudioPlayback(true);
-        console.log('[LiveSession] Anam token received, using AUDIO PASSTHROUGH mode');
+        // IMPORTANT: Do NOT mute Nova Sonic audio - let it play!
+        // Anam receives audio chunks for lip-sync only, doesn't play audio itself
+        setMuteAudioPlayback(false);
+        console.log('[LiveSession] Anam token received, Nova Sonic audio ENABLED for playback, Anam handles lip-sync');
       })
       .catch((err) => {
         console.error('[LiveSession] Failed to get Anam token, falling back to Nova Sonic:', err);

@@ -152,15 +152,10 @@ export default function SessionPage() {
   const handleConfirmStart = async () => {
     setShowStartModal(false);
 
-    // Only mute Nova Sonic audio if Anam avatar is enabled
-    // When Anam is disabled, Nova Sonic handles all audio
-    if (config.anamEnabled) {
-      agentCore.setMuteAudioPlayback(true);
-      console.log('[SessionPage] Anam enabled - Nova Sonic audio MUTED');
-    } else {
-      agentCore.setMuteAudioPlayback(false);
-      console.log('[SessionPage] Anam disabled - Nova Sonic audio ENABLED');
-    }
+    // Nova Sonic audio should always play - Anam only does lip-sync
+    // Don't mute audio based on Anam config
+    agentCore.setMuteAudioPlayback(false);
+    console.log('[SessionPage] Nova Sonic audio ENABLED for playback');
 
     await agentCore.startSession({
       personaId,
