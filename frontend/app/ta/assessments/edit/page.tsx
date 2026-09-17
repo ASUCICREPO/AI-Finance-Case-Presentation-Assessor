@@ -129,6 +129,7 @@ export default function EditAssessmentPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!form.title.trim()) newErrors.title = 'Title is required';
+    if (!form.description.trim()) newErrors.description = 'Description is required';
     if (!form.dueDate) newErrors.dueDate = 'Due date is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -265,15 +266,18 @@ export default function EditAssessmentPage() {
           {/* Description */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Description
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Brief description of the assessment..."
               rows={3}
-              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+              className={`w-full rounded-lg border ${errors.description ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500`}
             />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-500">{errors.description}</p>
+            )}
           </div>
 
           {/* Persona - Native Select */}
