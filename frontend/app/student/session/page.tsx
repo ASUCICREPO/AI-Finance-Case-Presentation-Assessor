@@ -11,11 +11,12 @@ import { Persona } from '../../config/config';
 import PracticeOverview from './components/PracticeOverview';
 import CalibrationCheck from './components/CalibrationCheck';
 import DocumentUpload from './components/DocumentUpload';
+import PresentationSession from './components/PresentationSession';
 import LiveSession from './components/LiveSession';
 import SessionComplete from './components/SessionComplete';
 import StartSessionModal from './components/StartSessionModal';
 
-export type SessionView = 'overview' | 'calibration' | 'upload' | 'live' | 'complete';
+export type SessionView = 'overview' | 'calibration' | 'upload' | 'presentation' | 'live' | 'complete';
 export type SessionType = 'practice' | 'graded';
 
 // Default Anam persona ID (fallback for practice sessions)
@@ -148,14 +149,18 @@ export default function SessionPage() {
     }
   }, [sessionId]);
 
-  // Confirm start -> Begin Q&A
+  // Confirm start -> Begin Presentation phase
   const handleConfirmStart = async () => {
     setShowStartModal(false);
+    // Start presentation phase (no AI yet)
+    setSessionView('presentation');
+  };
 
+  // From Presentation -> Q&A (start AI session)
+  const handleProceedToQA = async () => {
     // Nova Sonic audio should always play - Anam only does lip-sync
-    // Don't mute audio based on Anam config
     agentCore.setMuteAudioPlayback(false);
-    console.log('[SessionPage] Nova Sonic audio ENABLED for playback');
+    console.log('[SessionPage] Starting Q&A - Nova Sonic audio ENABLED');
 
     await agentCore.startSession({
       personaId,
@@ -273,6 +278,18 @@ export default function SessionPage() {
           isUploading={isUploading}
           uploadProgress={uploadProgress}
           error={uploadError}
+        />
+      )}
+
+      {sessionView === 'presentation' && (
+        <PresentationSession
+          sessionType={sessionType}
+          assessmentTitle={assessmentTitle}
+          studentName={userName || 'Student'}
+          timer={timer}
+          workbookSheets={workbookSheets}
+          workbookData={workbookData}
+          onProceedToQA={handleProceedToQA}
         />
       )}
 

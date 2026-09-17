@@ -111,7 +111,7 @@ export default function StartSessionModal({
             onClick={onConfirm}
             className="rounded-lg bg-maroon-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
           >
-            Begin Q&A session
+            Begin Presentation
           </button>
         </div>
       </div>
