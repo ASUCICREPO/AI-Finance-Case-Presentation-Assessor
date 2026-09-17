@@ -49,6 +49,9 @@ export default function SessionPage() {
   // Modal state
   const [showStartModal, setShowStartModal] = useState(false);
 
+  // Presentation transcript state (captured during presentation)
+  const [presentationTranscript, setPresentationTranscript] = useState<string>('');
+
   // Assessment and persona state
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [assessmentTitle, setAssessmentTitle] = useState<string>('');
@@ -157,20 +160,51 @@ export default function SessionPage() {
   };
 
   // From Presentation -> Q&A (start AI session)
-  const handleProceedToQA = async () => {
+  const handleProceedToQA = async (transcript: string) => {
+    // Save the presentation transcript
+    setPresentationTranscript(transcript);
+
     // Nova Sonic audio should always play - Anam only does lip-sync
     agentCore.setMuteAudioPlayback(false);
     console.log('[SessionPage] Starting Q&A - Nova Sonic audio ENABLED');
+    console.log('[SessionPage] Presentation transcript length:', transcript.length);
+
+    // Build workbook context summary for the AI
+    const workbookContext = buildWorkbookContext(workbookData);
 
     await agentCore.startSession({
       personaId,
       userId: userId || '',
       sessionId,
       qaTimeLimitSec: 900,
+      presentationTranscript: transcript,
+      workbookContext: workbookContext,
     });
 
     timer.start(900);
     setSessionView('live');
+  };
+
+  // Build a context summary from workbook data for the AI
+  const buildWorkbookContext = (data: Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>) => {
+    if (!data || Object.keys(data).length === 0) return '';
+
+    const summaryParts: string[] = [];
+    for (const [sheetName, sheetData] of Object.entries(data)) {
+      summaryParts.push(`\n--- Sheet: ${sheetName} (${sheetData.rowCount} rows) ---`);
+      if (sheetData.headers.length > 0) {
+        summaryParts.push(`Columns: ${sheetData.headers.join(', ')}`);
+      }
+      // Include first 5 rows as sample
+      for (const row of sheetData.rows.slice(0, 5)) {
+        const rowStr = row.map(cell => cell ?? '').join(' | ');
+        if (rowStr.trim()) summaryParts.push(rowStr);
+      }
+      if (sheetData.rowCount > 5) {
+        summaryParts.push(`... (${sheetData.rowCount - 5} more rows)`);
+      }
+    }
+    return summaryParts.join('\n');
   };
 
   // Submit session - saves to DynamoDB (only for graded sessions)

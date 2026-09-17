@@ -29,6 +29,8 @@ export interface AgentCoreSetupParams {
   voiceId?: string;
   qaTimeLimitSec?: number;
   previousContext?: string;
+  presentationTranscript?: string; // Student's presentation content
+  workbookContext?: string; // Summary of spreadsheet data
   rubricWeights?: Record<string, number>;
 }
 
@@ -111,6 +113,8 @@ export class AgentCoreClient {
             voiceId: params.voiceId || 'matthew',
             qaTimeLimitSec: params.qaTimeLimitSec || config.defaultSessionDuration,
             previousContext: params.previousContext || '',
+            presentationTranscript: params.presentationTranscript || '',
+            workbookContext: params.workbookContext || '',
             rubricWeights: params.rubricWeights,
           });
           resolve();

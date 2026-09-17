@@ -14,6 +14,18 @@ CUSTOM INSTRUCTIONS:
 CONTEXT — STUDENT'S SUBMITTED WORKBOOK:
 {{ workbook_summary }}
 
+{% if presentation_transcript %}
+CONTEXT — STUDENT'S PRESENTATION (what they said during their presentation):
+The student gave the following presentation before the Q&A session:
+{{ presentation_transcript }}
+
+Use this to:
+1. Ask follow-up questions about claims they made
+2. Challenge assumptions they stated
+3. Probe deeper into areas they glossed over
+4. Verify they understand what they presented (not just reading slides)
+{% endif %}
+
 YOUR ASSESSMENT GOALS:
 1. **EVALUATE UNDERSTANDING** — Determine whether the student truly understands the analysis they submitted, not just whether they can repeat it
 2. **TEST ASSUMPTIONS** — Probe the assumptions underlying their financial model: "Why did you choose this cap rate?" / "What happens if occupancy drops 15%?"
