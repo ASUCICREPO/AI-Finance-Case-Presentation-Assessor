@@ -67,6 +67,12 @@ export class AgentCoreClient {
   private isConnected = false;
   private setupParams: AgentCoreSetupParams | null = null;
 
+  // Audio playback queue (prevents overlapping/muffled audio)
+  private playbackContext: AudioContext | null = null;
+  private playbackGain: GainNode | null = null;
+  private playbackQueue: Float32Array[] = [];
+  private isPlaying = false;
+
   // Public state
   public transcript: TranscriptEntry[] = [];
   public isSessionActive = false;
@@ -188,36 +194,78 @@ export class AgentCoreClient {
 
   /**
    * Play received audio from the AI persona.
-   * IMPORTANT: When Anam avatar is active, this should be muted
-   * because Anam handles TTS with lip sync.
+   * Uses queue-based playback to prevent overlapping/muffled audio.
    */
   playAudio(base64Audio: string): void {
-    // CRITICAL: Skip playback if Anam avatar is handling TTS
-    // This prevents the muffled dual-audio issue
+    // Skip playback if muted (Anam avatar handles TTS)
     if (this.muteAudioPlayback) {
-      console.log('[AgentCore] Audio playback MUTED (Anam handles TTS)');
       return;
     }
 
-    if (!this.audioContext) {
-      this.audioContext = new AudioContext({ sampleRate: 16000 });
+    // Decode base64 -> Int16 -> Float32
+    const pcmBytes = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+    const int16 = new Int16Array(pcmBytes.buffer);
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) {
+      float32[i] = int16[i] / 32768;
     }
 
-    const pcmBuffer = this.base64ToArrayBuffer(base64Audio);
-    const int16Array = new Int16Array(pcmBuffer);
-    const float32Array = new Float32Array(int16Array.length);
+    // Queue and play
+    this.playbackQueue.push(float32);
+    this.drainPlaybackQueue();
+  }
 
-    for (let i = 0; i < int16Array.length; i++) {
-      float32Array[i] = int16Array[i] / 0x8000;
+  /**
+   * Drain the audio playback queue sequentially.
+   */
+  private drainPlaybackQueue(): void {
+    if (this.isPlaying || this.playbackQueue.length === 0) return;
+    this.isPlaying = true;
+
+    // Initialize playback context if needed
+    if (!this.playbackContext || this.playbackContext.state === 'closed') {
+      this.playbackContext = new AudioContext({ sampleRate: 16000 });
+      this.playbackGain = null;
     }
 
-    const audioBuffer = this.audioContext.createBuffer(1, float32Array.length, 16000);
-    audioBuffer.getChannelData(0).set(float32Array);
+    const ctx = this.playbackContext;
 
-    const source = this.audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(this.audioContext.destination);
-    source.start();
+    // Create gain node if needed
+    if (!this.playbackGain) {
+      const gain = ctx.createGain();
+      gain.gain.value = 1;
+      gain.connect(ctx.destination);
+      this.playbackGain = gain;
+    }
+
+    const gainNode = this.playbackGain;
+
+    const playNext = () => {
+      const chunk = this.playbackQueue.shift();
+      if (!chunk) {
+        this.isPlaying = false;
+        return;
+      }
+
+      const buffer = ctx.createBuffer(1, chunk.length, 16000);
+      buffer.getChannelData(0).set(chunk);
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(gainNode);
+      source.onended = playNext;
+      source.start();
+    };
+
+    playNext();
+  }
+
+  /**
+   * Clear playback queue (e.g., on interruption).
+   */
+  clearPlaybackQueue(): void {
+    this.playbackQueue = [];
+    this.isPlaying = false;
   }
 
   /**
@@ -242,6 +290,9 @@ export class AgentCoreClient {
     this.isSessionActive = false;
     this.isConnected = false;
 
+    // Clear audio playback queue
+    this.clearPlaybackQueue();
+
     // Stop audio capture
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach((track) => track.stop());
@@ -250,6 +301,13 @@ export class AgentCoreClient {
     if (this.audioContext) {
       this.audioContext.close().catch(() => { });
       this.audioContext = null;
+    }
+
+    // Close playback context
+    if (this.playbackContext) {
+      this.playbackContext.close().catch(() => { });
+      this.playbackContext = null;
+      this.playbackGain = null;
     }
 
     // Close WebSocket
@@ -281,11 +339,18 @@ export class AgentCoreClient {
           break;
 
         case 'audio_clear':
-          // Stop any currently playing audio
-          if (this.audioContext) {
-            this.audioContext.close().catch(() => { });
-            this.audioContext = new AudioContext({ sampleRate: 16000 });
+          // Clear playback queue and stop playing
+          this.clearPlaybackQueue();
+          if (this.playbackContext && this.playbackContext.state !== 'closed') {
+            this.playbackContext.close().catch(() => { });
+            this.playbackContext = null;
+            this.playbackGain = null;
           }
+          break;
+
+        case 'interruption':
+          // User interrupted AI - clear audio queue
+          this.clearPlaybackQueue();
           break;
 
         case 'transcript':
