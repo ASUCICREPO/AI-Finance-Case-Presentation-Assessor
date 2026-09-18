@@ -24,7 +24,7 @@ const DEFAULT_ANAM_PERSONA_ID = '26981553-4601-4799-b64b-7dfa1580de8c';
 
 export default function SessionPage() {
   const searchParams = useSearchParams();
-  const { userId, userName, userGroup, userCourse, userSessionNumber, userGroupNumber } = useAuth();
+  const { userId, userEmail, userName, userGroup, userCourse, userSessionNumber, userGroupNumber } = useAuth();
   const agentCore = useAgentCore();
   const timer = useSessionTimer(() => {
     agentCore.endSession();
@@ -159,15 +159,30 @@ export default function SessionPage() {
     setSessionView('presentation');
   };
 
+  // Video blob state for recording
+  const [presentationVideoBlob, setPresentationVideoBlob] = useState<Blob | null>(null);
+  const [presentationDuration, setPresentationDuration] = useState(0);
+  const [videoS3Key, setVideoS3Key] = useState<string | null>(null);
+
   // From Presentation -> Q&A (start AI session)
-  const handleProceedToQA = async (transcript: string) => {
-    // Save the presentation transcript
+  const handleProceedToQA = async (transcript: string, videoBlob: Blob | null, duration: number) => {
+    // Save the presentation transcript and video
     setPresentationTranscript(transcript);
+    setPresentationVideoBlob(videoBlob);
+    setPresentationDuration(duration);
+
+    // Upload video to S3 in background if available
+    if (videoBlob && sessionType === 'graded') {
+      uploadVideoToS3(videoBlob).catch(err => {
+        console.error('[SessionPage] Failed to upload video:', err);
+      });
+    }
 
     // Nova Sonic audio should always play - Anam only does lip-sync
     agentCore.setMuteAudioPlayback(false);
     console.log('[SessionPage] Starting Q&A - Nova Sonic audio ENABLED');
     console.log('[SessionPage] Presentation transcript length:', transcript.length);
+    console.log('[SessionPage] Video blob size:', videoBlob?.size);
 
     // Build workbook context summary for the AI
     const workbookContext = buildWorkbookContext(workbookData);
@@ -183,6 +198,22 @@ export default function SessionPage() {
 
     timer.start(900);
     setSessionView('live');
+  };
+
+  // Upload video to S3
+  const uploadVideoToS3 = async (videoBlob: Blob) => {
+    try {
+      const videoFile = new File([videoBlob], `presentation-${sessionId}.webm`, { type: 'video/webm' });
+      const { s3Key } = await uploadFile(sessionId, videoFile, 'videos', (percent) => {
+        console.log('[SessionPage] Video upload progress:', percent);
+      });
+      setVideoS3Key(s3Key);
+      console.log('[SessionPage] Video uploaded to S3:', s3Key);
+      return s3Key;
+    } catch (err) {
+      console.error('[SessionPage] Video upload failed:', err);
+      throw err;
+    }
   };
 
   // Build a context summary from workbook data for the AI
@@ -238,6 +269,8 @@ export default function SessionPage() {
         // Create submission in DynamoDB with AI analytics
         await createSubmission({
           studentId: userId || 'anonymous',
+          studentEmail: userEmail || undefined,
+          studentName: userName || undefined,
           assessmentId: assessmentId,
           sessionId: sessionId,
           sessionNumber: userSessionNumber || '1',
@@ -264,12 +297,16 @@ export default function SessionPage() {
             },
           },
 
-          // Session data
-          transcript: transcriptData,
+          // Dual transcripts
+          presentationTranscript: presentationTranscript,
+          qaTranscript: transcriptData,
+          transcript: transcriptData, // Legacy field
           questionsAsked,
           responsesGiven,
           sessionDuration,
+          presentationDuration: presentationDuration,
           spreadsheetS3Key: spreadsheetS3Key || undefined,
+          videoS3Key: videoS3Key || undefined,
         });
 
         console.log('[SessionPage] Graded submission saved to DynamoDB');
