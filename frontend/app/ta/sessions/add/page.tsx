@@ -12,22 +12,27 @@ import {
   Sun,
   Moon,
   Clock,
+  Hash,
+  Loader2,
 } from 'lucide-react';
+import { createCourseSession } from '../../../services/api';
 
 export default function AddSessionPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Form state
+  const [sessionNumber, setSessionNumber] = useState('');  // Most important field
   const [courseName, setCourseName] = useState('Real Estate Finance');
   const [courseCode, setCourseCode] = useState('FIN 502');
   const [semester, setSemester] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
-  const [sessionType, setSessionType] = useState<'morning' | 'evening' | '1' | '2'>('morning');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [customSessionNumber, setCustomSessionNumber] = useState('');
 
   // Dropdown states
   const [semesterOpen, setSemesterOpen] = useState(false);
@@ -35,24 +40,30 @@ export default function AddSessionPage() {
 
   const semesters = ['Spring', 'Summer', 'Fall', 'Winter'];
   const years = [2025, 2026, 2027, 2028];
-  const sessionTypes = [
-    { value: 'morning', label: 'Morning', icon: Sun },
-    { value: 'evening', label: 'Evening', icon: Moon },
-    { value: '1', label: 'Session 1', icon: Clock },
-    { value: '2', label: 'Session 2', icon: Clock },
+
+  // Quick select session numbers
+  const sessionNumberOptions = [
+    { value: 'morning', label: 'Morning', icon: Sun, color: 'amber' },
+    { value: 'evening', label: 'Evening', icon: Moon, color: 'indigo' },
+    { value: '1', label: 'Session 1', icon: Hash, color: 'purple' },
+    { value: '2', label: 'Session 2', icon: Hash, color: 'teal' },
   ];
 
-  const getSessionTypeName = () => {
-    switch (sessionType) {
+  const getSessionNumberDisplay = () => {
+    if (!sessionNumber) return '';
+    switch (sessionNumber) {
       case 'morning': return 'Morning';
       case 'evening': return 'Evening';
-      case '1': return 'Session 1';
-      case '2': return 'Session 2';
+      default: return `Session ${sessionNumber}`;
     }
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+
+    // Session number is the most important - check first
+    if (!sessionNumber.trim()) newErrors.sessionNumber = 'Session number is required';
+
     if (!courseName.trim()) newErrors.courseName = 'Course name is required';
     if (!courseCode.trim()) newErrors.courseCode = 'Course code is required';
     if (!semester) newErrors.semester = 'Semester is required';
@@ -70,16 +81,18 @@ export default function AddSessionPage() {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setApiError(null);
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Creating session:', {
-        name: `${semester} ${year} - ${getSessionTypeName()}`,
+      const sessionName = `${semester} ${year} - ${getSessionNumberDisplay()}`;
+
+      await createCourseSession({
+        name: sessionName,
+        sessionNumber: sessionNumber.toLowerCase(),
         courseName,
         courseCode,
-        semester,
+        semester: semester as 'Spring' | 'Summer' | 'Fall' | 'Winter',
         year,
-        sessionType,
         startDate,
         endDate,
       });
@@ -88,10 +101,19 @@ export default function AddSessionPage() {
       setTimeout(() => {
         router.push('/ta/sessions');
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating session:', error);
+      setApiError(error.message || 'Failed to create session. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Handle custom session number input
+  const handleCustomSessionNumber = (value: string) => {
+    setCustomSessionNumber(value);
+    if (value.trim()) {
+      setSessionNumber(value.trim());
     }
   };
 
@@ -102,7 +124,7 @@ export default function AddSessionPage() {
           <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
           <h2 className="text-xl font-bold text-gray-900 font-serif">Session Created Successfully!</h2>
           <p className="mt-2 text-sm text-gray-600 font-sans">
-            {semester} {year} - {getSessionTypeName()} session for {courseCode} has been created.
+            {semester} {year} - {getSessionNumberDisplay()} session for {courseCode} has been created.
           </p>
           <p className="mt-4 text-sm text-gray-500 font-sans">
             Redirecting to Sessions...
@@ -128,8 +150,84 @@ export default function AddSessionPage() {
         </div>
       </div>
 
+      {/* API Error */}
+      {apiError && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 flex items-center gap-3">
+          <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
+          <div>
+            <p className="text-sm font-medium text-red-800">{apiError}</p>
+          </div>
+        </div>
+      )}
+
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* SESSION NUMBER - MOST IMPORTANT SECTION */}
+        <div className="rounded-xl border-2 border-maroon-200 bg-maroon-50/30 p-6">
+          <h2 className="text-sm font-semibold text-maroon-900 mb-2 font-sans flex items-center gap-2">
+            <Hash size={16} className="text-maroon-600" />
+            Session Number <span className="text-red-500">*</span>
+          </h2>
+          <p className="text-xs text-maroon-700 mb-4">
+            This is the primary identifier for your class section (e.g., Morning, Evening, Session 1, Session 2)
+          </p>
+
+          {/* Quick Select Options */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {sessionNumberOptions.map((option) => {
+              const Icon = option.icon;
+              const isSelected = sessionNumber === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setSessionNumber(option.value);
+                    setCustomSessionNumber('');
+                  }}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${isSelected
+                      ? 'border-maroon-500 bg-maroon-100 text-maroon-800 shadow-sm'
+                      : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                    }`}
+                >
+                  <Icon size={18} className={isSelected ? 'text-maroon-600' : 'text-gray-400'} />
+                  <span className="text-sm font-semibold">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Custom Session Number */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5 font-sans">
+              Or enter a custom session number (e.g., 3, 4, A, B)
+            </label>
+            <input
+              type="text"
+              value={customSessionNumber}
+              onChange={(e) => handleCustomSessionNumber(e.target.value)}
+              placeholder="e.g., 3, 4, A, B, afternoon"
+              className={`w-full rounded-lg border ${errors.sessionNumber ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500 bg-white`}
+            />
+          </div>
+
+          {errors.sessionNumber && (
+            <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle size={12} />
+              {errors.sessionNumber}
+            </p>
+          )}
+
+          {sessionNumber && (
+            <div className="mt-3 p-2 rounded-lg bg-maroon-100 border border-maroon-200">
+              <p className="text-sm font-medium text-maroon-800">
+                Selected: <span className="font-bold">{getSessionNumberDisplay()}</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Course Information */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4 font-sans flex items-center gap-2">
             <BookOpen size={16} className="text-maroon-600" />
@@ -177,7 +275,7 @@ export default function AddSessionPage() {
           </div>
 
           {/* Semester and Year */}
-          <div className="grid grid-cols-2 gap-4 mb-5">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
                 Semester <span className="text-red-500">*</span>
@@ -252,34 +350,9 @@ export default function AddSessionPage() {
               </div>
             </div>
           </div>
-
-          {/* Session Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
-              Session Type <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {sessionTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => setSessionType(type.value as typeof sessionType)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${sessionType === type.value
-                        ? 'border-maroon-500 bg-maroon-50 text-maroon-700'
-                        : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-                      }`}
-                  >
-                    <Icon size={18} className={sessionType === type.value ? 'text-maroon-600' : 'text-gray-400'} />
-                    <span className="text-sm font-medium">{type.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
+        {/* Session Dates */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4 font-sans flex items-center gap-2">
             <Calendar size={16} className="text-maroon-600" />
@@ -325,11 +398,12 @@ export default function AddSessionPage() {
             </div>
           </div>
 
-          {semester && (
+          {/* Preview */}
+          {semester && sessionNumber && (
             <div className="mt-4 p-3 rounded-lg bg-gray-50 border border-gray-100">
               <p className="text-sm text-gray-600">
                 <span className="font-medium text-gray-900">Session Name: </span>
-                {semester} {year} - {getSessionTypeName()}
+                {semester} {year} - {getSessionNumberDisplay()}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 This name will be displayed throughout the dashboard.
@@ -350,8 +424,9 @@ export default function AddSessionPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2.5 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
           >
+            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
             {isSubmitting ? 'Creating...' : 'Create Session'}
           </button>
         </div>

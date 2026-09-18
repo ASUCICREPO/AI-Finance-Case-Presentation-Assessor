@@ -11,8 +11,10 @@ import {
   ChevronDown,
   Sun,
   Moon,
-  Clock,
+  Hash,
+  Loader2,
 } from 'lucide-react';
+import { getCourseSession, updateCourseSession, CourseSession } from '../../../services/api';
 
 export default function EditSessionPage() {
   const router = useRouter();
@@ -23,16 +25,18 @@ export default function EditSessionPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Form state
+  const [sessionNumber, setSessionNumber] = useState('');
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
   const [semester, setSemester] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
-  const [sessionType, setSessionType] = useState<'morning' | 'evening' | '1' | '2'>('morning');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState<'active' | 'upcoming' | 'archived'>('active');
+  const [customSessionNumber, setCustomSessionNumber] = useState('');
 
   // Dropdown states
   const [semesterOpen, setSemesterOpen] = useState(false);
@@ -46,11 +50,13 @@ export default function EditSessionPage() {
     { value: 'upcoming', label: 'Upcoming' },
     { value: 'archived', label: 'Archived' },
   ];
-  const sessionTypes = [
+
+  // Quick select session numbers
+  const sessionNumberOptions = [
     { value: 'morning', label: 'Morning', icon: Sun },
     { value: 'evening', label: 'Evening', icon: Moon },
-    { value: '1', label: 'Session 1', icon: Clock },
-    { value: '2', label: 'Session 2', icon: Clock },
+    { value: '1', label: 'Session 1', icon: Hash },
+    { value: '2', label: 'Session 2', icon: Hash },
   ];
 
   // Load session data
@@ -60,85 +66,48 @@ export default function EditSessionPage() {
       return;
     }
 
-    // Simulate loading session data - in production this would be an API call
-    setTimeout(() => {
-      // Mock data based on sessionId
-      const mockData: Record<string, {
-        courseName: string;
-        courseCode: string;
-        semester: string;
-        year: number;
-        sessionType: 'morning' | 'evening' | '1' | '2';
-        startDate: string;
-        endDate: string;
-        status: 'active' | 'upcoming' | 'archived';
-      }> = {
-        'sess-1': {
-          courseName: 'Real Estate Finance',
-          courseCode: 'FIN 502',
-          semester: 'Spring',
-          year: 2026,
-          sessionType: 'morning',
-          startDate: '2026-01-15',
-          endDate: '2026-05-15',
-          status: 'active',
-        },
-        'sess-2': {
-          courseName: 'Real Estate Finance',
-          courseCode: 'FIN 502',
-          semester: 'Spring',
-          year: 2026,
-          sessionType: 'evening',
-          startDate: '2026-01-15',
-          endDate: '2026-05-15',
-          status: 'active',
-        },
-        'sess-3': {
-          courseName: 'Real Estate Finance',
-          courseCode: 'FIN 502',
-          semester: 'Fall',
-          year: 2026,
-          sessionType: '1',
-          startDate: '2026-08-20',
-          endDate: '2026-12-15',
-          status: 'upcoming',
-        },
-        'sess-4': {
-          courseName: 'Real Estate Finance',
-          courseCode: 'FIN 502',
-          semester: 'Fall',
-          year: 2025,
-          sessionType: 'morning',
-          startDate: '2025-08-19',
-          endDate: '2025-12-14',
-          status: 'archived',
-        },
-      };
-
-      const data = mockData[sessionId] || mockData['sess-1'];
-      setCourseName(data.courseName);
-      setCourseCode(data.courseCode);
-      setSemester(data.semester);
-      setYear(data.year);
-      setSessionType(data.sessionType);
-      setStartDate(data.startDate);
-      setEndDate(data.endDate);
-      setStatus(data.status);
-      setLoading(false);
-    }, 500);
+    loadSession();
   }, [sessionId, router]);
 
-  const getSessionTypeName = () => {
-    switch (sessionType) {
+  async function loadSession() {
+    setLoading(true);
+    setApiError(null);
+    try {
+      const session = await getCourseSession(sessionId!);
+      setSessionNumber(session.sessionNumber || session.sessionType || '');
+      setCourseName(session.courseName);
+      setCourseCode(session.courseCode);
+      setSemester(session.semester);
+      setYear(session.year);
+      setStartDate(session.startDate);
+      setEndDate(session.endDate);
+      setStatus(session.status);
+
+      // If session number is not a quick select option, set it as custom
+      const quickSelectValues = sessionNumberOptions.map(o => o.value);
+      if (!quickSelectValues.includes(session.sessionNumber || session.sessionType || '')) {
+        setCustomSessionNumber(session.sessionNumber || session.sessionType || '');
+      }
+    } catch (err: any) {
+      console.error('Error loading session:', err);
+      setApiError(err.message || 'Failed to load session');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const getSessionNumberDisplay = () => {
+    if (!sessionNumber) return '';
+    switch (sessionNumber.toLowerCase()) {
       case 'morning': return 'Morning';
       case 'evening': return 'Evening';
-      case '1': return 'Session 1';
-      case '2': return 'Session 2';
+      default: return `Session ${sessionNumber}`;
     }
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    if (!sessionNumber.trim()) newErrors.sessionNumber = 'Session number is required';
     if (!courseName.trim()) newErrors.courseName = 'Course name is required';
     if (!courseCode.trim()) newErrors.courseCode = 'Course code is required';
     if (!semester) newErrors.semester = 'Semester is required';
@@ -156,41 +125,67 @@ export default function EditSessionPage() {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setApiError(null);
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Updating session:', {
-        sessionId,
-        name: `${semester} ${year} - ${getSessionTypeName()}`,
+      const sessionName = `${semester} ${year} - ${getSessionNumberDisplay()}`;
+
+      await updateCourseSession(sessionId!, {
+        name: sessionName,
+        sessionNumber: sessionNumber.toLowerCase(),
         courseName,
         courseCode,
-        semester,
+        semester: semester as 'Spring' | 'Summer' | 'Fall' | 'Winter',
         year,
-        sessionType,
         startDate,
         endDate,
         status,
       });
-      
+
       setShowSuccess(true);
       setTimeout(() => {
         router.push('/ta/sessions');
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating session:', error);
+      setApiError(error.message || 'Failed to update session. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Handle custom session number input
+  const handleCustomSessionNumber = (value: string) => {
+    setCustomSessionNumber(value);
+    if (value.trim()) {
+      setSessionNumber(value.trim());
     }
   };
 
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl animate-fade-in">
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
-          </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="animate-spin text-maroon-600" size={32} />
+          <span className="ml-3 text-gray-600">Loading session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (apiError && !courseName) {
+    return (
+      <div className="mx-auto max-w-2xl animate-fade-in">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+          <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 font-serif">Failed to Load Session</h2>
+          <p className="mt-2 text-sm text-gray-600 font-sans">{apiError}</p>
+          <button
+            onClick={() => router.push('/ta/sessions')}
+            className="mt-4 px-4 py-2 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700"
+          >
+            Back to Sessions
+          </button>
         </div>
       </div>
     );
@@ -203,7 +198,7 @@ export default function EditSessionPage() {
           <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
           <h2 className="text-xl font-bold text-gray-900 font-serif">Session Updated Successfully!</h2>
           <p className="mt-2 text-sm text-gray-600 font-sans">
-            {semester} {year} - {getSessionTypeName()} session has been updated.
+            {semester} {year} - {getSessionNumberDisplay()} session has been updated.
           </p>
           <p className="mt-4 text-sm text-gray-500 font-sans">
             Redirecting to Sessions...
@@ -229,8 +224,84 @@ export default function EditSessionPage() {
         </div>
       </div>
 
+      {/* API Error */}
+      {apiError && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 flex items-center gap-3">
+          <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
+          <div>
+            <p className="text-sm font-medium text-red-800">{apiError}</p>
+          </div>
+        </div>
+      )}
+
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* SESSION NUMBER - MOST IMPORTANT SECTION */}
+        <div className="rounded-xl border-2 border-maroon-200 bg-maroon-50/30 p-6">
+          <h2 className="text-sm font-semibold text-maroon-900 mb-2 font-sans flex items-center gap-2">
+            <Hash size={16} className="text-maroon-600" />
+            Session Number <span className="text-red-500">*</span>
+          </h2>
+          <p className="text-xs text-maroon-700 mb-4">
+            This is the primary identifier for your class section
+          </p>
+
+          {/* Quick Select Options */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {sessionNumberOptions.map((option) => {
+              const Icon = option.icon;
+              const isSelected = sessionNumber.toLowerCase() === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setSessionNumber(option.value);
+                    setCustomSessionNumber('');
+                  }}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${isSelected
+                      ? 'border-maroon-500 bg-maroon-100 text-maroon-800 shadow-sm'
+                      : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                    }`}
+                >
+                  <Icon size={18} className={isSelected ? 'text-maroon-600' : 'text-gray-400'} />
+                  <span className="text-sm font-semibold">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Custom Session Number */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5 font-sans">
+              Or enter a custom session number
+            </label>
+            <input
+              type="text"
+              value={customSessionNumber}
+              onChange={(e) => handleCustomSessionNumber(e.target.value)}
+              placeholder="e.g., 3, 4, A, B, afternoon"
+              className={`w-full rounded-lg border ${errors.sessionNumber ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500 bg-white`}
+            />
+          </div>
+
+          {errors.sessionNumber && (
+            <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle size={12} />
+              {errors.sessionNumber}
+            </p>
+          )}
+
+          {sessionNumber && (
+            <div className="mt-3 p-2 rounded-lg bg-maroon-100 border border-maroon-200">
+              <p className="text-sm font-medium text-maroon-800">
+                Selected: <span className="font-bold">{getSessionNumberDisplay()}</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Course Information */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4 font-sans flex items-center gap-2">
             <BookOpen size={16} className="text-maroon-600" />
@@ -354,33 +425,6 @@ export default function EditSessionPage() {
             </div>
           </div>
 
-          {/* Session Type */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
-              Session Type <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {sessionTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => setSessionType(type.value as typeof sessionType)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
-                      sessionType === type.value
-                        ? 'border-maroon-500 bg-maroon-50 text-maroon-700'
-                        : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    <Icon size={18} className={sessionType === type.value ? 'text-maroon-600' : 'text-gray-400'} />
-                    <span className="text-sm font-medium">{type.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
@@ -416,6 +460,7 @@ export default function EditSessionPage() {
           </div>
         </div>
 
+        {/* Session Dates */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <h2 className="text-sm font-semibold text-gray-900 mb-4 font-sans flex items-center gap-2">
             <Calendar size={16} className="text-maroon-600" />
@@ -461,11 +506,12 @@ export default function EditSessionPage() {
             </div>
           </div>
 
-          {semester && (
+          {/* Preview */}
+          {semester && sessionNumber && (
             <div className="mt-4 p-3 rounded-lg bg-gray-50 border border-gray-100">
               <p className="text-sm text-gray-600">
                 <span className="font-medium text-gray-900">Session Name: </span>
-                {semester} {year} - {getSessionTypeName()}
+                {semester} {year} - {getSessionNumberDisplay()}
               </p>
             </div>
           )}
@@ -483,8 +529,9 @@ export default function EditSessionPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2.5 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
           >
+            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
