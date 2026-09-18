@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, Flag, ChevronRight, Mic, MicOff } from 'lucide-react';
+import { Clock, Flag, ChevronRight, Mic, MicOff, Circle } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
-import StudentCameraView from './StudentCameraView';
+import StudentCameraView, { StudentCameraViewRef } from './StudentCameraView';
+import { useVideoRecorder } from '../../../hooks/useVideoRecorder';
 
 // Web Speech API type declarations
 interface SpeechRecognitionEvent extends Event {
@@ -68,7 +69,7 @@ interface PresentationSessionProps {
   timer: TimerState;
   workbookSheets: string[];
   workbookData: Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>;
-  onProceedToQA: (presentationTranscript: string) => void;
+  onProceedToQA: (presentationTranscript: string, videoBlob: Blob | null, presentationDuration: number) => void;
   presentationDuration?: number;
 }
 
@@ -93,6 +94,11 @@ export default function PresentationSession({
   const [currentSpeech, setCurrentSpeech] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const cameraRef = useRef<StudentCameraViewRef>(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+
+  // Video recording
+  const videoRecorder = useVideoRecorder();
 
   const hasWorkbookData = workbookSheets.length > 0;
 
@@ -166,9 +172,9 @@ export default function PresentationSession({
     };
   }, [isListening]);
 
-  // Auto-start listening when component mounts
+  // Auto-start listening and recording when component mounts
   useEffect(() => {
-    const startListening = () => {
+    const startListening = async () => {
       if (recognitionRef.current && !isListening) {
         try {
           recognitionRef.current.start();
@@ -222,8 +228,8 @@ export default function PresentationSession({
     }
   }, [isListening]);
 
-  // Handle proceed to Q&A - pass the collected transcript
-  const handleProceedToQA = () => {
+  // Handle proceed to Q&A - pass the collected transcript and video
+  const handleProceedToQA = async () => {
     // Stop recognition
     if (recognitionRef.current) {
       try {
@@ -234,11 +240,29 @@ export default function PresentationSession({
     }
     setIsListening(false);
 
+    // Stop video recording and get blob
+    let videoBlob: Blob | null = null;
+    if (videoRecorder.isRecording) {
+      videoBlob = await videoRecorder.stopRecording();
+      console.log('[PresentationSession] Video recording stopped, blob size:', videoBlob?.size);
+    }
+
     // Combine all transcript segments
     const fullTranscript = transcript.join(' ').trim();
     console.log('[PresentationSession] Presentation transcript:', fullTranscript.substring(0, 200) + '...');
-    onProceedToQA(fullTranscript);
+    onProceedToQA(fullTranscript, videoBlob, elapsedTime);
   };
+
+  // Handle camera stream ready - start video recording
+  const handleStreamReady = useCallback((stream: MediaStream) => {
+    setCameraStream(stream);
+    // Auto-start recording when stream is ready
+    if (!videoRecorder.isRecording) {
+      videoRecorder.startRecording(stream).catch(err => {
+        console.error('[PresentationSession] Failed to start video recording:', err);
+      });
+    }
+  }, [videoRecorder]);
 
   // Check if minimum presentation time reached (1 minute)
   const minPresentationTime = 60;
@@ -257,10 +281,16 @@ export default function PresentationSession({
             Presenting
           </span>
           {/* Recording indicator */}
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${isListening ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${videoRecorder.isRecording ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+            {videoRecorder.isRecording ? <Circle size={12} className="fill-red-500 text-red-500" /> : <MicOff size={12} />}
+            {videoRecorder.isRecording ? 'Recording Video' : 'Not Recording'}
+          </span>
+          {/* Speech indicator */}
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${isListening ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
             }`}>
             {isListening ? <Mic size={12} /> : <MicOff size={12} />}
-            {isListening ? 'Recording' : 'Paused'}
+            {isListening ? 'Transcribing' : 'Paused'}
           </span>
           {/* Presentation time */}
           <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
@@ -310,7 +340,11 @@ export default function PresentationSession({
           {/* Student Camera - Large view during presentation */}
           <div className="flex-1 min-h-0">
             <div className="h-full rounded-xl border border-gray-200 bg-gray-900 overflow-hidden">
-              <StudentCameraView studentName={studentName || 'Student'} />
+              <StudentCameraView
+                ref={cameraRef}
+                studentName={studentName || 'Student'}
+                onStreamReady={handleStreamReady}
+              />
             </div>
           </div>
 
