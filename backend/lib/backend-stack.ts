@@ -222,6 +222,25 @@ export class FinanceAssessorStack extends cdk.Stack {
       sortKey: { name: 'submittedAt', type: dynamodb.AttributeType.STRING },
     });
 
+    // Course Sessions Table - class sections (morning/evening, session 1/2)
+    const courseSessionsTable = new dynamodb.Table(this, 'CourseSessionsTable', {
+      partitionKey: { name: 'courseSessionId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    // GSI for querying by status (active, upcoming, archived)
+    courseSessionsTable.addGlobalSecondaryIndex({
+      indexName: 'status-index',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'startDate', type: dynamodb.AttributeType.STRING },
+    });
+    // GSI for querying by semester/year
+    courseSessionsTable.addGlobalSecondaryIndex({
+      indexName: 'semesterYear-index',
+      partitionKey: { name: 'semester', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'year', type: dynamodb.AttributeType.NUMBER },
+    });
+
     // ──────────────────────────────────────────────────────────
     // Lambda Functions
     // ──────────────────────────────────────────────────────────
@@ -376,6 +395,21 @@ export class FinanceAssessorStack extends cdk.Stack {
     groupsTable.grantReadData(assessmentsCrudFn);
     studentsTable.grantReadData(assessmentsCrudFn);
 
+    // Course Sessions CRUD Lambda - class sections (morning/evening, session 1/2)
+    const courseSessionsCrudFn = new lambda.Function(this, 'CourseSessionsCrudFn', {
+      ...lambdaDefaults,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/course-sessions-crud'),
+      description: 'CRUD operations for course sessions (class sections)',
+      environment: {
+        ...lambdaDefaults.environment,
+        COURSE_SESSIONS_TABLE: courseSessionsTable.tableName,
+      },
+    } as lambda.FunctionProps);
+    courseSessionsTable.grantReadWriteData(courseSessionsCrudFn);
+    studentsTable.grantReadData(courseSessionsCrudFn);
+    groupsTable.grantReadData(courseSessionsCrudFn);
+
     // ──────────────────────────────────────────────────────────
     // API Gateway
     // ──────────────────────────────────────────────────────────
@@ -482,6 +516,21 @@ export class FinanceAssessorStack extends cdk.Stack {
     const studentAssessments = assessmentsResource.addResource('student');
     studentAssessments.addMethod('GET', new apigateway.LambdaIntegration(assessmentsCrudFn));
 
+    // /course-sessions (TA Dashboard - class sections)
+    const courseSessionsResource = api.root.addResource('course-sessions');
+    courseSessionsResource.addMethod('GET', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+    courseSessionsResource.addMethod('POST', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+    const courseSessionById = courseSessionsResource.addResource('{sessionId}');
+    courseSessionById.addMethod('GET', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+    courseSessionById.addMethod('PUT', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+    courseSessionById.addMethod('DELETE', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+    // Archive a course session (soft delete)
+    const courseSessionArchive = courseSessionById.addResource('archive');
+    courseSessionArchive.addMethod('POST', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+    // Duplicate a course session
+    const courseSessionDuplicate = courseSessionById.addResource('duplicate');
+    courseSessionDuplicate.addMethod('POST', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+
     this.apiUrl = api.url;
 
     // ──────────────────────────────────────────────────────────
@@ -502,5 +551,6 @@ export class FinanceAssessorStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'StudentsTableName', { value: studentsTable.tableName });
     new cdk.CfnOutput(this, 'GroupsTableName', { value: groupsTable.tableName });
     new cdk.CfnOutput(this, 'SubmissionsTableName', { value: submissionsTable.tableName });
+    new cdk.CfnOutput(this, 'CourseSessionsTableName', { value: courseSessionsTable.tableName });
   }
 }
