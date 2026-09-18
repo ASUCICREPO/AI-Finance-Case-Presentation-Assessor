@@ -35,8 +35,10 @@ export interface UseAgentCoreReturn {
   requestAnalytics: () => void;
   disconnect: () => void;
   setMuteAudioPlayback: (mute: boolean) => void;
-  /** Register callback to receive audio chunks for Anam lip-sync */
+  /** Register callback to receive audio chunks for Anam lip-sync (audio passthrough mode) */
   onAudioChunk: (callback: (audioBase64: string, isFinal: boolean) => void) => void;
+  /** Register callback to receive assistant TEXT for Anam TTS (text mode - preferred) */
+  onAssistantText: (callback: (text: string, isFinal: boolean) => void) => void;
   /** Send a text command to the AI (e.g., skip question) */
   sendTextCommand: (text: string) => void;
 }
@@ -60,6 +62,9 @@ export function useAgentCore(): UseAgentCoreReturn {
   // Audio chunk callback for Anam lip-sync
   const audioChunkCallbackRef = useRef<((audioBase64: string, isFinal: boolean) => void) | null>(null);
 
+  // Text callback for Anam TTS (preferred mode)
+  const assistantTextCallbackRef = useRef<((text: string, isFinal: boolean) => void) | null>(null);
+
   // Event handler
   const handleEvent = useCallback((event: AgentCoreEvent) => {
     switch (event.type) {
@@ -81,6 +86,11 @@ export function useAgentCore(): UseAgentCoreReturn {
         if (event.role === 'assistant') {
           setIsAISpeaking(event.is_partial); // Speaking while partial, done when final
           setCurrentAIText(event.text);
+
+          // Forward assistant text to registered callback (for Anam TTS)
+          if (assistantTextCallbackRef.current) {
+            assistantTextCallbackRef.current(event.text, !event.is_partial);
+          }
 
           // When assistant transcript becomes final, signal end of audio sequence
           if (!event.is_partial && audioChunkCallbackRef.current) {
@@ -203,6 +213,12 @@ export function useAgentCore(): UseAgentCoreReturn {
     console.log('[useAgentCore] Audio chunk callback registered for Anam lip-sync');
   }, []);
 
+  // Register callback for assistant text (for Anam TTS - preferred)
+  const onAssistantText = useCallback((callback: (text: string, isFinal: boolean) => void) => {
+    assistantTextCallbackRef.current = callback;
+    console.log('[useAgentCore] Assistant text callback registered for Anam TTS');
+  }, []);
+
   // Send a text command to the AI (e.g., skip question)
   const sendTextCommand = useCallback((text: string) => {
     if (clientRef.current) {
@@ -235,6 +251,7 @@ export function useAgentCore(): UseAgentCoreReturn {
     disconnect,
     setMuteAudioPlayback,
     onAudioChunk,
+    onAssistantText,
     sendTextCommand,
   };
 }
