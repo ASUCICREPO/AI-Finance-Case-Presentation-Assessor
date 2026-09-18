@@ -102,7 +102,7 @@ export async function getUploadUrl(
   sessionId: string,
   fileName: string,
   contentType: string,
-  folder: 'uploads' | 'recordings' | 'reports' = 'uploads'
+  folder: 'uploads' | 'recordings' | 'reports' | 'videos' = 'uploads'
 ): Promise<PresignedUrlResponse> {
   return fetchApi<PresignedUrlResponse>('/upload-url', {
     method: 'POST',
@@ -113,7 +113,7 @@ export async function getUploadUrl(
 export async function getDownloadUrl(
   sessionId: string,
   fileName: string,
-  folder: 'uploads' | 'recordings' | 'reports' = 'reports'
+  folder: 'uploads' | 'recordings' | 'reports' | 'videos' = 'reports'
 ): Promise<PresignedUrlResponse> {
   return fetchApi<PresignedUrlResponse>('/upload-url', {
     method: 'POST',
@@ -122,12 +122,35 @@ export async function getDownloadUrl(
 }
 
 /**
+ * Get a pre-signed download URL for a video file stored in S3.
+ * @param videoS3Key The S3 key for the video (e.g., "videos/session-123/presentation.webm")
+ */
+export async function getVideoDownloadUrl(videoS3Key: string): Promise<string> {
+  // Extract sessionId and fileName from the S3 key
+  // Format: "videos/{sessionId}/{fileName}" or just "{fileName}"
+  const parts = videoS3Key.split('/');
+  let sessionId = 'unknown';
+  let fileName = videoS3Key;
+
+  if (parts.length >= 3 && parts[0] === 'videos') {
+    sessionId = parts[1];
+    fileName = parts.slice(2).join('/');
+  } else if (parts.length >= 2) {
+    sessionId = parts[0];
+    fileName = parts.slice(1).join('/');
+  }
+
+  const response = await getDownloadUrl(sessionId, fileName, 'videos');
+  return response.url;
+}
+
+/**
  * Upload a file to S3 using a pre-signed URL.
  */
 export async function uploadFile(
   sessionId: string,
   file: File,
-  folder: 'uploads' | 'recordings' = 'uploads',
+  folder: 'uploads' | 'recordings' | 'videos' = 'uploads',
   onProgress?: (percent: number) => void
 ): Promise<{ s3Key: string }> {
   // Get pre-signed URL
@@ -447,6 +470,15 @@ export async function removeGroupMembers(groupId: string, studentIds: string[]):
 // TA Dashboard API - Submissions
 // ──────────────────────────────────────────────────────────
 
+// AI Rubric Category Score (from Bedrock assessment)
+export interface RubricCategoryScore {
+  performanceLevel?: number;
+  score?: number;
+  justification?: string;
+  evidence?: string[];
+  confidence?: string;
+}
+
 export interface Submission {
   submissionId: string;
   studentId: string;
@@ -463,17 +495,31 @@ export interface Submission {
   aiScoreBreakdown?: Record<string, number>;
   aiAnalytics?: {
     overallScore?: number;
-    categoryScores?: Record<string, number>;
+    overallSummary?: string;
+    categoryScores?: Record<string, number | RubricCategoryScore>;
     feedback?: {
       strengths?: string[];
       improvements?: string[];
       evidence?: string[];
     };
+    rubricWeights?: Record<string, number>;
+    performanceLevels?: Record<number, { label: string; description: string; scoreRange: number[] }>;
+    inconsistencies?: string[];
+    unansweredQuestions?: string[];
+    instructorReviewFlags?: string[];
+    overallConfidence?: string;
+    provisionalLabel?: string;
   };
-  transcript?: Array<{ role: string; text: string; timestamp?: string }>;
+
+  // Dual transcripts
+  presentationTranscript?: string; // What student said during presentation
+  qaTranscript?: Array<{ role: string; text: string; timestamp?: string }>; // Q&A with AI
+  transcript?: Array<{ role: string; text: string; timestamp?: string }>; // Legacy: Q&A only
+
   questionsAsked?: number;
   responsesGiven?: number;
-  sessionDuration?: number;
+  sessionDuration?: number; // Q&A duration in seconds
+  presentationDuration?: number; // Presentation duration in seconds
 
   // Reviewer Scores
   reviewerScore?: number;
@@ -484,6 +530,7 @@ export interface Submission {
 
   // File references
   videoUrl?: string;
+  videoS3Key?: string; // S3 key for video recording
   transcriptUrl?: string;
   spreadsheetUrl?: string;
   spreadsheetS3Key?: string;
@@ -557,6 +604,8 @@ export async function getSubmissionTranscript(submissionId: string): Promise<{
  */
 export async function createSubmission(data: {
   studentId: string;
+  studentEmail?: string;
+  studentName?: string;
   assessmentId: string;
   sessionId: string;
   groupId?: string;
@@ -565,11 +614,15 @@ export async function createSubmission(data: {
   aiScore?: number;
   aiScoreBreakdown?: Record<string, number>;
   aiAnalytics?: object;
-  transcript?: Array<{ role: string; text: string; timestamp?: string }>;
+  presentationTranscript?: string;
+  qaTranscript?: Array<{ role: string; text: string; timestamp?: string }>;
+  transcript?: Array<{ role: string; text: string; timestamp?: string }>; // Legacy - Q&A only
   questionsAsked?: number;
   responsesGiven?: number;
   sessionDuration?: number;
+  presentationDuration?: number;
   spreadsheetS3Key?: string;
+  videoS3Key?: string;
 }): Promise<Submission> {
   return fetchApi<Submission>('/submissions', {
     method: 'POST',
