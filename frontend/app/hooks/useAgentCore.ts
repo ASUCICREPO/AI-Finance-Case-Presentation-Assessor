@@ -37,6 +37,8 @@ export interface UseAgentCoreReturn {
   setMuteAudioPlayback: (mute: boolean) => void;
   /** Register callback to receive audio chunks for Anam lip-sync */
   onAudioChunk: (callback: (audioBase64: string, isFinal: boolean) => void) => void;
+  /** Send a text command to the AI (e.g., skip question) */
+  sendTextCommand: (text: string) => void;
 }
 
 export function useAgentCore(): UseAgentCoreReturn {
@@ -201,6 +203,15 @@ export function useAgentCore(): UseAgentCoreReturn {
     console.log('[useAgentCore] Audio chunk callback registered for Anam lip-sync');
   }, []);
 
+  // Send a text command to the AI (e.g., skip question)
+  const sendTextCommand = useCallback((text: string) => {
+    if (clientRef.current) {
+      clientRef.current.sendTextCommand(text);
+      // Update local transcript
+      setTranscript([...clientRef.current.transcript]);
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -224,5 +235,6 @@ export function useAgentCore(): UseAgentCoreReturn {
     disconnect,
     setMuteAudioPlayback,
     onAudioChunk,
+    sendTextCommand,
   };
 }

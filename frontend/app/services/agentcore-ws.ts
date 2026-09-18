@@ -276,6 +276,25 @@ export class AgentCoreClient {
   }
 
   /**
+   * Send a text message/command to the AI (e.g., "skip this question").
+   * This bypasses audio input and sends text directly.
+   */
+  sendTextCommand(text: string): void {
+    this.sendJson({ action: 'text_input', text });
+
+    // Also add to transcript as user message
+    this.transcript.push({
+      role: 'user',
+      text: text,
+      isFinal: true,
+      timestamp: Date.now(),
+    });
+
+    // Emit transcript event so UI updates
+    this.emit({ type: 'transcript', role: 'user', text: text, is_partial: false });
+  }
+
+  /**
    * End the Q&A session gracefully.
    */
   endSession(): void {
