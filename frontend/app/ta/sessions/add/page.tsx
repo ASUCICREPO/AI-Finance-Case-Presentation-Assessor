@@ -9,6 +9,9 @@ import {
   Calendar,
   BookOpen,
   ChevronDown,
+  Sun,
+  Moon,
+  Clock,
 } from 'lucide-react';
 
 export default function AddSessionPage() {
@@ -22,6 +25,7 @@ export default function AddSessionPage() {
   const [courseCode, setCourseCode] = useState('FIN 502');
   const [semester, setSemester] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
+  const [sessionType, setSessionType] = useState<'morning' | 'evening' | '1' | '2'>('morning');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -31,6 +35,21 @@ export default function AddSessionPage() {
 
   const semesters = ['Spring', 'Summer', 'Fall', 'Winter'];
   const years = [2025, 2026, 2027, 2028];
+  const sessionTypes = [
+    { value: 'morning', label: 'Morning', icon: Sun },
+    { value: 'evening', label: 'Evening', icon: Moon },
+    { value: '1', label: 'Session 1', icon: Clock },
+    { value: '2', label: 'Session 2', icon: Clock },
+  ];
+
+  const getSessionTypeName = () => {
+    switch (sessionType) {
+      case 'morning': return 'Morning';
+      case 'evening': return 'Evening';
+      case '1': return 'Session 1';
+      case '2': return 'Session 2';
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -55,15 +74,16 @@ export default function AddSessionPage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       console.log('Creating session:', {
-        name: `${semester} ${year}`,
+        name: `${semester} ${year} - ${getSessionTypeName()}`,
         courseName,
         courseCode,
         semester,
         year,
+        sessionType,
         startDate,
         endDate,
       });
-      
+
       setShowSuccess(true);
       setTimeout(() => {
         router.push('/ta/sessions');
@@ -82,7 +102,7 @@ export default function AddSessionPage() {
           <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
           <h2 className="text-xl font-bold text-gray-900 font-serif">Session Created Successfully!</h2>
           <p className="mt-2 text-sm text-gray-600 font-sans">
-            {semester} {year} session for {courseCode} has been created.
+            {semester} {year} - {getSessionTypeName()} session for {courseCode} has been created.
           </p>
           <p className="mt-4 text-sm text-gray-500 font-sans">
             Redirecting to Sessions...
@@ -104,7 +124,7 @@ export default function AddSessionPage() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 font-serif">Add Session</h1>
-          <p className="text-sm text-gray-500 font-sans">Create a new course session</p>
+          <p className="text-sm text-gray-500 font-sans">Create a new class section</p>
         </div>
       </div>
 
@@ -232,6 +252,32 @@ export default function AddSessionPage() {
               </div>
             </div>
           </div>
+
+          {/* Session Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5 font-sans">
+              Session Type <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {sessionTypes.map((type) => {
+                const Icon = type.icon;
+                return (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => setSessionType(type.value as typeof sessionType)}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${sessionType === type.value
+                        ? 'border-maroon-500 bg-maroon-50 text-maroon-700'
+                        : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                      }`}
+                  >
+                    <Icon size={18} className={sessionType === type.value ? 'text-maroon-600' : 'text-gray-400'} />
+                    <span className="text-sm font-medium">{type.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -283,7 +329,7 @@ export default function AddSessionPage() {
             <div className="mt-4 p-3 rounded-lg bg-gray-50 border border-gray-100">
               <p className="text-sm text-gray-600">
                 <span className="font-medium text-gray-900">Session Name: </span>
-                {semester} {year}
+                {semester} {year} - {getSessionTypeName()}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 This name will be displayed throughout the dashboard.
