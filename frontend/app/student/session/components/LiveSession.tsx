@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Clock, Flag, ChevronRight, Upload, Volume2, AlertCircle, Mic, Video, VolumeX, SkipForward } from 'lucide-react';
+import { Clock, Flag, ChevronRight, Upload, Volume2, Mic, Video, SkipForward } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
 import AnamAvatarPanel from './AnamAvatarPanel';
@@ -31,14 +31,20 @@ interface LiveSessionProps {
   timer: TimerState;
   workbookSheets: string[];
   workbookData: Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>;
+  /** Anam persona ID - only used if useAnamAvatar is true */
   anamPersonaId?: string;
+  /** Whether to use Anam visual avatar (from persona config) */
+  useAnamAvatar?: boolean;
   onSubmit: () => void;
   onFileUpload?: (file: File) => void;
 }
 
 /**
  * Live Q&A Session — Spreadsheet on left, Q&A Panel (timer, avatar, camera) on right.
- * Both always visible side by side.
+ * 
+ * Audio Architecture:
+ * - If Anam avatar is enabled: Nova Sonic audio is MUTED, text is sent to Anam for TTS
+ * - If Anam avatar is NOT enabled: Nova Sonic plays audio directly (voice-only mode)
  */
 export default function LiveSession({
   studentInfo,
@@ -49,6 +55,7 @@ export default function LiveSession({
   workbookSheets,
   workbookData,
   anamPersonaId,
+  useAnamAvatar = false,
   onSubmit,
   onFileUpload,
 }: LiveSessionProps) {
@@ -57,60 +64,58 @@ export default function LiveSession({
   const [anamFailed, setAnamFailed] = useState(false);
   const [voiceMode, setVoiceMode] = useState<'anam' | 'nova-sonic' | 'text-chat'>(() => getVoiceAgentMode());
 
-  // Audio chunk callback ref for Anam lip-sync (not text for TTS)
-  const onAudioChunkRef = useRef<((audioBase64: string, isFinal: boolean) => void) | null>(null);
+  // Text callback ref for Anam TTS (sends transcript text to Anam)
+  const onAssistantTextRef = useRef<((text: string, isFinal: boolean) => void) | null>(null);
 
-  const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback, onAudioChunk, sendTextCommand } = agentCore;
+  const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback, onAssistantText, sendTextCommand } = agentCore;
   const { formattedTime, isLowTime } = timer;
 
-  // Fetch Anam session token on mount (only if Anam is enabled)
+  // Determine if we should use Anam avatar
+  const shouldUseAnam = useAnamAvatar && anamPersonaId && config.anamEnabled;
+
+  // Fetch Anam session token on mount (only if Anam avatar is enabled)
   useEffect(() => {
-    // If Anam is not enabled globally, use Nova Sonic
-    if (!config.anamEnabled) {
-      console.log('[LiveSession] Anam disabled globally, using Nova Sonic voice');
+    if (!shouldUseAnam) {
+      console.log('[LiveSession] Anam avatar not enabled, using Nova Sonic voice-only mode');
       setVoiceMode('nova-sonic');
       setAnamFailed(true);
-      setMuteAudioPlayback(false); // Let Nova Sonic handle audio
+      setMuteAudioPlayback(false); // Nova Sonic plays audio
       return;
     }
 
-    if (!anamPersonaId) {
-      console.log('[LiveSession] No Anam persona ID, falling back to Nova Sonic');
-      setVoiceMode('nova-sonic');
-      setAnamFailed(true);
-      setMuteAudioPlayback(false);
-      return;
-    }
-
-    // Try to get Anam session token with audio passthrough enabled
-    getAnamSessionToken(anamPersonaId, true) // enableAudioPassthrough = true
+    // Try to get Anam session token
+    getAnamSessionToken(anamPersonaId!, false) // No audio passthrough - Anam does TTS
       .then((token) => {
         setAnamSessionToken(token);
         setVoiceMode('anam');
-        // IMPORTANT: Do NOT mute Nova Sonic audio - let it play!
-        // Anam receives audio chunks for lip-sync only, doesn't play audio itself
-        setMuteAudioPlayback(false);
-        console.log('[LiveSession] Anam token received, Nova Sonic audio ENABLED for playback, Anam handles lip-sync');
+        // MUTE Nova Sonic audio - Anam will do TTS from text
+        setMuteAudioPlayback(true);
+        console.log('[LiveSession] Anam token received, Nova Sonic audio MUTED, Anam handles TTS');
       })
       .catch((err) => {
         console.error('[LiveSession] Failed to get Anam token, falling back to Nova Sonic:', err);
         setVoiceMode('nova-sonic');
         setAnamFailed(true);
-        setMuteAudioPlayback(false); // Let Nova Sonic handle audio
+        setMuteAudioPlayback(false); // Nova Sonic plays audio
       });
-  }, [anamPersonaId, setMuteAudioPlayback]);
 
-  // Register audio chunk callback for forwarding Nova Sonic audio to Anam
+    // Cleanup: unmute on unmount
+    return () => {
+      setMuteAudioPlayback(false);
+    };
+  }, [shouldUseAnam, anamPersonaId, setMuteAudioPlayback]);
+
+  // Register text callback for forwarding Nova Sonic transcript to Anam
   useEffect(() => {
-    if (!anamFailed && onAudioChunk) {
-      // Subscribe to Nova Sonic audio chunks and forward to Anam
-      onAudioChunk((audioBase64: string, isFinal: boolean) => {
-        if (onAudioChunkRef.current) {
-          onAudioChunkRef.current(audioBase64, isFinal);
+    if (voiceMode === 'anam' && anamSessionToken && onAssistantText) {
+      // Subscribe to Nova Sonic assistant text and forward to Anam
+      onAssistantText((text: string, isFinal: boolean) => {
+        if (onAssistantTextRef.current) {
+          onAssistantTextRef.current(text, isFinal);
         }
       });
     }
-  }, [anamFailed, onAudioChunk]);
+  }, [voiceMode, anamSessionToken, onAssistantText]);
 
   // File upload handler
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,6 +126,7 @@ export default function LiveSession({
   }, [onFileUpload]);
 
   const hasWorkbookData = workbookSheets.length > 0;
+  const anamIsActive = voiceMode === 'anam' && !anamFailed && anamPersonaId && anamSessionToken;
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)]">
@@ -135,11 +141,11 @@ export default function LiveSession({
             Recording
           </span>
           {/* Voice mode indicator */}
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${voiceMode === 'anam'
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${anamIsActive
             ? 'bg-purple-100 text-purple-700'
             : 'bg-blue-100 text-blue-700'
             }`}>
-            {voiceMode === 'anam' ? (
+            {anamIsActive ? (
               <>
                 <Video size={12} />
                 Avatar Mode
@@ -238,11 +244,11 @@ export default function LiveSession({
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-maroon-600 flex items-center justify-center">
                   <span className="text-xs text-white font-bold">
-                    {(personaName || 'Real Estate Agent').charAt(0)}
+                    {(personaName || 'AI Stakeholder').charAt(0)}
                   </span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 font-sans">
-                  {personaName || 'Real Estate Agent'}
+                  {personaName || 'AI Stakeholder'}
                 </span>
               </div>
               <button className="rounded-full p-1 hover:bg-maroon-100">
@@ -252,13 +258,13 @@ export default function LiveSession({
 
             {/* Avatar area */}
             <div className="relative h-36 bg-gray-100">
-              {voiceMode === 'anam' && !anamFailed && anamPersonaId ? (
+              {anamIsActive ? (
                 <AnamAvatarPanel
-                  anamPersonaId={anamPersonaId}
+                  anamPersonaId={anamPersonaId!}
                   sessionToken={anamSessionToken}
                   isActive={status === 'active'}
-                  personaName={personaName || 'Real Estate Agent'}
-                  onAudioChunkRef={onAudioChunkRef}
+                  personaName={personaName || 'AI Stakeholder'}
+                  onAssistantTextRef={onAssistantTextRef}
                 />
               ) : (
                 /* Nova Sonic Fallback - Voice-only mode with animated indicator */

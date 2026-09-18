@@ -374,6 +374,7 @@ export default function SessionPage() {
           workbookSheets={workbookSheets}
           workbookData={workbookData}
           anamPersonaId={persona?.anamPersonaId || DEFAULT_ANAM_PERSONA_ID}
+          useAnamAvatar={persona?.useAnamAvatar ?? false}
           onSubmit={handleSubmitSession}
         />
       )}
