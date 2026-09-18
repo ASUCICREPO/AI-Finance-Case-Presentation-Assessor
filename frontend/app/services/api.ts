@@ -660,12 +660,15 @@ export async function exportGradebook(options: {
 
 
 // ──────────────────────────────────────────────────────────
-// TA Dashboard API - Sessions (Course Semesters)
+// TA Dashboard API - Sessions (Course Sessions / Class Sections)
 // ──────────────────────────────────────────────────────────
 
 export interface CourseSession {
   sessionId: string;
+  courseSessionId?: string;
   name: string;
+  sessionNumber: string;  // e.g., 'morning', 'evening', '1', '2', '3'
+  sessionType?: string;   // Alias for backward compatibility
   courseName: string;
   courseCode: string;
   semester: 'Spring' | 'Summer' | 'Fall' | 'Winter';
@@ -675,6 +678,7 @@ export interface CourseSession {
   studentCount: number;
   groupCount: number;
   status: 'active' | 'upcoming' | 'archived';
+  description?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -689,75 +693,24 @@ export interface CourseSessionsResponse {
  */
 export async function listCourseSessions(status?: string): Promise<CourseSessionsResponse> {
   const params = status ? `?status=${encodeURIComponent(status)}` : '';
-  // Note: Backend may use /sessions or a dedicated /course-sessions endpoint
-  // For now, returning mock data as sessions API isn't fully implemented
-  // In production, this would be: return fetchApi<CourseSessionsResponse>(`/course-sessions${params}`);
+  return fetchApi<CourseSessionsResponse>(`/course-sessions${params}`);
+}
 
-  // Mock implementation for frontend development
-  const mockSessions: CourseSession[] = [
-    {
-      sessionId: 'sess-1',
-      name: 'Spring 2026',
-      courseName: 'Real Estate Finance',
-      courseCode: 'FIN 502',
-      semester: 'Spring',
-      year: 2026,
-      startDate: '2026-01-15',
-      endDate: '2026-05-15',
-      studentCount: 45,
-      groupCount: 12,
-      status: 'active',
-      createdAt: '2025-12-01',
-      updatedAt: '2025-12-01',
-    },
-    {
-      sessionId: 'sess-2',
-      name: 'Fall 2026',
-      courseName: 'Real Estate Finance',
-      courseCode: 'FIN 502',
-      semester: 'Fall',
-      year: 2026,
-      startDate: '2026-08-20',
-      endDate: '2026-12-15',
-      studentCount: 0,
-      groupCount: 0,
-      status: 'upcoming',
-      createdAt: '2026-06-01',
-      updatedAt: '2026-06-01',
-    },
-  ];
-
-  const filtered = status
-    ? mockSessions.filter(s => s.status === status)
-    : mockSessions;
-
-  return { sessions: filtered, count: filtered.length };
+/**
+ * Get a single course session by ID.
+ */
+export async function getCourseSession(sessionId: string): Promise<CourseSession> {
+  return fetchApi<CourseSession>(`/course-sessions/${sessionId}`);
 }
 
 /**
  * Create a new course session.
  */
 export async function createCourseSession(data: Partial<CourseSession>): Promise<CourseSession> {
-  // In production: return fetchApi<CourseSession>('/course-sessions', { method: 'POST', body: JSON.stringify(data) });
-
-  // Mock implementation
-  const newSession: CourseSession = {
-    sessionId: `sess-${Date.now()}`,
-    name: `${data.semester} ${data.year}`,
-    courseName: data.courseName || 'Real Estate Finance',
-    courseCode: data.courseCode || 'FIN 502',
-    semester: data.semester || 'Spring',
-    year: data.year || new Date().getFullYear(),
-    startDate: data.startDate || new Date().toISOString().split('T')[0],
-    endDate: data.endDate || new Date().toISOString().split('T')[0],
-    studentCount: 0,
-    groupCount: 0,
-    status: 'upcoming',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  return newSession;
+  return fetchApi<CourseSession>('/course-sessions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 /**
@@ -771,10 +724,28 @@ export async function updateCourseSession(sessionId: string, data: Partial<Cours
 }
 
 /**
- * Delete/archive a course session.
+ * Archive a course session (soft delete).
  */
-export async function archiveCourseSession(sessionId: string): Promise<void> {
-  await fetchApi(`/course-sessions/${sessionId}/archive`, { method: 'POST' });
+export async function archiveCourseSession(sessionId: string): Promise<{ message: string; session: CourseSession }> {
+  return fetchApi(`/course-sessions/${sessionId}/archive`, { method: 'POST' });
+}
+
+/**
+ * Permanently delete a course session.
+ * Note: Will fail if session has students or groups assigned.
+ */
+export async function deleteCourseSession(sessionId: string): Promise<{ message: string }> {
+  return fetchApi(`/course-sessions/${sessionId}`, { method: 'DELETE' });
+}
+
+/**
+ * Duplicate a course session.
+ */
+export async function duplicateCourseSession(sessionId: string, data?: Partial<CourseSession>): Promise<CourseSession> {
+  return fetchApi<CourseSession>(`/course-sessions/${sessionId}/duplicate`, {
+    method: 'POST',
+    body: JSON.stringify(data || {}),
+  });
 }
 
 // ──────────────────────────────────────────────────────────
