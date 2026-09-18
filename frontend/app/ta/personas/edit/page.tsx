@@ -16,6 +16,7 @@ import {
   Bot,
   Check,
   Loader2,
+  Volume2,
 } from 'lucide-react';
 import { getPersona, updatePersona, Persona } from '../../../services/api';
 
@@ -51,6 +52,7 @@ export default function EditPersonaPage() {
 
   // Form state
   const [selectedAvatar, setSelectedAvatar] = useState<AnamAvatar | null>(null);
+  const [useAnamAvatar, setUseAnamAvatar] = useState(true); // Whether to use visual avatar
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [description, setDescription] = useState('');
@@ -76,7 +78,7 @@ export default function EditPersonaPage() {
     try {
       setLoading(true);
       const persona = await getPersona(personaId!);
-      
+
       // Populate form
       setName(persona.name || '');
       setRole(persona.role || '');
@@ -85,7 +87,7 @@ export default function EditPersonaPage() {
       setIsActive(persona.active !== false);
       setSampleQuestions(persona.questionBank?.length ? persona.questionBank : ['']);
       setPersonality(persona.assessmentFocus?.[0] || 'professional');
-      
+
       // Find matching avatar
       if (persona.avatarId) {
         const avatar = ANAM_AVATARS.find(a => a.id === persona.avatarId);
@@ -94,6 +96,9 @@ export default function EditPersonaPage() {
         const avatar = ANAM_AVATARS.find(a => a.anamPersonaId === persona.anamPersonaId);
         if (avatar) setSelectedAvatar(avatar);
       }
+
+      // Set useAnamAvatar based on persona config
+      setUseAnamAvatar(persona.useAnamAvatar !== false);
     } catch (err) {
       console.error('Error fetching persona:', err);
       setErrors({ load: 'Failed to load persona' });
@@ -118,7 +123,7 @@ export default function EditPersonaPage() {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!selectedAvatar) newErrors.avatar = 'Please select an avatar';
+    if (useAnamAvatar && !selectedAvatar) newErrors.avatar = 'Please select an avatar';
     if (!name.trim()) newErrors.name = 'Persona name is required';
     if (!role.trim()) newErrors.role = 'Role/Title is required';
     if (!description.trim()) newErrors.description = 'Description is required';
@@ -143,8 +148,9 @@ export default function EditPersonaPage() {
         questionBank: filteredQuestions,
         assessmentFocus: [personality],
         active: isActive,
-        anamPersonaId: selectedAvatar?.anamPersonaId,
-        avatarId: selectedAvatar?.id,
+        useAnamAvatar: useAnamAvatar,
+        anamPersonaId: useAnamAvatar ? selectedAvatar?.anamPersonaId : undefined,
+        avatarId: useAnamAvatar ? selectedAvatar?.id : undefined,
       });
 
       setShowSuccess(true);
@@ -222,48 +228,74 @@ export default function EditPersonaPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Avatar Selection */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4 font-sans flex items-center gap-2">
-            <Bot size={16} className="text-maroon-600" />
-            Select Anam Avatar <span className="text-red-500">*</span>
-          </h2>
-          <p className="text-xs text-gray-500 mb-4">
-            Choose a video avatar from Anam AI.
-          </p>
-
-          <div className="grid grid-cols-3 gap-3">
-            {ANAM_AVATARS.map((avatar, index) => (
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-900 font-sans flex items-center gap-2">
+              <Bot size={16} className="text-maroon-600" />
+              Visual Avatar {useAnamAvatar && <span className="text-red-500">*</span>}
+            </h2>
+            {/* Toggle for using Anam avatar */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-xs text-gray-600">Use visual avatar</span>
               <button
-                key={avatar.id}
                 type="button"
-                onClick={() => setSelectedAvatar(avatar)}
-                className={`relative rounded-xl border p-4 text-center transition-all ${
-                  selectedAvatar?.id === avatar.id
-                    ? 'border-maroon-500 bg-maroon-50 ring-2 ring-maroon-500'
-                    : 'border-gray-200 hover:border-maroon-200 hover:bg-gray-50'
-                }`}
+                onClick={() => setUseAnamAvatar(!useAnamAvatar)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${useAnamAvatar ? 'bg-maroon-600' : 'bg-gray-300'}`}
               >
-                <div className={`h-14 w-14 mx-auto rounded-full flex items-center justify-center text-xl font-bold mb-2 ${
-                  selectedAvatar?.id === avatar.id
-                    ? 'bg-maroon-600 text-white'
-                    : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'
-                }`}>
-                  {index + 1}
-                </div>
-                <p className="text-xs font-medium text-gray-900">{avatar.name}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">{avatar.description}</p>
-                {selectedAvatar?.id === avatar.id && (
-                  <div className="absolute top-2 right-2">
-                    <Check size={16} className="text-maroon-600" />
-                  </div>
-                )}
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${useAnamAvatar ? 'translate-x-5' : 'translate-x-1'}`}
+                />
               </button>
-            ))}
+            </label>
           </div>
-          {errors.avatar && (
-            <p className="mt-3 text-xs text-red-500 flex items-center gap-1">
-              <AlertCircle size={12} />
-              {errors.avatar}
-            </p>
+
+          {useAnamAvatar ? (
+            <>
+              <p className="text-xs text-gray-500 mb-4">
+                Choose a video avatar from Anam AI.
+              </p>
+
+              <div className="grid grid-cols-3 gap-3">
+                {ANAM_AVATARS.map((avatar, index) => (
+                  <button
+                    key={avatar.id}
+                    type="button"
+                    onClick={() => setSelectedAvatar(avatar)}
+                    className={`relative rounded-xl border p-4 text-center transition-all ${selectedAvatar?.id === avatar.id
+                      ? 'border-maroon-500 bg-maroon-50 ring-2 ring-maroon-500'
+                      : 'border-gray-200 hover:border-maroon-200 hover:bg-gray-50'
+                      }`}
+                  >
+                    <div className={`h-14 w-14 mx-auto rounded-full flex items-center justify-center text-xl font-bold mb-2 ${selectedAvatar?.id === avatar.id
+                      ? 'bg-maroon-600 text-white'
+                      : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'
+                      }`}>
+                      {index + 1}
+                    </div>
+                    <p className="text-xs font-medium text-gray-900">{avatar.name}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{avatar.description}</p>
+                    {selectedAvatar?.id === avatar.id && (
+                      <div className="absolute top-2 right-2">
+                        <Check size={16} className="text-maroon-600" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {errors.avatar && (
+                <p className="mt-3 text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  {errors.avatar}
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="py-6 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
+              <Volume2 size={32} className="mx-auto text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600 font-medium">Voice-Only Mode</p>
+              <p className="text-xs text-gray-500 mt-1">
+                This persona will use Nova Sonic for voice interaction without a visual avatar.
+              </p>
+            </div>
           )}
         </div>
 
@@ -366,11 +398,10 @@ export default function EditPersonaPage() {
                 key={option.value}
                 type="button"
                 onClick={() => setPersonality(option.value)}
-                className={`rounded-lg border p-3 text-left transition-all ${
-                  personality === option.value
-                    ? 'border-maroon-500 bg-maroon-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`rounded-lg border p-3 text-left transition-all ${personality === option.value
+                  ? 'border-maroon-500 bg-maroon-50'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className={`text-sm font-medium ${personality === option.value ? 'text-maroon-700' : 'text-gray-900'}`}>
                   {option.label}

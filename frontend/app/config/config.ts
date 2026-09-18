@@ -144,6 +144,9 @@ export interface Persona {
   questionBank: string[];
   assessmentFocus: string[];
   voiceId?: string;
+  /** Whether to use Anam visual avatar for this persona */
+  useAnamAvatar?: boolean;
+  /** Anam persona ID for avatar selection */
   anamPersonaId?: string;
   avatarId?: string;
   qaTimeLimitSec?: number;
