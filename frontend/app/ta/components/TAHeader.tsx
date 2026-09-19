@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Bell, Settings, LogOut, X, Check, AlertCircle, Info } from 'lucide-react';
+import { Bell, Settings, LogOut, X, Check, AlertCircle, Info, HelpCircle } from 'lucide-react';
+import InstructorTutorialModal from './InstructorTutorialModal';
 
 // Mock notifications for now - in production this would come from an API
 const mockNotifications = [
@@ -17,9 +18,20 @@ export default function TAHeader() {
   const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [notifications, setNotifications] = useState(mockNotifications);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Show tutorial on first visit
+  useEffect(() => {
+    const hasCompletedTutorial = localStorage.getItem('instructor_tutorial_completed');
+    if (!hasCompletedTutorial) {
+      // Small delay to let the page render first
+      const timer = setTimeout(() => setShowTutorial(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const markAllRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
@@ -42,8 +54,17 @@ export default function TAHeader() {
         </div>
       </div>
 
-      {/* Right - Notifications & User */}
+      {/* Right - Tutorial, Notifications & User */}
       <div className="flex items-center gap-4">
+        {/* Tutorial Button */}
+        <button
+          onClick={() => setShowTutorial(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-maroon-200 bg-maroon-50 px-3 py-1.5 text-sm font-medium text-maroon-700 hover:bg-maroon-100 transition-colors"
+        >
+          <HelpCircle size={16} />
+          <span className="hidden sm:inline">Tutorial</span>
+        </button>
+
         {/* Notifications Button */}
         <div className="relative">
           <button
@@ -82,8 +103,8 @@ export default function TAHeader() {
                     >
                       <div className="flex gap-3">
                         <div className={`mt-0.5 rounded-full p-1 ${n.type === 'alert' ? 'bg-amber-100 text-amber-600' :
-                            n.type === 'success' ? 'bg-green-100 text-green-600' :
-                              'bg-blue-100 text-blue-600'
+                          n.type === 'success' ? 'bg-green-100 text-green-600' :
+                            'bg-blue-100 text-blue-600'
                           }`}>
                           {n.type === 'alert' ? <AlertCircle size={14} /> :
                             n.type === 'success' ? <Check size={14} /> :
@@ -188,6 +209,13 @@ export default function TAHeader() {
           onClick={() => { setShowNotifications(false); setShowSettings(false); }}
         />
       )}
+
+      {/* Instructor Tutorial Modal */}
+      <InstructorTutorialModal
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        userName={userName || undefined}
+      />
     </header>
   );
 }
