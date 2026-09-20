@@ -88,7 +88,9 @@ export default function StudentDashboard() {
       // Get student's submissions to check status
       try {
         const submissionsResponse = await getStudentSubmissions(userId!);
+        console.log('[Dashboard] Submissions fetched:', submissionsResponse.submissions.length);
         submissionsResponse.submissions.forEach((sub: Submission) => {
+          console.log('[Dashboard] Submission assessmentId:', sub.assessmentId);
           submittedAssessments.set(sub.assessmentId, sub);
         });
       } catch (err) {
@@ -99,6 +101,12 @@ export default function StudentDashboard() {
       const displayAssessments: AssessmentDisplay[] = assignedAssessments.map(assessment => {
         const assessmentId = assessment.assessmentId || assessment.assessmentID || '';
         const submission = submittedAssessments.get(assessmentId);
+
+        console.log('[Dashboard] Assessment:', {
+          assessmentId,
+          title: assessment.title,
+          hasSubmission: !!submission,
+        });
 
         return {
           assessmentId,
