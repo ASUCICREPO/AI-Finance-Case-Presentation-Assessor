@@ -39,9 +39,21 @@ export default function AnamAvatarPanel({
 
   // Initialize Anam client when session token is available
   useEffect(() => {
-    if (!sessionToken || !isActive || clientRef.current) return;
+    if (!sessionToken) {
+      console.log('[AnamAvatar] No session token yet');
+      return;
+    }
+    if (!isActive) {
+      console.log('[AnamAvatar] Not active yet');
+      return;
+    }
+    if (clientRef.current) {
+      console.log('[AnamAvatar] Client already exists');
+      return;
+    }
 
     const initAnam = async () => {
+      console.log('[AnamAvatar] Initializing Anam client...');
       setConnecting(true);
       try {
         // Create Anam client - disable input audio (Nova Sonic handles mic)
@@ -50,29 +62,33 @@ export default function AnamAvatarPanel({
         });
 
         client.addListener(AnamEvent.CONNECTION_ESTABLISHED, () => {
-          console.log('[Anam] Connected — ready for talk commands (TEXT mode)');
+          console.log('[AnamAvatar] ✅ Connected — ready for talk commands (TEXT mode)');
           setConnected(true);
           setConnecting(false);
         });
 
         client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
-          console.log('[Anam] Connection closed');
+          console.log('[AnamAvatar] ❌ Connection closed');
           setConnected(false);
           talkStreamRef.current = null;
         });
 
         // Suppress any Anam-generated messages (we're using Nova Sonic for AI)
         client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, (event: unknown) => {
-          console.log('[Anam] Message event (ignoring - using Nova Sonic AI):', event);
+          console.log('[AnamAvatar] Message event (ignoring - using Nova Sonic AI):', event);
         });
 
         clientRef.current = client;
 
         if (videoRef.current) {
+          console.log('[AnamAvatar] Streaming to video element:', videoRef.current.id);
           await client.streamToVideoElement(videoRef.current.id);
+          console.log('[AnamAvatar] Video stream started');
+        } else {
+          console.warn('[AnamAvatar] Video ref not available');
         }
       } catch (error) {
-        console.error('[Anam] Failed to connect:', error);
+        console.error('[AnamAvatar] ❌ Failed to connect:', error);
         setConnecting(false);
       }
     };
@@ -82,6 +98,7 @@ export default function AnamAvatarPanel({
     return () => {
       if (clientRef.current) {
         try {
+          console.log('[AnamAvatar] Cleaning up client');
           clientRef.current.stopStreaming();
         } catch (e) {
           // Ignore cleanup errors
@@ -95,30 +112,47 @@ export default function AnamAvatarPanel({
 
   // Register text callback — pipes Nova Sonic transcript TEXT to Anam for TTS + lip sync
   useEffect(() => {
+    if (!connected) {
+      console.log('[AnamAvatar] Not connected yet, skipping callback registration');
+      return;
+    }
+
+    console.log('[AnamAvatar] Registering text callback for Anam TTS');
     onAssistantTextRef.current = (text: string, isFinal: boolean) => {
-      if (!clientRef.current || !connected) return;
+      if (!clientRef.current || !connected) {
+        console.warn('[AnamAvatar] Received text but not ready:', { hasClient: !!clientRef.current, connected });
+        return;
+      }
+
+      console.log('[AnamAvatar] Received text:', { text, isFinal });
 
       try {
         // Create a new talk stream if needed
         if (!talkStreamRef.current || !talkStreamRef.current.isActive()) {
+          console.log('[AnamAvatar] Creating new talk stream');
           talkStreamRef.current = clientRef.current.createTalkMessageStream();
         }
 
         if (talkStreamRef.current.isActive()) {
+          console.log('[AnamAvatar] Streaming message chunk');
           talkStreamRef.current.streamMessageChunk(text, isFinal);
+        } else {
+          console.warn('[AnamAvatar] Talk stream not active');
         }
 
         // Reset stream ref on final so next turn gets a new stream
         if (isFinal) {
+          console.log('[AnamAvatar] Final chunk, resetting stream');
           talkStreamRef.current = null;
         }
       } catch (e) {
-        console.warn('[Anam] Talk stream error:', e);
+        console.error('[AnamAvatar] Talk stream error:', e);
         talkStreamRef.current = null;
       }
     };
 
     return () => {
+      console.log('[AnamAvatar] Clearing text callback');
       onAssistantTextRef.current = null;
     };
   }, [onAssistantTextRef, connected]);

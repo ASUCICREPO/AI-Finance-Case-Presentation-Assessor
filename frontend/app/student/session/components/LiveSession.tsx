@@ -106,16 +106,22 @@ export default function LiveSession({
   }, [shouldUseAnam, anamPersonaId, setMuteAudioPlayback]);
 
   // Register text callback for forwarding Nova Sonic transcript to Anam
+  // This MUST happen BEFORE any audio/text starts flowing
   useEffect(() => {
-    if (voiceMode === 'anam' && anamSessionToken && onAssistantText) {
+    if (shouldUseAnam && anamSessionToken) {
       // Subscribe to Nova Sonic assistant text and forward to Anam
+      console.log('[LiveSession] Registering onAssistantText callback for Anam TTS');
       onAssistantText((text: string, isFinal: boolean) => {
+        console.log('[LiveSession] Forwarding text to Anam:', { text, isFinal });
         if (onAssistantTextRef.current) {
           onAssistantTextRef.current(text, isFinal);
         }
       });
+    } else {
+      // Clear callback when not using Anam
+      onAssistantText(() => { });
     }
-  }, [voiceMode, anamSessionToken, onAssistantText]);
+  }, [shouldUseAnam, anamSessionToken, onAssistantText]);
 
   // File upload handler
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
