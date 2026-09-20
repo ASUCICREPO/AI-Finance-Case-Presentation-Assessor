@@ -253,16 +253,21 @@ export default function PresentationSession({
     onProceedToQA(fullTranscript, videoBlob, elapsedTime);
   };
 
+  // Track if we've already started recording to prevent re-triggering
+  const recordingStartedRef = useRef(false);
+
   // Handle camera stream ready - start video recording
   const handleStreamReady = useCallback((stream: MediaStream) => {
     setCameraStream(stream);
-    // Auto-start recording when stream is ready
-    if (!videoRecorder.isRecording) {
+    // Auto-start recording when stream is ready (only once)
+    if (!recordingStartedRef.current) {
+      recordingStartedRef.current = true;
       videoRecorder.startRecording(stream).catch(err => {
         console.error('[PresentationSession] Failed to start video recording:', err);
+        recordingStartedRef.current = false; // Allow retry on error
       });
     }
-  }, [videoRecorder]);
+  }, []); // Empty deps - we use ref to track state instead
 
   // Check if minimum presentation time reached (1 minute)
   const minPresentationTime = 60;

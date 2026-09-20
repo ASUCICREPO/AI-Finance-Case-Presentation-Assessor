@@ -33,6 +33,12 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
       getStream: () => mediaStreamRef.current,
     }), []);
 
+    // Store callback in ref to avoid dependency issues
+    const onStreamReadyRef = useRef(onStreamReady);
+    useEffect(() => {
+      onStreamReadyRef.current = onStreamReady;
+    }, [onStreamReady]);
+
     const startCamera = useCallback(async () => {
       if (mediaStreamRef.current) return;
       try {
@@ -50,9 +56,9 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
           videoRef.current.onloadeddata = () => {
             if (mountedRef.current) {
               setCameraActive(true);
-              // Notify parent that stream is ready
-              if (onStreamReady) {
-                onStreamReady(stream);
+              // Notify parent that stream is ready (use ref to get latest callback)
+              if (onStreamReadyRef.current) {
+                onStreamReadyRef.current(stream);
               }
             }
           };
@@ -60,7 +66,7 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
       } catch {
         if (mountedRef.current) setPermissionDenied(true);
       }
-    }, [onStreamReady]);
+    }, []); // No dependencies - camera should only start once
 
     useEffect(() => {
       mountedRef.current = true;
