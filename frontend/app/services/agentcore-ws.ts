@@ -79,6 +79,7 @@ export class AgentCoreClient {
   public personaName: string | null = null;
   public sessionDuration: number = 0;
   public muteAudioPlayback = false; // Set true when Anam handles TTS
+  public assessmentReport: AssessmentReport | null = null; // AI-generated assessment report
 
   /**
    * Subscribe to AgentCore events.
