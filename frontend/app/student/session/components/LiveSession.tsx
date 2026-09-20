@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Clock, Flag, ChevronRight, Upload, Volume2, Mic, Video, SkipForward } from 'lucide-react';
+import { Clock, Flag, ChevronRight, Upload, Volume2, Mic, Video } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
 import AnamAvatarPanel from './AnamAvatarPanel';
@@ -225,16 +225,6 @@ export default function LiveSession({
             <p className="mt-1 text-xs text-gray-500 font-sans">
               {isLowTime ? `${Math.ceil(timer.timeRemaining / 60)} minute${timer.timeRemaining > 60 ? 's' : ''} remaining` : '15-minute maximum session'}
             </p>
-
-            {/* Skip Question Button */}
-            <button
-              onClick={() => sendTextCommand("Please skip this question and move to the next one.")}
-              disabled={!isAISpeaking && status !== 'active'}
-              className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors font-sans disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <SkipForward size={16} />
-              Skip Question
-            </button>
           </div>
 
           {/* AI Avatar Card */}

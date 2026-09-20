@@ -105,7 +105,7 @@ export default function SubmitModal({
             onClick={onConfirm}
             className="rounded-lg bg-maroon-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-maroon-700 transition-colors font-sans"
           >
-            {isPractice ? 'Begin Q&A session' : 'Submit'}
+            {isPractice ? 'End Session' : 'Submit for Grading'}
           </button>
         </div>
       </div>

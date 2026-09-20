@@ -376,11 +376,6 @@ export default function PresentationSession({
                 Minimum 1 minute before proceeding
               </p>
             )}
-            {transcript.length > 0 && (
-              <p className="text-xs text-green-600 mt-1">
-                {transcript.length} segments captured
-              </p>
-            )}
           </div>
 
           {/* Proceed to Q&A Button */}
