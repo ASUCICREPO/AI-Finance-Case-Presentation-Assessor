@@ -44,11 +44,23 @@ export default function StudentDashboard() {
   const [statusFilters, setStatusFilters] = useState<string[]>(['All']);
   const filterRef = useRef<HTMLDivElement>(null);
 
-  // Load assessments on mount
+  // Load assessments on mount and when returning from session
   useEffect(() => {
     if (userId || userEmail) {
       fetchAssessments();
     }
+  }, [userId, userEmail]);
+
+  // Re-fetch when page becomes visible (user returns from session)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && (userId || userEmail)) {
+        fetchAssessments();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [userId, userEmail]);
 
   async function fetchAssessments() {
