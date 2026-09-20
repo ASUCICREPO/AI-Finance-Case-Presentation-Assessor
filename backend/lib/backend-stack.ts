@@ -5,6 +5,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 interface FinanceAssessorStackProps extends cdk.StackProps {
@@ -320,6 +321,14 @@ export class FinanceAssessorStack extends cdk.Stack {
     } as lambda.FunctionProps);
     this.uploadsBucket.grantReadWrite(s3PresignedUrlFn);
 
+    // Anam API Key from Secrets Manager
+    // Create or retrieve the secret - set the value manually in AWS Console
+    const anamApiKeySecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'AnamApiKeySecret',
+      'finance-assessor/anam-api-key'
+    );
+
     // Anam AI Session Token Lambda
     const anamSessionTokenFn = new lambda.Function(this, 'AnamSessionTokenFn', {
       runtime: lambda.Runtime.PYTHON_3_12,
@@ -329,10 +338,13 @@ export class FinanceAssessorStack extends cdk.Stack {
       code: lambda.Code.fromAsset('lambda/anam-session-token'),
       description: 'Exchanges Anam API key for short-lived session token for avatar rendering',
       environment: {
-        ANAM_API_KEY: process.env.ANAM_API_KEY || 'PLACEHOLDER_SET_IN_CONSOLE',
+        ANAM_API_KEY_SECRET_ARN: anamApiKeySecret.secretArn,
         ALLOWED_ORIGINS: 'http://localhost:3000,https://main.d2y1cwozysxwnb.amplifyapp.com',
       },
     });
+
+    // Grant Lambda permission to read the secret
+    anamApiKeySecret.grantRead(anamSessionTokenFn);
 
     // TA Dashboard Lambda Functions
     // Students CRUD Lambda
