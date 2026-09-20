@@ -90,8 +90,13 @@ export default function StudentDashboard() {
         const submissionsResponse = await getStudentSubmissions(userId!);
         console.log('[Dashboard] Submissions fetched:', submissionsResponse.submissions.length);
         submissionsResponse.submissions.forEach((sub: Submission) => {
-          console.log('[Dashboard] Submission assessmentId:', sub.assessmentId);
-          submittedAssessments.set(sub.assessmentId, sub);
+          // DynamoDB may return assessmentID (capital) or assessmentId (lowercase)
+          // Store by both to ensure matching works
+          const subAssessmentId = (sub as any).assessmentId || (sub as any).assessmentID;
+          console.log('[Dashboard] Submission assessmentId:', subAssessmentId);
+          if (subAssessmentId) {
+            submittedAssessments.set(subAssessmentId, sub);
+          }
         });
       } catch (err) {
         console.error('Error fetching submissions:', err);
@@ -99,13 +104,17 @@ export default function StudentDashboard() {
 
       // Map assessments to display format
       const displayAssessments: AssessmentDisplay[] = assignedAssessments.map(assessment => {
+        // Assessments may have assessmentId or assessmentID
         const assessmentId = assessment.assessmentId || assessment.assessmentID || '';
         const submission = submittedAssessments.get(assessmentId);
 
         console.log('[Dashboard] Assessment:', {
           assessmentId,
           title: assessment.title,
+          hasAssessmentId: !!assessment.assessmentId,
+          hasAssessmentID: !!assessment.assessmentID,
           hasSubmission: !!submission,
+          submissionStatus: submission?.status,
         });
 
         return {
