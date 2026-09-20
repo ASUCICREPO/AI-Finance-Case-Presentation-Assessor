@@ -412,6 +412,20 @@ export class AgentCoreClient {
           }
           break;
 
+        case 'assessment_report':
+          // Store the AI-generated assessment report
+          this.assessmentReport = data.assessment;
+          console.log('[AgentCore] Received AI assessment report:', {
+            overallScore: data.assessment.overallScore,
+            categories: Object.keys(data.assessment.categoryScores || {}),
+          });
+          break;
+
+        case 'guardrail_intervention':
+          // Guardrail blocked content - log it
+          console.warn('[AgentCore] Guardrail intervention:', data.sanitized_text);
+          break;
+
         case 'session_ended':
           this.isSessionActive = false;
           break;
