@@ -21,7 +21,7 @@ from strands.experimental.bidi.types.events import (
     BidiResponseCompleteEvent,
 )
 from strands.experimental.bidi.types.io import BidiInput, BidiOutput, BidiOutputEvent
-from strands.experimental.bidi.models import BedrockNovaSonicModel
+from strands.experimental.bidi.models import BidiNovaSonicModel
 from strands.experimental.hooks.events import BidiMessageAddedEvent
 from strands.hooks.registry import HookRegistry
 from strands.experimental.bidi.tools import stop_conversation
@@ -208,9 +208,9 @@ def build_qa_system_prompt(
 
 
 def create_nova_sonic_model(voice_id=None):
-    """Create a BedrockNovaSonicModel with the given voice configuration."""
+    """Create a BidiNovaSonicModel with the given voice configuration."""
     voice = voice_id if voice_id and voice_id in VALID_VOICES else DEFAULT_VOICE_ID
-    return BedrockNovaSonicModel(
+    return BidiNovaSonicModel(
         model_id=MODEL_ID,
         provider_config={
             "audio": {
