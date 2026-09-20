@@ -1,10 +1,23 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Bell } from 'lucide-react';
+import { Bell, HelpCircle } from 'lucide-react';
+import StudentTutorialModal from './StudentTutorialModal';
 
 export default function StudentHeader() {
   const { userName } = useAuth();
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Show tutorial on first visit
+  useEffect(() => {
+    const hasCompletedTutorial = localStorage.getItem('student_tutorial_completed');
+    if (!hasCompletedTutorial) {
+      // Small delay to let the page render first
+      const timer = setTimeout(() => setShowTutorial(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
@@ -20,8 +33,17 @@ export default function StudentHeader() {
         </div>
       </div>
 
-      {/* Right - Notifications & User */}
+      {/* Right - Tutorial, Notifications & User */}
       <div className="flex items-center gap-4">
+        {/* Tutorial Button */}
+        <button
+          onClick={() => setShowTutorial(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-maroon-200 bg-maroon-50 px-3 py-1.5 text-sm font-medium text-maroon-700 hover:bg-maroon-100 transition-colors"
+        >
+          <HelpCircle size={16} />
+          <span className="hidden sm:inline">Tutorial</span>
+        </button>
+
         <button className="relative rounded-full p-2 hover:bg-gray-100 transition-colors">
           <Bell size={20} className="text-gray-600" />
         </button>
@@ -39,6 +61,13 @@ export default function StudentHeader() {
           </div>
         </div>
       </div>
+
+      {/* Student Tutorial Modal */}
+      <StudentTutorialModal
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        userName={userName || undefined}
+      />
     </header>
   );
 }
