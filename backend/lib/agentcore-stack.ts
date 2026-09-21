@@ -58,7 +58,7 @@ export class AgentCoreStack extends cdk.Stack {
         'VOICE_ID': 'matthew',
         'MODEL_ID': 'amazon.nova-2-sonic-v1:0',
         'QA_ANALYTICS_MODEL_ID': 'global.amazon.nova-2-lite-v1:0',
-        'ASSESSMENT_MODEL_ID': 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+        'ASSESSMENT_MODEL_ID': 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
         'PERSONA_TABLE_NAME': props.personasTable.tableName,
         'UPLOADS_BUCKET': props.uploadsBucket.bucketName,
         'AGENT_RUNTIME_NAME': cdk.Lazy.string({

@@ -19,7 +19,7 @@ submissions_table = dynamodb.Table(os.environ["SUBMISSIONS_TABLE"])
 
 # Assessment model - Claude Sonnet
 ASSESSMENT_MODEL_ID = os.environ.get(
-    "ASSESSMENT_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    "ASSESSMENT_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 )
 
 # Standardized 6-dimension rubric
@@ -67,14 +67,14 @@ PERFORMANCE_LEVELS = {
 def handler(event, context):
     """
     Generate AI scores for a submission.
-    
+
     POST /generate-ai-score
     Body: { "submissionId": "...", "force": false }
-    
+
     GET /generate-ai-score?submissionId=...&force=false
     """
     http_method = event.get("httpMethod", "")
-    
+
     try:
         if http_method == "POST":
             body = json.loads(event.get("body", "{}"))
@@ -86,12 +86,12 @@ def handler(event, context):
             force = params.get("force", "false").lower() == "true"
         else:
             return response(400, {"error": "Invalid method"})
-        
+
         if not submission_id:
             return response(400, {"error": "Missing submissionId"})
-        
+
         return generate_score(submission_id, force)
-    
+
     except Exception as e:
         print(f"Error: {str(e)}")
         return response(500, {"error": str(e)})
@@ -102,35 +102,41 @@ def generate_score(submission_id: str, force: bool = False):
     # Get submission
     result = submissions_table.get_item(Key={"submissionId": submission_id})
     submission = result.get("Item")
-    
+
     if not submission:
         return response(404, {"error": "Submission not found"})
-    
+
     # Check if already has AI score (unless force=true)
     if not force and submission.get("aiScore") is not None:
-        return response(200, {
-            "message": "Submission already has AI score",
-            "submissionId": submission_id,
-            "aiScore": float(submission["aiScore"]),
-            "skipped": True
-        })
-    
+        return response(
+            200,
+            {
+                "message": "Submission already has AI score",
+                "submissionId": submission_id,
+                "aiScore": float(submission["aiScore"]),
+                "skipped": True,
+            },
+        )
+
     # Get transcript data
     qa_transcript = submission.get("qaTranscript") or submission.get("transcript") or []
     presentation_transcript = submission.get("presentationTranscript", "")
-    
+
     if not qa_transcript and not presentation_transcript:
-        return response(400, {
-            "error": "No transcript data available to score",
-            "submissionId": submission_id
-        })
-    
+        return response(
+            400,
+            {
+                "error": "No transcript data available to score",
+                "submissionId": submission_id,
+            },
+        )
+
     # Build transcript text for AI evaluation
     transcript_text = ""
-    
+
     if presentation_transcript:
         transcript_text += f"## Student Presentation\n{presentation_transcript}\n\n"
-    
+
     if qa_transcript:
         transcript_text += "## Q&A Session\n"
         for entry in qa_transcript:
@@ -138,17 +144,17 @@ def generate_score(submission_id: str, force: bool = False):
             text = entry.get("text", "")
             speaker = "[AI Stakeholder]" if role == "assistant" else "[Student]"
             transcript_text += f"{speaker}: {text}\n"
-    
+
     # Generate assessment using Bedrock
     assessment = generate_rubric_assessment(transcript_text, DEFAULT_RUBRIC)
-    
+
     if not assessment:
         return response(500, {"error": "Failed to generate AI assessment"})
-    
+
     # Update submission with AI scores
     overall_score = assessment.get("overallScore", 0)
     category_scores = assessment.get("categoryScores", {})
-    
+
     # Convert category scores to simple number map for storage
     score_breakdown = {}
     detailed_categories = {}
@@ -164,13 +170,13 @@ def generate_score(submission_id: str, force: bool = False):
         else:
             score_breakdown[category] = Decimal(str(data))
             detailed_categories[category] = {"score": Decimal(str(data))}
-    
+
     # Update DynamoDB
     update_expr = """SET aiScore = :score, 
                         aiScoreBreakdown = :breakdown,
                         aiAnalytics = :analytics,
                         updatedAt = :now"""
-    
+
     submissions_table.update_item(
         Key={"submissionId": submission_id},
         UpdateExpression=update_expr,
@@ -190,21 +196,24 @@ def generate_score(submission_id: str, force: bool = False):
                 "model": ASSESSMENT_MODEL_ID,
             },
             ":now": datetime.utcnow().isoformat(),
-        }
+        },
     )
-    
-    return response(200, {
-        "message": "AI score generated successfully",
-        "submissionId": submission_id,
-        "aiScore": overall_score,
-        "categoryScores": {k: float(v) for k, v in score_breakdown.items()},
-        "summary": assessment.get("overallSummary", ""),
-    })
+
+    return response(
+        200,
+        {
+            "message": "AI score generated successfully",
+            "submissionId": submission_id,
+            "aiScore": overall_score,
+            "categoryScores": {k: float(v) for k, v in score_breakdown.items()},
+            "summary": assessment.get("overallSummary", ""),
+        },
+    )
 
 
 def generate_rubric_assessment(transcript: str, rubric: dict) -> dict:
     """Generate rubric-based assessment using Bedrock Claude."""
-    
+
     rubric_description = ""
     for key, config in rubric.items():
         rubric_description += f"\n{key} (Weight: {config.get('weight', 0)}%):\n"
@@ -251,28 +260,66 @@ Provide your assessment now."""
                         "json": {
                             "type": "object",
                             "properties": {
-                                "overallScore": {"type": "number", "description": "Weighted overall score 0-100"},
-                                "overallSummary": {"type": "string", "description": "Brief narrative summary"},
+                                "overallScore": {
+                                    "type": "number",
+                                    "description": "Weighted overall score 0-100",
+                                },
+                                "overallSummary": {
+                                    "type": "string",
+                                    "description": "Brief narrative summary",
+                                },
                                 "categoryScores": {
                                     "type": "object",
                                     "properties": {
                                         cat: {
                                             "type": "object",
                                             "properties": {
-                                                "performanceLevel": {"type": "integer", "minimum": 1, "maximum": 4},
-                                                "score": {"type": "number", "minimum": 0, "maximum": 100},
+                                                "performanceLevel": {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 4,
+                                                },
+                                                "score": {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "maximum": 100,
+                                                },
                                                 "justification": {"type": "string"},
-                                                "confidence": {"type": "string", "enum": ["high", "moderate", "low"]},
+                                                "confidence": {
+                                                    "type": "string",
+                                                    "enum": ["high", "moderate", "low"],
+                                                },
                                             },
-                                            "required": ["performanceLevel", "score", "justification", "confidence"]
-                                        } for cat in rubric.keys()
-                                    }
+                                            "required": [
+                                                "performanceLevel",
+                                                "score",
+                                                "justification",
+                                                "confidence",
+                                            ],
+                                        }
+                                        for cat in rubric.keys()
+                                    },
                                 },
-                                "strengths": {"type": "array", "items": {"type": "string"}},
-                                "improvements": {"type": "array", "items": {"type": "string"}},
-                                "evidenceCitations": {"type": "array", "items": {"type": "string"}},
+                                "strengths": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "improvements": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "evidenceCitations": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
                             },
-                            "required": ["overallScore", "overallSummary", "categoryScores", "strengths", "improvements"]
+                            "required": [
+                                "overallScore",
+                                "overallSummary",
+                                "categoryScores",
+                                "strengths",
+                                "improvements",
+                            ],
                         }
                     },
                 }
@@ -287,7 +334,7 @@ Provide your assessment now."""
             messages=[{"role": "user", "content": [{"text": prompt}]}],
             toolConfig=tool_config,
         )
-        
+
         return bedrock_response["output"]["message"]["content"][0]["toolUse"]["input"]
     except Exception as e:
         print(f"Bedrock assessment error: {str(e)}")

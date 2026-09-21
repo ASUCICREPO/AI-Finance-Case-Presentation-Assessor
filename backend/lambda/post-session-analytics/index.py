@@ -33,7 +33,7 @@ BUCKET = os.environ["UPLOADS_BUCKET"]
 
 # Assessment model for rubric evaluation - using Claude Sonnet 4 (latest)
 ASSESSMENT_MODEL_ID = os.environ.get(
-    "ASSESSMENT_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    "ASSESSMENT_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 )
 
 # Standardized 6-dimension rubric with weights and descriptions
