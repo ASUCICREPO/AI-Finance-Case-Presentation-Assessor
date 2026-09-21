@@ -238,6 +238,23 @@ export default function SessionPage() {
     return summaryParts.join('\n');
   };
 
+  // Helper to wait for assessment report with timeout
+  const waitForAssessmentReport = async (timeoutMs: number = 30000): Promise<typeof agentCore.assessmentReport> => {
+    const startTime = Date.now();
+    const pollInterval = 500; // Check every 500ms
+
+    while (Date.now() - startTime < timeoutMs) {
+      if (agentCore.assessmentReport) {
+        console.log('[SessionPage] Assessment report received');
+        return agentCore.assessmentReport;
+      }
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+
+    console.warn('[SessionPage] Timed out waiting for assessment report');
+    return null;
+  };
+
   // Submit session - saves to DynamoDB (only for graded sessions)
   const handleSubmitSession = async () => {
     if (submitting) return;
@@ -245,10 +262,17 @@ export default function SessionPage() {
     setSubmitting(true);
 
     try {
-      // Request analytics before ending session
+      // Request analytics BEFORE ending session - gives AgentCore time to generate report
       agentCore.requestAnalytics();
-      agentCore.endSession();
       timer.pause();
+
+      // Wait for the assessment report to arrive (up to 30 seconds)
+      // This is critical for AI scoring - the assessment is generated asynchronously
+      console.log('[SessionPage] Waiting for AI assessment report...');
+      const assessmentReport = await waitForAssessmentReport(30000);
+
+      // Now end the session after we have the report
+      agentCore.endSession();
 
       // Only save to DynamoDB for graded sessions
       if (sessionType === 'graded') {
@@ -276,24 +300,24 @@ export default function SessionPage() {
           sessionNumber: userSessionNumber || '1',
           groupNumber: userGroupNumber || '1',
 
-          // AI Analytics from AgentCore - convert categoryScores to simple number map
-          aiScore: agentCore.assessmentReport?.overallScore,
-          aiScoreBreakdown: agentCore.assessmentReport?.categoryScores
+          // AI Analytics from AgentCore - use the waited-for report
+          aiScore: assessmentReport?.overallScore,
+          aiScoreBreakdown: assessmentReport?.categoryScores
             ? Object.fromEntries(
-              Object.entries(agentCore.assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
+              Object.entries(assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
             )
             : {},
           aiAnalytics: {
-            overallScore: agentCore.assessmentReport?.overallScore,
-            categoryScores: agentCore.assessmentReport?.categoryScores
+            overallScore: assessmentReport?.overallScore,
+            categoryScores: assessmentReport?.categoryScores
               ? Object.fromEntries(
-                Object.entries(agentCore.assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
+                Object.entries(assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
               )
               : {},
             feedback: {
-              strengths: agentCore.assessmentReport?.strengths || [],
-              improvements: agentCore.assessmentReport?.improvements || [],
-              evidence: agentCore.assessmentReport?.evidenceCitations || [],
+              strengths: assessmentReport?.strengths || [],
+              improvements: assessmentReport?.improvements || [],
+              evidence: assessmentReport?.evidenceCitations || [],
             },
           },
 
@@ -309,7 +333,7 @@ export default function SessionPage() {
           videoS3Key: videoS3Key || undefined,
         });
 
-        console.log('[SessionPage] Graded submission saved to DynamoDB');
+        console.log('[SessionPage] Graded submission saved to DynamoDB with AI score:', assessmentReport?.overallScore);
       } else {
         console.log('[SessionPage] Practice session completed (not saved to gradebook)');
       }
