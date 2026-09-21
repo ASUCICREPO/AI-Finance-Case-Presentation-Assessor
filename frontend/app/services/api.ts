@@ -482,6 +482,8 @@ export interface RubricCategoryScore {
 export interface Submission {
   submissionId: string;
   studentId: string;
+  studentEmail?: string; // Student's email address
+  studentName?: string; // Student's display name
   assessmentId: string;
   sessionId: string;
   groupId?: string;

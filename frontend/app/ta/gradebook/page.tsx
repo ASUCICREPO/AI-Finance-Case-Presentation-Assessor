@@ -465,7 +465,7 @@ export default function GradebookPage() {
                           {/* Action */}
                           <td className="px-4 py-3 text-center">
                             <button
-                              onClick={() => router.push(`/ta/submissions/${submission.submissionId}/review`)}
+                              onClick={() => router.push(`/ta/submissions/review?id=${submission.submissionId}`)}
                               className="inline-flex items-center gap-1 rounded-lg bg-maroon-50 px-3 py-1.5 text-sm font-medium text-maroon-600 hover:bg-maroon-100 transition-colors"
                             >
                               <Eye size={14} />
@@ -513,8 +513,8 @@ export default function GradebookPage() {
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
                         className={`h-8 w-8 rounded-lg text-sm font-medium ${currentPage === pageNum
-                            ? 'bg-maroon-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
+                          ? 'bg-maroon-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
                           }`}
                       >
                         {pageNum}
