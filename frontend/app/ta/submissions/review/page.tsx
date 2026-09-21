@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -59,10 +59,12 @@ const PERFORMANCE_LEVELS: Record<number, { label: string; color: string }> = {
   1: { label: 'Insufficient Evidence', color: 'text-red-700 bg-red-100' },
 };
 
-export default function SubmissionReviewPage() {
+export default function SubmissionReviewPage({ submissionIdProp }: { submissionIdProp?: string } = {}) {
   const searchParams = useSearchParams();
+  const params = useParams();
   const router = useRouter();
-  const submissionId = searchParams.get('id');
+  // Support both path param and query param
+  const submissionId = submissionIdProp || (params?.submissionId as string) || searchParams.get('id');
 
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(true);
@@ -413,8 +415,8 @@ export default function SubmissionReviewPage() {
                       <div
                         key={index}
                         className={`p-3 rounded-lg ${entry.role === 'assistant'
-                            ? 'bg-blue-50 border-l-4 border-blue-400'
-                            : 'bg-gray-50 border-l-4 border-gray-400'
+                          ? 'bg-blue-50 border-l-4 border-blue-400'
+                          : 'bg-gray-50 border-l-4 border-gray-400'
                           }`}
                       >
                         <div className="flex items-center gap-2 mb-1">
