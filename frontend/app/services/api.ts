@@ -595,6 +595,7 @@ export async function gradeSubmission(submissionId: string, data: {
 /**
  * Generate AI score for a submission using Bedrock.
  * This is called when a submission doesn't have an AI score yet.
+ * NOTE: This can take 30-60 seconds due to Bedrock Claude processing time.
  */
 export async function generateAiScore(submissionId: string, force: boolean = false): Promise<{
   message: string;
@@ -604,10 +605,27 @@ export async function generateAiScore(submissionId: string, force: boolean = fal
   summary?: string;
   skipped?: boolean;
 }> {
-  return fetchApi(`/generate-ai-score`, {
-    method: 'POST',
-    body: JSON.stringify({ submissionId, force }),
-  });
+  // Use AbortController for timeout (90 seconds to account for Bedrock processing)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+  try {
+    const response = await fetchApi<{
+      message: string;
+      submissionId: string;
+      aiScore: number;
+      categoryScores?: Record<string, number>;
+      summary?: string;
+      skipped?: boolean;
+    }>(`/generate-ai-score`, {
+      method: 'POST',
+      body: JSON.stringify({ submissionId, force }),
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function getSubmissionTranscript(submissionId: string): Promise<{

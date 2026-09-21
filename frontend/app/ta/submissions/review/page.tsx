@@ -160,9 +160,15 @@ export default function SubmissionReviewPage({ submissionIdProp }: { submissionI
       } else {
         alert('Submission already has an AI score. Set force=true to regenerate.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error generating AI score:', err);
-      alert('Failed to generate AI score. Please try again.');
+      if (err.name === 'AbortError') {
+        // Timeout - but the Lambda might still be running, refresh to check
+        alert('Request timed out, but AI scoring may still complete. Refreshing...');
+        await fetchSubmission();
+      } else {
+        alert('Failed to generate AI score. Please try again.');
+      }
     } finally {
       setGeneratingAiScore(false);
     }
@@ -667,7 +673,10 @@ export default function SubmissionReviewPage({ submissionIdProp }: { submissionI
                     {generatingAiScore ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Generating AI Score...
+                        <span className="flex flex-col items-center">
+                          <span>Analyzing with Claude AI...</span>
+                          <span className="text-xs opacity-75">This may take 30-60 seconds</span>
+                        </span>
                       </>
                     ) : (
                       <>
