@@ -596,6 +596,8 @@ export async function gradeSubmission(submissionId: string, data: {
  * Generate AI score for a submission using Bedrock.
  * This is called when a submission doesn't have an AI score yet.
  * NOTE: This can take 30-60 seconds due to Bedrock Claude processing time.
+ * The API Gateway will timeout at 29s, but the Lambda continues running.
+ * This function handles the timeout by polling for the result.
  */
 export async function generateAiScore(submissionId: string, force: boolean = false): Promise<{
   message: string;
@@ -605,9 +607,9 @@ export async function generateAiScore(submissionId: string, force: boolean = fal
   summary?: string;
   skipped?: boolean;
 }> {
-  // Use AbortController for timeout (90 seconds to account for Bedrock processing)
+  // Use AbortController for timeout (25 seconds - slightly less than API Gateway limit)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 90000);
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
   try {
     const response = await fetchApi<{
@@ -622,9 +624,40 @@ export async function generateAiScore(submissionId: string, force: boolean = fal
       body: JSON.stringify({ submissionId, force }),
       signal: controller.signal,
     });
-    return response;
-  } finally {
     clearTimeout(timeoutId);
+    return response;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+
+    // If timeout or network error, poll for completion
+    if (err.name === 'AbortError' || err.message?.includes('timeout') || err.status === 504) {
+      console.log('AI scoring request timed out, polling for result...');
+
+      // Poll for up to 60 more seconds
+      for (let i = 0; i < 12; i++) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+        try {
+          const submission = await fetchApi<any>(`/submissions/${submissionId}`);
+          if (submission.aiScore !== undefined && submission.aiScore !== null) {
+            return {
+              message: 'AI scoring completed',
+              submissionId,
+              aiScore: submission.aiScore,
+              categoryScores: submission.aiScoreBreakdown,
+              skipped: false,
+            };
+          }
+        } catch (pollErr) {
+          console.log('Polling attempt failed, continuing...', pollErr);
+        }
+      }
+
+      // Still no result after polling
+      throw new Error('AI scoring timed out. Please refresh and try again.');
+    }
+
+    throw err;
   }
 }
 

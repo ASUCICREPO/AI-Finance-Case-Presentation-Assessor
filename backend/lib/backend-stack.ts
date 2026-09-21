@@ -477,13 +477,12 @@ export class FinanceAssessorStack extends cdk.Stack {
     analyticsResource.addMethod('POST', new apigateway.LambdaIntegration(postSessionAnalyticsFn));
     analyticsResource.addMethod('GET', new apigateway.LambdaIntegration(postSessionAnalyticsFn));
 
-    // /generate-ai-score - Generate AI scores for submissions (long timeout for Bedrock calls)
+    // /generate-ai-score - Generate AI scores for submissions
+    // NOTE: This Lambda can take 30-50s for Bedrock processing, which exceeds 
+    // API Gateway's 29s limit. The frontend handles this with timeout retry logic.
     const generateAiScoreResource = api.root.addResource('generate-ai-score');
-    const generateAiScoreIntegration = new apigateway.LambdaIntegration(generateAiScoreFn, {
-      timeout: cdk.Duration.seconds(60),  // Bedrock scoring can take 30-50s
-    });
-    generateAiScoreResource.addMethod('GET', generateAiScoreIntegration);
-    generateAiScoreResource.addMethod('POST', generateAiScoreIntegration);
+    generateAiScoreResource.addMethod('GET', new apigateway.LambdaIntegration(generateAiScoreFn));
+    generateAiScoreResource.addMethod('POST', new apigateway.LambdaIntegration(generateAiScoreFn));
 
     // /anam-session
     const anamSessionResource = api.root.addResource('anam-session');

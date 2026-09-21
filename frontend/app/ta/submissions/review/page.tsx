@@ -162,10 +162,10 @@ export default function SubmissionReviewPage({ submissionIdProp }: { submissionI
       }
     } catch (err: any) {
       console.error('Error generating AI score:', err);
-      if (err.name === 'AbortError') {
-        // Timeout - but the Lambda might still be running, refresh to check
-        alert('Request timed out, but AI scoring may still complete. Refreshing...');
-        await fetchSubmission();
+      // Always refresh to see if scoring completed despite error
+      await fetchSubmission();
+      if (err.message?.includes('timed out')) {
+        alert('AI scoring is taking longer than expected. The page will refresh - check if the score appears.');
       } else {
         alert('Failed to generate AI score. Please try again.');
       }
