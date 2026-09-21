@@ -312,6 +312,23 @@ export class FinanceAssessorStack extends cdk.Stack {
     assessmentsTable.grantReadWriteData(postSessionAnalyticsFn);
     this.uploadsBucket.grantReadWrite(postSessionAnalyticsFn);
 
+    // Generate AI Score Lambda - scores submissions using Bedrock
+    const generateAiScoreFn = new lambda.Function(this, 'GenerateAiScoreFn', {
+      ...lambdaDefaults,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/generate-ai-score'),
+      description: 'Generates AI rubric-based scores for submissions using Bedrock',
+      timeout: cdk.Duration.seconds(120),
+      memorySize: 512,
+    } as lambda.FunctionProps);
+    submissionsTable.grantReadWriteData(generateAiScoreFn);
+    // Grant Bedrock permissions for AI scoring
+    generateAiScoreFn.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['bedrock:Converse', 'bedrock:InvokeModel'],
+      resources: ['*'],
+    }));
+
     // S3 Pre-signed URL Lambda
     const s3PresignedUrlFn = new lambda.Function(this, 'S3PresignedUrlFn', {
       ...lambdaDefaults,
@@ -459,6 +476,11 @@ export class FinanceAssessorStack extends cdk.Stack {
     const analyticsResource = api.root.addResource('analytics');
     analyticsResource.addMethod('POST', new apigateway.LambdaIntegration(postSessionAnalyticsFn));
     analyticsResource.addMethod('GET', new apigateway.LambdaIntegration(postSessionAnalyticsFn));
+
+    // /generate-ai-score - Generate AI scores for submissions
+    const generateAiScoreResource = api.root.addResource('generate-ai-score');
+    generateAiScoreResource.addMethod('GET', new apigateway.LambdaIntegration(generateAiScoreFn));
+    generateAiScoreResource.addMethod('POST', new apigateway.LambdaIntegration(generateAiScoreFn));
 
     // /anam-session
     const anamSessionResource = api.root.addResource('anam-session');

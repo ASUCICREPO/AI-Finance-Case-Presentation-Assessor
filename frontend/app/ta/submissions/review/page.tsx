@@ -29,6 +29,7 @@ import {
   getSubmission,
   gradeSubmission,
   getVideoDownloadUrl,
+  generateAiScore,
   Submission,
   RubricCategoryScore,
 } from '../../../services/api';
@@ -70,6 +71,7 @@ export default function SubmissionReviewPage({ submissionIdProp }: { submissionI
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [generatingAiScore, setGeneratingAiScore] = useState(false);
   const [activeTab, setActiveTab] = useState<'video' | 'presentation' | 'qa' | 'rubric'>('presentation');
 
   // Video state
@@ -143,6 +145,26 @@ export default function SubmissionReviewPage({ submissionIdProp }: { submissionI
       setVideoError('Failed to load video');
     } finally {
       setVideoLoading(false);
+    }
+  }
+
+  async function handleGenerateAiScore() {
+    if (!submissionId) return;
+    try {
+      setGeneratingAiScore(true);
+      const result = await generateAiScore(submissionId, true); // force=true to regenerate
+      if (!result.skipped) {
+        // Refresh submission to get new AI scores
+        await fetchSubmission();
+        alert(`AI Score generated: ${result.aiScore}%`);
+      } else {
+        alert('Submission already has an AI score. Set force=true to regenerate.');
+      }
+    } catch (err) {
+      console.error('Error generating AI score:', err);
+      alert('Failed to generate AI score. Please try again.');
+    } finally {
+      setGeneratingAiScore(false);
     }
   }
 
@@ -634,6 +656,27 @@ export default function SubmissionReviewPage({ submissionIdProp }: { submissionI
                       : '—'}
                   </span>
                 </div>
+
+                {/* Generate AI Score Button - shown when no AI score exists */}
+                {(submission.aiScore === undefined || submission.aiScore === null) && (
+                  <button
+                    onClick={handleGenerateAiScore}
+                    disabled={generatingAiScore}
+                    className="w-full mt-2 mb-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {generatingAiScore ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Generating AI Score...
+                      </>
+                    ) : (
+                      <>
+                        <Bot size={16} />
+                        Generate AI Score
+                      </>
+                    )}
+                  </button>
+                )}
 
                 {/* AI Score Breakdown - 6 dimensions */}
                 {categoryScores && Object.keys(categoryScores).length > 0 && (

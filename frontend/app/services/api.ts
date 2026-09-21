@@ -592,6 +592,24 @@ export async function gradeSubmission(submissionId: string, data: {
   });
 }
 
+/**
+ * Generate AI score for a submission using Bedrock.
+ * This is called when a submission doesn't have an AI score yet.
+ */
+export async function generateAiScore(submissionId: string, force: boolean = false): Promise<{
+  message: string;
+  submissionId: string;
+  aiScore: number;
+  categoryScores?: Record<string, number>;
+  summary?: string;
+  skipped?: boolean;
+}> {
+  return fetchApi(`/generate-ai-score`, {
+    method: 'POST',
+    body: JSON.stringify({ submissionId, force }),
+  });
+}
+
 export async function getSubmissionTranscript(submissionId: string): Promise<{
   submissionId: string;
   transcript: string | null;
