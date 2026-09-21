@@ -633,9 +633,16 @@ export async function createSubmission(data: {
 /**
  * Get submissions for a specific student (for student dashboard).
  * Uses includeAiAnalytics=false to hide AI scores from students.
+ * Supports both studentId (Cognito sub) and email lookup for reliability.
  */
-export async function getStudentSubmissions(studentId: string): Promise<SubmissionsResponse> {
-  return fetchApi<SubmissionsResponse>(`/submissions?studentId=${encodeURIComponent(studentId)}&includeAiAnalytics=false`);
+export async function getStudentSubmissions(studentId: string, email?: string): Promise<SubmissionsResponse> {
+  const params = new URLSearchParams();
+  params.set('studentId', studentId);
+  if (email) {
+    params.set('studentEmail', email);
+  }
+  params.set('includeAiAnalytics', 'false');
+  return fetchApi<SubmissionsResponse>(`/submissions?${params.toString()}`);
 }
 
 // ──────────────────────────────────────────────────────────

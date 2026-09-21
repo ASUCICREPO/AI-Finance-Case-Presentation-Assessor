@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 
 # Initialize AWS clients
 dynamodb = boto3.resource("dynamodb")
@@ -54,6 +54,7 @@ def get_all_submissions(query_params):
     try:
         assessment_id = query_params.get("assessmentId") if query_params else None
         student_id = query_params.get("studentId") if query_params else None
+        student_email = query_params.get("studentEmail") if query_params else None
         status = query_params.get("status") if query_params else None
         group_id = query_params.get("groupId") if query_params else None
         session_number = query_params.get("sessionNumber") if query_params else None
@@ -64,9 +65,24 @@ def get_all_submissions(query_params):
                 KeyConditionExpression=Key("assessmentId").eq(assessment_id),
             )
         elif student_id:
+            # First try the studentId directly
             result = submissions_table.query(
                 IndexName="studentId-index",
                 KeyConditionExpression=Key("studentId").eq(student_id),
+            )
+            # If no results and we have email, also search by email
+            items = result.get("Items", [])
+            if not items and student_email:
+                # Fallback: scan by email (submissions have studentEmail field)
+                scan_result = submissions_table.scan(
+                    FilterExpression=Attr("studentEmail").eq(student_email)
+                )
+                items = scan_result.get("Items", [])
+                result = {"Items": items}
+        elif student_email:
+            # Search by email directly
+            result = submissions_table.scan(
+                FilterExpression=Attr("studentEmail").eq(student_email)
             )
         elif status:
             result = submissions_table.query(

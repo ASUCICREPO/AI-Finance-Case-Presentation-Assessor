@@ -87,7 +87,7 @@ export default function StudentDashboard() {
 
       // Get student's submissions to check status
       try {
-        const submissionsResponse = await getStudentSubmissions(userId!);
+        const submissionsResponse = await getStudentSubmissions(userId!, userEmail || undefined);
         console.log('[Dashboard] Submissions fetched:', submissionsResponse.submissions.length);
         submissionsResponse.submissions.forEach((sub: Submission) => {
           // DynamoDB may return assessmentID (capital) or assessmentId (lowercase)
