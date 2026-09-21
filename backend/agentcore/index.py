@@ -65,7 +65,7 @@ QA_ANALYTICS_MODEL_ID = os.environ.get(
     "QA_ANALYTICS_MODEL_ID", "global.amazon.nova-2-lite-v1:0"
 )
 ASSESSMENT_MODEL_ID = os.environ.get(
-    "ASSESSMENT_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+    "ASSESSMENT_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0"
 )
 _runtime_name = os.getenv("AGENT_RUNTIME_NAME", "")
 GUARDRAIL_ID = os.environ.get("BEDROCK_GUARDRAIL_ID", "")
