@@ -238,41 +238,22 @@ export default function SessionPage() {
     return summaryParts.join('\n');
   };
 
-  // Helper to wait for assessment report with timeout
-  const waitForAssessmentReport = async (timeoutMs: number = 30000): Promise<typeof agentCore.assessmentReport> => {
-    const startTime = Date.now();
-    const pollInterval = 500; // Check every 500ms
-
-    while (Date.now() - startTime < timeoutMs) {
-      if (agentCore.assessmentReport) {
-        console.log('[SessionPage] Assessment report received');
-        return agentCore.assessmentReport;
-      }
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-
-    console.warn('[SessionPage] Timed out waiting for assessment report');
-    return null;
-  };
-
   // Submit session - saves to DynamoDB (only for graded sessions)
+  // AI scoring is triggered asynchronously via Lambda after submission is saved
   const handleSubmitSession = async () => {
     if (submitting) return;
 
     setSubmitting(true);
 
     try {
-      // Request analytics BEFORE ending session - gives AgentCore time to generate report
-      agentCore.requestAnalytics();
+      // Try to request analytics and end session gracefully
+      try {
+        agentCore.requestAnalytics();
+        agentCore.endSession();
+      } catch (e) {
+        console.warn('[SessionPage] Could not end AgentCore session:', e);
+      }
       timer.pause();
-
-      // Wait for the assessment report to arrive (up to 30 seconds)
-      // This is critical for AI scoring - the assessment is generated asynchronously
-      console.log('[SessionPage] Waiting for AI assessment report...');
-      const assessmentReport = await waitForAssessmentReport(30000);
-
-      // Now end the session after we have the report
-      agentCore.endSession();
 
       // Only save to DynamoDB for graded sessions
       if (sessionType === 'graded') {
@@ -290,7 +271,11 @@ export default function SessionPage() {
             timestamp: new Date().toISOString(),
           }));
 
-        // Create submission in DynamoDB with AI analytics
+        // Use assessment report if available (from successful WebSocket session)
+        const assessmentReport = agentCore.assessmentReport;
+
+        // Create submission in DynamoDB
+        // If AI assessment is not available, it will be generated asynchronously by Lambda
         await createSubmission({
           studentId: userId || 'anonymous',
           studentEmail: userEmail || undefined,
@@ -300,26 +285,26 @@ export default function SessionPage() {
           sessionNumber: userSessionNumber || '1',
           groupNumber: userGroupNumber || '1',
 
-          // AI Analytics from AgentCore - use the waited-for report
+          // AI Analytics from AgentCore (if available)
           aiScore: assessmentReport?.overallScore,
           aiScoreBreakdown: assessmentReport?.categoryScores
             ? Object.fromEntries(
               Object.entries(assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
             )
             : {},
-          aiAnalytics: {
-            overallScore: assessmentReport?.overallScore,
-            categoryScores: assessmentReport?.categoryScores
+          aiAnalytics: assessmentReport ? {
+            overallScore: assessmentReport.overallScore,
+            categoryScores: assessmentReport.categoryScores
               ? Object.fromEntries(
                 Object.entries(assessmentReport.categoryScores).map(([k, v]) => [k, v.score])
               )
               : {},
             feedback: {
-              strengths: assessmentReport?.strengths || [],
-              improvements: assessmentReport?.improvements || [],
-              evidence: assessmentReport?.evidenceCitations || [],
+              strengths: assessmentReport.strengths || [],
+              improvements: assessmentReport.improvements || [],
+              evidence: assessmentReport.evidenceCitations || [],
             },
-          },
+          } : {},
 
           // Dual transcripts
           presentationTranscript: presentationTranscript,
@@ -333,7 +318,7 @@ export default function SessionPage() {
           videoS3Key: videoS3Key || undefined,
         });
 
-        console.log('[SessionPage] Graded submission saved to DynamoDB with AI score:', assessmentReport?.overallScore);
+        console.log('[SessionPage] Graded submission saved to DynamoDB');
       } else {
         console.log('[SessionPage] Practice session completed (not saved to gradebook)');
       }
