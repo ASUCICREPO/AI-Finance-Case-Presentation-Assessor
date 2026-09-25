@@ -19,7 +19,9 @@ import StartSessionModal from './components/StartSessionModal';
 export type SessionView = 'overview' | 'calibration' | 'upload' | 'presentation' | 'live' | 'complete';
 export type SessionType = 'practice' | 'graded';
 
-// Default Anam persona ID (fallback for practice sessions)
+// Default persona ID for practice sessions - Keith Clarkson (Clarkson Lumber case)
+const DEFAULT_PRACTICE_PERSONA_ID = 'keith-clarkson-ceo';
+// Default Anam avatar persona ID (visual avatar fallback)
 const DEFAULT_ANAM_PERSONA_ID = '26981553-4601-4799-b64b-7dfa1580de8c';
 
 export default function SessionPage() {
@@ -55,7 +57,7 @@ export default function SessionPage() {
   // Assessment and persona state
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [assessmentTitle, setAssessmentTitle] = useState<string>('');
-  const [personaId, setPersonaId] = useState<string>(DEFAULT_ANAM_PERSONA_ID);
+  const [personaId, setPersonaId] = useState<string>(DEFAULT_PRACTICE_PERSONA_ID);
   const [persona, setPersona] = useState<Persona | null>(null);
 
   // Load assessment details and its persona
@@ -87,16 +89,27 @@ export default function SessionPage() {
           }
         }
 
-        // Fallback: use default Anam persona or first active persona
-        const defaultPersona = personas.find((p) => p.personaID === DEFAULT_ANAM_PERSONA_ID);
-        if (defaultPersona) {
-          setPersonaId(defaultPersona.personaID);
-          setPersona(defaultPersona);
+        // For practice sessions: Use Keith Clarkson persona (Clarkson Lumber case - financially focused)
+        // For graded sessions without assigned persona: Fall back to active persona
+        const clarksonPersona = personas.find((p) => p.personaID === DEFAULT_PRACTICE_PERSONA_ID);
+        if (clarksonPersona) {
+          setPersonaId(clarksonPersona.personaID);
+          setPersona(clarksonPersona);
+          // Set title for practice sessions based on persona
+          if (sessionType === 'practice') {
+            setAssessmentTitle('Clarkson Lumber Company');
+          }
+          console.log('[SessionPage] Using Clarkson Lumber persona for practice:', clarksonPersona.name);
         } else {
+          // Fallback: use first active persona
           const active = personas.find((p) => p.active);
           if (active) {
             setPersonaId(active.personaID);
             setPersona(active);
+            if (sessionType === 'practice') {
+              setAssessmentTitle(active.name || 'Financial Case Analysis');
+            }
+            console.log('[SessionPage] Using fallback active persona:', active.name);
           }
         }
       } catch (err) {

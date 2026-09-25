@@ -32,8 +32,10 @@ export default function PracticeOverview({
   onStartAssessment,
 }: PracticeOverviewProps) {
   const isPractice = sessionType === 'practice';
-  const title = assessmentTitle || 'Assessment';
-  const description = assessmentDescription || 'Complete this assessment by answering questions from the AI interviewer about your analysis and recommendations.';
+  const title = assessmentTitle || (isPractice ? 'Clarkson Lumber Company' : 'Assessment');
+  const description = assessmentDescription || (isPractice
+    ? 'Present your financial analysis of Clarkson Lumber Company to Mr. Keith Clarkson, the company owner. He will ask questions about your group\'s analysis, assumptions, calculations, and recommendations. Be prepared to defend your work and demonstrate understanding of the underlying financial concepts.'
+    : 'Complete this assessment by answering questions from the AI interviewer about your analysis and recommendations.');
   const durationMinutes = duration || 15;
 
   // Format due date for display
@@ -117,26 +119,53 @@ export default function PracticeOverview({
               How to complete {isPractice ? 'practice ' : ''}Q&A session
             </h3>
             <ul className="mt-3 space-y-2 text-sm text-gray-600 font-sans">
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Review the case materials and prepare concise, data-backed responses.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Know your analysis inside out — assumptions, metrics, and outputs.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Support your analysis with evidence and comparable examples.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Clearly articulate risks and how they&apos;re mitigated.
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
-                Defend your final recommendation with a logical, well-structured argument.
-              </li>
+              {isPractice ? (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Understand your group&apos;s financial analysis — profitability, cash flow, and working capital.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Know how to trace calculations through your spreadsheet model.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Be prepared to defend your assumptions — sales forecasts, working capital, and financing needs.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Understand trade-offs between growth, profitability, and liquidity.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Have a clear recommendation with quantified impacts and practical implementation steps.
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Review the case materials and prepare concise, data-backed responses.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Know your analysis inside out — assumptions, metrics, and outputs.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Support your analysis with evidence and comparable examples.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Clearly articulate risks and how they&apos;re mitigated.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
+                    Defend your final recommendation with a logical, well-structured argument.
+                  </li>
+                </>
+              )}
             </ul>
 
             {/* Assessment Details */}
