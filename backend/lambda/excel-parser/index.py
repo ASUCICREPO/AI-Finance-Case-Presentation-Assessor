@@ -61,18 +61,88 @@ def handler(event, context):
         return response(500, {'error': str(e)})
 
 
+def argb_to_hex(argb_color):
+    """Convert openpyxl ARGB color to CSS hex color."""
+    if not argb_color or argb_color == '00000000':
+        return None
+    # ARGB format: first 2 chars are alpha, rest is RGB
+    if len(argb_color) == 8:
+        return f"#{argb_color[2:]}"  # Skip alpha, return RGB
+    elif len(argb_color) == 6:
+        return f"#{argb_color}"
+    return None
+
+
+def get_cell_style(cell) -> dict:
+    """Extract style information from an openpyxl cell."""
+    style = {}
+    
+    try:
+        # Background color
+        fill = cell.fill
+        if fill and fill.fgColor and fill.fgColor.type == 'rgb' and fill.fgColor.rgb:
+            bg_color = argb_to_hex(fill.fgColor.rgb)
+            if bg_color and bg_color.lower() != '#ffffff':  # Skip white backgrounds
+                style['bg'] = bg_color
+        
+        # Font color
+        font = cell.font
+        if font and font.color and font.color.type == 'rgb' and font.color.rgb:
+            font_color = argb_to_hex(font.color.rgb)
+            if font_color and font_color.lower() != '#000000':  # Skip black font
+                style['fc'] = font_color
+        
+        # Font style
+        if font:
+            if font.bold:
+                style['b'] = True
+            if font.italic:
+                style['i'] = True
+            if font.underline:
+                style['u'] = True
+        
+        # Alignment
+        align = cell.alignment
+        if align:
+            if align.horizontal and align.horizontal != 'general':
+                style['ha'] = align.horizontal  # left, center, right
+        
+        # Number format (for detecting percentages, currency, dates)
+        if cell.number_format and cell.number_format != 'General':
+            nf = cell.number_format
+            if '%' in nf:
+                style['nf'] = 'pct'
+            elif '$' in nf or '¥' in nf or '€' in nf or '£' in nf:
+                style['nf'] = 'cur'
+            elif 'yy' in nf.lower() or 'mm' in nf.lower() or 'dd' in nf.lower():
+                style['nf'] = 'date'
+    except Exception:
+        pass  # Ignore style extraction errors
+    
+    return style if style else None
+
+
 def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
     """
     Parse Excel workbook bytes into structured JSON.
     Uses openpyxl for .xlsx files.
     
-    Returns BOTH values and formulas for each sheet.
+    Returns values, formulas, AND styles for each sheet.
 
-    Returns dict of sheet_name -> { headers: [...], rows: [[...], ...], formulas: [[...], ...], rowCount: int }
+    Returns dict of sheet_name -> { 
+        headers: [...], 
+        rows: [[...], ...], 
+        formulas: [[...], ...], 
+        styles: [[{...}, ...], ...],  # Cell styles (bg, fc, b, i, u, ha, nf)
+        rowCount: int,
+        colWidths: [...],  # Column widths
+        mergedCells: [...]  # Merged cell ranges
+    }
     """
     try:
         import openpyxl
-        # Load twice: once for values, once for formulas
+        from openpyxl.utils import get_column_letter
+        # Load twice: once for values, once for formulas/styles
         wb_values = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
         wb_formulas = openpyxl.load_workbook(BytesIO(file_content), data_only=False)
     except ImportError:
@@ -90,6 +160,7 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
         # Get all rows including empty ones to preserve structure
         all_rows = []
         all_formulas = []
+        all_styles = []
         max_col = ws_values.max_column
         
         # Extract values
@@ -107,17 +178,44 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
                     row_data.append(str(cell_val))
             all_rows.append(row_data)
         
-        # Extract formulas
+        # Extract formulas and styles
         for row_idx, row in enumerate(ws_formulas.iter_rows(min_row=1, max_row=ws_formulas.max_row), start=1):
             formula_row = []
+            style_row = []
             for cell in row[:max_col]:
                 # Check if cell has a formula (starts with =)
                 if cell.value and isinstance(cell.value, str) and cell.value.startswith('='):
                     formula_row.append(cell.value)
                 else:
-                    # No formula - show empty or the value itself
                     formula_row.append('')
+                
+                # Extract cell style
+                cell_style = get_cell_style(cell)
+                style_row.append(cell_style)
+            
             all_formulas.append(formula_row)
+            all_styles.append(style_row)
+        
+        # Extract column widths
+        col_widths = []
+        for col_idx in range(1, max_col + 1):
+            col_letter = get_column_letter(col_idx)
+            if col_letter in ws_formulas.column_dimensions:
+                width = ws_formulas.column_dimensions[col_letter].width
+                if width:
+                    col_widths.append(round(width * 7))  # Approximate pixels
+                else:
+                    col_widths.append(64)  # Default width
+            else:
+                col_widths.append(64)
+        
+        # Extract merged cells
+        merged_cells = []
+        for merged_range in ws_formulas.merged_cells.ranges:
+            merged_cells.append({
+                'start': [merged_range.min_row, merged_range.min_col],
+                'end': [merged_range.max_row, merged_range.max_col]
+            })
         
         # Find the header row (first row with multiple non-empty cells)
         header_idx = 0
@@ -135,15 +233,18 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
                 if cell and str(cell).strip():
                     headers.append(str(cell))
                 else:
-                    col_letter = openpyxl.utils.get_column_letter(col_idx + 1)
+                    col_letter = get_column_letter(col_idx + 1)
                     headers.append(col_letter)
         else:
-            headers = [openpyxl.utils.get_column_letter(i + 1) for i in range(max_col)]
+            headers = [get_column_letter(i + 1) for i in range(max_col)]
         
         result[sheet_name] = {
             'headers': headers,
             'rows': all_rows,
-            'formulas': all_formulas,  # NEW: Include formulas
+            'formulas': all_formulas,
+            'styles': all_styles,  # NEW: Include styles
+            'colWidths': col_widths,  # NEW: Column widths
+            'mergedCells': merged_cells,  # NEW: Merged cells
             'rowCount': len(all_rows),
         }
 
