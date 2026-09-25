@@ -80,7 +80,12 @@ export default function SessionPage() {
               if (assessmentPersona) {
                 setPersonaId(assessmentPersona.personaID);
                 setPersona(assessmentPersona);
-                console.log('[SessionPage] Using assessment persona:', assessmentPersona.name);
+                console.log('[SessionPage] Using assessment persona:', {
+                  name: assessmentPersona.name,
+                  personaID: assessmentPersona.personaID,
+                  useAnamAvatar: assessmentPersona.useAnamAvatar,
+                  anamPersonaId: assessmentPersona.anamPersonaId,
+                });
                 return;
               }
             }
@@ -99,7 +104,12 @@ export default function SessionPage() {
           if (sessionType === 'practice') {
             setAssessmentTitle('Clarkson Lumber Case Analysis');
           }
-          console.log('[SessionPage] Using Clarkson Lumber persona for practice:', clarksonPersona.name);
+          console.log('[SessionPage] Using Clarkson Lumber persona for practice:', {
+            name: clarksonPersona.name,
+            personaID: clarksonPersona.personaID,
+            useAnamAvatar: clarksonPersona.useAnamAvatar,
+            anamPersonaId: clarksonPersona.anamPersonaId,
+          });
         } else {
           // Fallback: use first active persona
           const active = personas.find((p) => p.active);
@@ -395,8 +405,8 @@ export default function SessionPage() {
           timer={timer}
           workbookSheets={workbookSheets}
           workbookData={workbookData}
-          anamPersonaId={persona?.anamPersonaId || DEFAULT_ANAM_PERSONA_ID}
-          useAnamAvatar={persona?.useAnamAvatar ?? false}
+          anamPersonaId={persona?.anamPersonaId}
+          useAnamAvatar={persona?.useAnamAvatar ?? (!!persona?.anamPersonaId)}
           onSubmit={handleSubmitSession}
         />
       )}
