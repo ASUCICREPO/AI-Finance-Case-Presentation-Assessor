@@ -248,21 +248,21 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
         all_styles = []
         max_col = ws_values.max_column
 
-        # Extract values WITH formatting, formulas, and styles
-        # Iterate row by row to access both computed values and cell formats
-        for row_idx in range(1, ws_values.max_row + 1):
+        # Use iter_rows on BOTH workbooks simultaneously for performance
+        # zip them together so we process each row pair once
+        values_rows = list(ws_values.iter_rows(min_row=1, max_row=ws_values.max_row))
+        formula_rows = list(
+            ws_formulas.iter_rows(min_row=1, max_row=ws_formulas.max_row)
+        )
+
+        for val_row, fmt_row in zip(values_rows, formula_rows):
             row_data = []
             formula_row = []
             style_row = []
 
-            for col_idx in range(1, max_col + 1):
-                # Get computed value from data_only workbook
-                value_cell = ws_values.cell(row=row_idx, column=col_idx)
-                cell_value = value_cell.value
-
-                # Get format info from formula workbook
-                format_cell = ws_formulas.cell(row=row_idx, column=col_idx)
-                number_format = format_cell.number_format
+            for val_cell, fmt_cell in zip(val_row[:max_col], fmt_row[:max_col]):
+                cell_value = val_cell.value
+                number_format = fmt_cell.number_format
 
                 # Format the value for display
                 if cell_value is None:
@@ -275,16 +275,16 @@ def parse_workbook(file_content: bytes, sheet_filter: list = None) -> dict:
 
                 # Check if cell has a formula
                 if (
-                    format_cell.value
-                    and isinstance(format_cell.value, str)
-                    and format_cell.value.startswith("=")
+                    fmt_cell.value
+                    and isinstance(fmt_cell.value, str)
+                    and fmt_cell.value.startswith("=")
                 ):
-                    formula_row.append(format_cell.value)
+                    formula_row.append(fmt_cell.value)
                 else:
                     formula_row.append("")
 
                 # Extract cell style
-                cell_style = get_cell_style(format_cell)
+                cell_style = get_cell_style(fmt_cell)
                 style_row.append(cell_style)
 
             all_rows.append(row_data)
