@@ -127,7 +127,10 @@ export default function TAHeader() {
                 )}
               </div>
               <div className="px-4 py-2 border-t border-gray-100">
-                <button className="w-full text-center text-sm text-maroon-600 hover:text-maroon-700">
+                <button
+                  onClick={() => { setShowNotifications(false); router.push('/ta/submissions'); }}
+                  className="w-full text-center text-sm text-maroon-600 hover:text-maroon-700 font-medium transition-colors"
+                >
                   View all notifications
                 </button>
               </div>
