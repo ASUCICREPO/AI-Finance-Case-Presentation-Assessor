@@ -55,7 +55,7 @@ export default function TASidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-gray-700 p-1.5 text-gray-300 hover:bg-gray-600 transition-colors"
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-maroon-600 p-1.5 text-white hover:bg-maroon-700 transition-colors"
       >
         {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>

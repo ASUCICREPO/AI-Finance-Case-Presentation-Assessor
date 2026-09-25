@@ -33,10 +33,10 @@ export default function StudentSidebar() {
       <div className="p-3 border-b border-gray-100">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center justify-center w-full rounded-lg p-2 hover:bg-gray-50 transition-colors"
+          className="flex items-center justify-center w-full rounded-lg p-2 bg-maroon-600 hover:bg-maroon-700 transition-colors"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <Menu size={20} className="text-gray-600" />
+          <Menu size={20} className="text-white" />
         </button>
       </div>
 
@@ -48,8 +48,8 @@ export default function StudentSidebar() {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                  ? 'bg-maroon-50 text-maroon-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-maroon-50 text-maroon-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 } ${collapsed || isSessionPage ? 'justify-center' : ''}`}
               title={item.label}
             >
