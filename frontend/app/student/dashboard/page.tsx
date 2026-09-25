@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getStudentSubmissions, getStudentAssessments, Submission, Assessment } from '../../services/api';
 import Link from 'next/link';
@@ -13,6 +13,7 @@ import {
   AlertCircle,
   FileText,
   Info,
+  Check,
 } from 'lucide-react';
 
 interface AssessmentDisplay {
@@ -25,6 +26,11 @@ interface AssessmentDisplay {
   submissionTime: string | null;
   status: 'Submitted' | 'Not started' | 'In progress';
   submissionId?: string;
+}
+
+interface FilterState {
+  status: string;
+  groups: string[];
 }
 
 /**
@@ -40,7 +46,8 @@ export default function StudentDashboard() {
 
   // Filter state
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [filters, setFilters] = useState<FilterState>({ status: 'All', groups: [] });
+  const [pendingFilters, setPendingFilters] = useState<FilterState>({ status: 'All', groups: [] });
   const filterRef = useRef<HTMLDivElement>(null);
 
   // Load assessments on mount and when returning from session
@@ -159,20 +166,75 @@ export default function StudentDashboard() {
     function handleClickOutside(event: MouseEvent) {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
         setShowFilterDropdown(false);
+        // Reset pending filters to current applied filters when closing
+        setPendingFilters(filters);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [filters]);
+
+  // Extract unique groups from assessments
+  const availableGroups = useMemo(() => {
+    const groups = new Set<string>();
+    assessments.forEach(a => {
+      if (a.group) groups.add(a.group);
+    });
+    return Array.from(groups).sort((a, b) => {
+      // Extract group numbers for proper sorting
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+  }, [assessments]);
 
   const totalAssessments = assessments.length;
   const completedAssessments = assessments.filter(a => a.status === 'Submitted').length;
   const pendingAssessments = totalAssessments - completedAssessments;
 
+  // Check if "All groups" is selected
+  const isAllGroupsSelected = pendingFilters.groups.length === 0;
+
+  // Handle status filter change
+  const handleStatusChange = (status: string) => {
+    setPendingFilters(prev => ({ ...prev, status }));
+  };
+
+  // Handle group filter toggle
+  const handleGroupToggle = (group: string) => {
+    setPendingFilters(prev => {
+      if (group === 'all') {
+        // Clear all group filters (select all)
+        return { ...prev, groups: [] };
+      }
+      const newGroups = prev.groups.includes(group)
+        ? prev.groups.filter(g => g !== group)
+        : [...prev.groups, group];
+      return { ...prev, groups: newGroups };
+    });
+  };
+
   // Apply filters
+  const handleApplyFilters = () => {
+    setFilters(pendingFilters);
+    setShowFilterDropdown(false);
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    const clearedFilters = { status: 'All', groups: [] };
+    setPendingFilters(clearedFilters);
+  };
+
+  // Filter assessments based on applied filters
   const filteredAssessments = assessments.filter(a => {
-    return statusFilter === 'All' || a.status === statusFilter;
+    const statusMatch = filters.status === 'All' || a.status === filters.status;
+    const groupMatch = filters.groups.length === 0 || filters.groups.includes(a.group);
+    return statusMatch && groupMatch;
   });
+
+  // Check if any filters are active
+  const hasActiveFilters = filters.status !== 'All' || filters.groups.length > 0;
 
   if (loading) {
     return (
@@ -252,30 +314,122 @@ export default function StudentDashboard() {
         {/* Filter dropdown */}
         <div className="relative" ref={filterRef}>
           <button
-            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-sans"
+            onClick={() => {
+              setShowFilterDropdown(!showFilterDropdown);
+              setPendingFilters(filters); // Reset pending to current on open
+            }}
+            className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors font-sans ${hasActiveFilters
+              ? 'border-maroon-300 bg-maroon-50 text-maroon-700'
+              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
           >
-            <Filter size={16} className="text-gray-500" />
-            Filter by {statusFilter}
-            <ChevronDown size={16} className="text-gray-400" />
+            <Filter size={16} className={hasActiveFilters ? 'text-maroon-600' : 'text-gray-500'} />
+            Filter by
+            <ChevronDown size={16} className={hasActiveFilters ? 'text-maroon-600' : 'text-gray-400'} />
           </button>
 
           {showFilterDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gray-200 bg-white shadow-lg z-50">
-              <div className="p-2">
-                {['All', 'Not started', 'Submitted'].map((status) => (
+            <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-gray-200 bg-white shadow-lg z-50">
+              <div className="p-4">
+                {/* Status Section */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-maroon-700 mb-3">Status</h4>
+                  <div className="space-y-2">
+                    {['All', 'Not started', 'Submitted'].map((status) => (
+                      <label
+                        key={status}
+                        className="flex items-center gap-3 cursor-pointer group"
+                      >
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${pendingFilters.status === status
+                            ? 'border-maroon-600 bg-maroon-600'
+                            : 'border-gray-300 group-hover:border-gray-400'
+                            }`}
+                          onClick={() => handleStatusChange(status)}
+                        >
+                          {pendingFilters.status === status && (
+                            <Check size={14} className="text-white" strokeWidth={3} />
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-700">{status}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Group Section */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-maroon-700 mb-3">Group</h4>
+                  <div className="space-y-2">
+                    {/* All groups option */}
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isAllGroupsSelected
+                          ? 'border-maroon-600 bg-maroon-600'
+                          : 'border-gray-300 group-hover:border-gray-400'
+                          }`}
+                        onClick={() => handleGroupToggle('all')}
+                      >
+                        {isAllGroupsSelected && (
+                          <Check size={14} className="text-white" strokeWidth={3} />
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-700">All groups</span>
+                    </label>
+
+                    {/* Individual group options */}
+                    {availableGroups.map((group) => (
+                      <label
+                        key={group}
+                        className="flex items-center gap-3 cursor-pointer group"
+                      >
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${pendingFilters.groups.includes(group)
+                            ? 'border-maroon-600 bg-maroon-600'
+                            : 'border-gray-300 group-hover:border-gray-400'
+                            }`}
+                          onClick={() => handleGroupToggle(group)}
+                        >
+                          {pendingFilters.groups.includes(group) && (
+                            <Check size={14} className="text-white" strokeWidth={3} />
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-700">{group}</span>
+                      </label>
+                    ))}
+
+                    {/* Show default groups if none exist yet */}
+                    {availableGroups.length === 0 && (
+                      <>
+                        {['Group 1', 'Group 2', 'Group 3', 'Group 4'].map((group) => (
+                          <label
+                            key={group}
+                            className="flex items-center gap-3 cursor-pointer group opacity-50"
+                          >
+                            <div className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center" />
+                            <span className="text-sm text-gray-500">{group}</span>
+                          </label>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2 border-t border-gray-100">
                   <button
-                    key={status}
-                    onClick={() => {
-                      setStatusFilter(status);
-                      setShowFilterDropdown(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-sm rounded-lg ${statusFilter === status ? 'bg-maroon-50 text-maroon-700' : 'text-gray-700 hover:bg-gray-50'
-                      }`}
+                    onClick={handleClearFilters}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    {status}
+                    Clear All
                   </button>
-                ))}
+                  <button
+                    onClick={handleApplyFilters}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 transition-colors"
+                  >
+                    Apply Filter
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -315,9 +469,9 @@ export default function StudentDashboard() {
               {filteredAssessments.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    {statusFilter === 'All'
+                    {!hasActiveFilters
                       ? 'No assessments assigned yet. Check back later!'
-                      : 'No assessments match your filter.'}
+                      : 'No assessments match your filters.'}
                   </td>
                 </tr>
               ) : (
