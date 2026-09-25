@@ -14,8 +14,6 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
-  const [group, setGroup] = useState('');
-  const [course, setCourse] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +33,8 @@ export default function SignUpPage() {
 
     setIsLoading(true);
     try {
-      const result = await signUp(email, password, name, role, group, course);
+      // Group and course will be assigned by TA/admin later
+      const result = await signUp(email, password, name, role, '', '');
       if (!result.userConfirmed) {
         router.push(`/confirm/?email=${encodeURIComponent(email)}`);
       } else {
@@ -111,33 +110,12 @@ export default function SignUpPage() {
               <option value="student">Student</option>
               <option value="instructor">Admin</option>
             </select>
+            {role === 'student' && (
+              <p className="mt-1.5 text-xs text-gray-500">
+                Your group and session will be assigned by your instructor.
+              </p>
+            )}
           </div>
-
-          {/* Group & Course (for students) */}
-          {role === 'student' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 font-sans">Group</label>
-                <input
-                  type="text"
-                  value={group}
-                  onChange={(e) => setGroup(e.target.value)}
-                  placeholder="Group 4"
-                  className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 font-sans">Course</label>
-                <input
-                  type="text"
-                  value={course}
-                  onChange={(e) => setCourse(e.target.value)}
-                  placeholder="FIN 502"
-                  className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-                />
-              </div>
-            </div>
-          )}
 
           {/* Password */}
           <div>
