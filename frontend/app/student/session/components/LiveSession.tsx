@@ -232,42 +232,28 @@ export default function LiveSession({
         </div>
 
         {/* RIGHT PANEL - Timer, Avatar, Camera */}
-        <div className="w-[300px] shrink-0 space-y-3 flex flex-col">
-          {/* Q&A Session Timer */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shrink-0">
-            <p className="text-xs text-gray-500 font-sans mb-1">Q&A Session</p>
-            <div className="flex items-center gap-2">
-              <Clock size={20} className={isLowTime ? 'text-red-500' : 'text-gray-400'} />
-              <span className={`text-4xl font-bold font-sans ${isLowTime ? 'text-red-600' : 'text-gray-900'}`}>
-                {formattedTime}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-gray-500 font-sans">
-              {isLowTime ? `${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''} remaining` : '15-minute maximum session'}
-            </p>
-          </div>
-
+        <div className="w-[320px] shrink-0 flex flex-col gap-3">
           {/* AI Avatar Card */}
-          <div className="rounded-xl border-2 border-maroon-200 bg-maroon-50 overflow-hidden flex-1 flex flex-col min-h-0">
-            {/* Avatar name header */}
-            <div className="flex items-center justify-between px-4 py-3 shrink-0">
+          <div className="rounded-2xl border border-maroon-200 overflow-hidden bg-gray-900 relative flex flex-col" style={{ minHeight: 280 }}>
+            {/* Name + Volume row */}
+            <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-full bg-maroon-600 flex items-center justify-center">
-                  <span className="text-sm text-white font-bold">
+                <div className="h-7 w-7 rounded-full bg-maroon-600 flex items-center justify-center shrink-0">
+                  <span className="text-xs text-white font-bold">
                     {displayPersonaName.charAt(0)}
                   </span>
                 </div>
-                <span className="text-sm font-semibold text-gray-900 font-sans">
+                <span className="text-sm font-semibold text-white drop-shadow font-sans">
                   {displayPersonaName}
                 </span>
               </div>
-              <button className="rounded-full p-1.5 hover:bg-maroon-100">
-                <Volume2 size={16} className="text-gray-500" />
+              <button className="rounded-full bg-white/20 p-1.5 hover:bg-white/30 transition-colors">
+                <Volume2 size={15} className="text-white" />
               </button>
             </div>
 
-            {/* Avatar area */}
-            <div className="relative flex-1 bg-gray-100 min-h-[180px]">
+            {/* Avatar video/orb area */}
+            <div className="flex-1 relative min-h-[220px]">
               {anamIsActive ? (
                 <AnamAvatarPanel
                   anamPersonaId={anamPersonaId!}
@@ -277,46 +263,72 @@ export default function LiveSession({
                   onAssistantTextRef={onAssistantTextRef}
                 />
               ) : (
-                /* Voice-only mode */
-                <div className="h-full bg-gradient-to-b from-maroon-50 to-maroon-100 flex flex-col items-center justify-center">
-                  <div className={`relative w-20 h-20 rounded-full bg-maroon-200 flex items-center justify-center ${isAISpeaking ? 'animate-pulse' : ''}`}>
-                    <div className={`absolute inset-0 rounded-full bg-maroon-300 ${isAISpeaking ? 'animate-ping opacity-30' : 'opacity-0'}`} />
-                    <Volume2 size={32} className={`text-maroon-600 ${isAISpeaking ? 'animate-bounce' : ''}`} />
+                /* Voice-only orb */
+                <div className="h-full bg-gradient-to-b from-gray-800 to-gray-900 flex flex-col items-center justify-center min-h-[220px]">
+                  <div className={`relative w-24 h-24 rounded-full bg-maroon-800 flex items-center justify-center ${isAISpeaking ? 'animate-pulse' : ''}`}>
+                    <div className={`absolute inset-0 rounded-full bg-maroon-600 ${isAISpeaking ? 'animate-ping opacity-20' : 'opacity-0'}`} />
+                    <span className="text-4xl font-bold text-white font-serif">
+                      {displayPersonaName.charAt(0)}
+                    </span>
                   </div>
-                  <p className="mt-2 text-xs text-maroon-600 font-medium">
-                    {isAISpeaking ? 'AI Speaking...' : 'Voice Mode'}
-                  </p>
                 </div>
               )}
 
-              {/* AI Speaking indicator with current text */}
-              {isAISpeaking && currentAIText && (
-                <div className="absolute bottom-0 left-0 right-0 bg-amber-500 px-4 py-3">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs text-white font-semibold">🎙️ AI Speaking</span>
+              {/* AI Speaking overlay at bottom — always visible when speaking */}
+              {isAISpeaking && (
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    {/* Animated bars */}
+                    <div className="flex items-end gap-0.5 h-4">
+                      {[1, 2, 3, 4].map(i => (
+                        <div
+                          key={i}
+                          className="w-1 bg-amber-400 rounded-full animate-bounce"
+                          style={{ height: `${8 + (i % 3) * 4}px`, animationDelay: `${i * 0.1}s` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs font-semibold text-amber-400">AI Speaking</span>
                   </div>
-                  <p className="text-sm text-white line-clamp-2">
-                    &quot;{currentAIText}&quot;
-                  </p>
+                  {currentAIText && (
+                    <p className="text-sm text-white line-clamp-2 italic">
+                      &quot;{currentAIText}&quot;
+                    </p>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
           {/* Student Camera Card */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shrink-0 h-[140px]">
+          <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-800 relative" style={{ minHeight: 200 }}>
             <StudentCameraView
               studentName={displayStudentName}
-              compact
+              showControls
             />
+          </div>
+
+          {/* Timer */}
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock size={18} className={isLowTime ? 'text-red-500' : 'text-gray-400'} />
+                <span className={`text-3xl font-bold font-sans tabular-nums ${isLowTime ? 'text-red-600' : 'text-gray-900'}`}>
+                  {formattedTime}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 font-sans text-right">
+                {isLowTime ? `${remainingMinutes} min left` : '15 min max'}
+              </p>
+            </div>
           </div>
 
           {/* Submit Button */}
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-500 px-6 py-3 text-sm font-medium text-white hover:bg-gray-600 transition-colors font-sans shrink-0"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-maroon-600 px-6 py-3 text-sm font-semibold text-white hover:bg-maroon-700 transition-colors font-sans shrink-0"
           >
-            Submit
+            Submit Assessment
             <ChevronRight size={16} />
           </button>
         </div>

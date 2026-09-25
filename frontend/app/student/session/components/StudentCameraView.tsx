@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
-import { Video, VideoOff, Mic, MicOff, Volume2 } from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff } from 'lucide-react';
 
 interface StudentCameraViewProps {
   studentName: string;
   isMuted?: boolean;
   onToggleMute?: () => void;
   compact?: boolean;
+  showControls?: boolean;
   onStreamReady?: (stream: MediaStream) => void;
 }
 
@@ -21,7 +22,7 @@ export interface StudentCameraViewRef {
  * Exposes stream for recording via ref.
  */
 const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProps>(
-  function StudentCameraView({ studentName, isMuted = false, onToggleMute, compact = false, onStreamReady }, ref) {
+  function StudentCameraView({ studentName, isMuted = false, onToggleMute, compact = false, showControls = false, onStreamReady }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [cameraActive, setCameraActive] = useState(false);
     const [permissionDenied, setPermissionDenied] = useState(false);
@@ -92,25 +93,14 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
             style={{ transform: 'scaleX(-1)' }}
           />
 
-          {/* Student name badge */}
-          <div className="absolute bottom-2 left-2 flex items-center gap-2 z-10">
+          {/* Student name badge top-left */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
             <div className="h-6 w-6 rounded-full bg-maroon-600 flex items-center justify-center">
               <span className="text-xs text-white font-medium">
                 {studentName.charAt(0)}
               </span>
             </div>
-            <span className="text-xs text-white font-sans">{studentName}</span>
-            <Volume2 size={12} className="text-white" />
-          </div>
-
-          {/* Controls */}
-          <div className="absolute bottom-2 right-2 flex items-center gap-2 z-10">
-            <button className="rounded-full bg-white/20 p-1.5 hover:bg-white/30 transition-colors">
-              <Mic size={12} className="text-white" />
-            </button>
-            <button className="rounded-full bg-white/20 p-1.5 hover:bg-white/30 transition-colors">
-              <Video size={12} className="text-white" />
-            </button>
+            <span className="text-xs text-white font-semibold font-sans drop-shadow">{studentName}</span>
           </div>
 
           {/* Loading state */}
@@ -119,10 +109,59 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
               <Video size={24} className="text-gray-500 animate-pulse" />
             </div>
           )}
-
           {permissionDenied && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
               <VideoOff size={24} className="text-gray-500" />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // showControls mode — matches the mockup design
+    if (showControls) {
+      return (
+        <div className="relative w-full h-full bg-gray-800 min-h-[200px]">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`absolute inset-0 h-full w-full object-cover ${cameraActive ? 'opacity-100' : 'opacity-0'}`}
+            style={{ transform: 'scaleX(-1)' }}
+          />
+
+          {/* Student name badge top-left */}
+          <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
+            <div className="h-7 w-7 rounded-full bg-maroon-600 flex items-center justify-center shrink-0">
+              <span className="text-xs text-white font-semibold">
+                {studentName.charAt(0)}
+              </span>
+            </div>
+            <span className="text-sm font-semibold text-white drop-shadow font-sans">{studentName}</span>
+          </div>
+
+          {/* Mic + Video buttons centered at bottom — matches mockup */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
+            <button className="rounded-full bg-white/25 backdrop-blur-sm p-3 hover:bg-white/40 transition-colors shadow-lg">
+              <Mic size={18} className="text-white" />
+            </button>
+            <button className="rounded-full bg-white/25 backdrop-blur-sm p-3 hover:bg-white/40 transition-colors shadow-lg">
+              <Video size={18} className="text-white" />
+            </button>
+          </div>
+
+          {/* Loading state */}
+          {!cameraActive && !permissionDenied && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 z-20">
+              <Video size={28} className="text-gray-500 animate-pulse mb-2" />
+              <p className="text-xs text-gray-400">Starting camera...</p>
+            </div>
+          )}
+          {permissionDenied && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 z-20">
+              <VideoOff size={28} className="text-gray-500 mb-2" />
+              <p className="text-xs text-gray-400">Camera access denied</p>
             </div>
           )}
         </div>
