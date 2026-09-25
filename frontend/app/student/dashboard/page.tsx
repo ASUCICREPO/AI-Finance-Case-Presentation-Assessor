@@ -91,9 +91,9 @@ export default function StudentDashboard() {
         console.log('[Dashboard] Submissions fetched:', submissionsResponse.submissions.length);
         submissionsResponse.submissions.forEach((sub: Submission) => {
           // DynamoDB may return assessmentID (capital) or assessmentId (lowercase)
-          // Store by both to ensure matching works
-          const subAssessmentId = (sub as any).assessmentId || (sub as any).assessmentID;
-          console.log('[Dashboard] Submission assessmentId:', subAssessmentId);
+          // Store by the assessmentId to ensure matching works
+          const subAssessmentId = sub.assessmentId || (sub as any).assessmentID;
+          console.log('[Dashboard] Submission assessmentId:', subAssessmentId, 'status:', sub.status);
           if (subAssessmentId) {
             submittedAssessments.set(subAssessmentId, sub);
           }
@@ -104,18 +104,24 @@ export default function StudentDashboard() {
 
       // Map assessments to display format
       const displayAssessments: AssessmentDisplay[] = assignedAssessments.map(assessment => {
-        // Assessments may have assessmentId or assessmentID
+        // Assessments may have assessmentId or assessmentID - normalize to lowercase
         const assessmentId = assessment.assessmentId || assessment.assessmentID || '';
         const submission = submittedAssessments.get(assessmentId);
 
-        console.log('[Dashboard] Assessment:', {
+        // Debug logging
+        console.log('[Dashboard] Matching assessment:', {
           assessmentId,
           title: assessment.title,
-          hasAssessmentId: !!assessment.assessmentId,
-          hasAssessmentID: !!assessment.assessmentID,
-          hasSubmission: !!submission,
-          submissionStatus: submission?.status,
+          submissionFound: !!submission,
+          submissionKeys: Array.from(submittedAssessments.keys()),
         });
+
+        // Determine status based on submission existence
+        let status: 'Submitted' | 'Not started' | 'In progress' = 'Not started';
+        if (submission) {
+          // If we have a submission record, it means the student completed and submitted
+          status = 'Submitted';
+        }
 
         return {
           assessmentId,
@@ -126,7 +132,7 @@ export default function StudentDashboard() {
           deadline: assessment.dueDate ? formatDeadline(assessment.dueDate) : 'No deadline',
           duration: `${assessment.duration || 15} min`,
           submissionTime: submission?.submittedAt ? formatDate(submission.submittedAt) : null,
-          status: submission ? 'Submitted' : 'Not started',
+          status,
           submissionId: submission?.submissionId,
         };
       });
