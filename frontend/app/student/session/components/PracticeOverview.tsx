@@ -32,7 +32,7 @@ export default function PracticeOverview({
   onStartAssessment,
 }: PracticeOverviewProps) {
   const isPractice = sessionType === 'practice';
-  const title = assessmentTitle || (isPractice ? 'Clarkson Lumber Company' : 'Assessment');
+  const title = assessmentTitle || (isPractice ? 'Clarkson Lumber Case Analysis' : 'Assessment');
   const description = assessmentDescription || (isPractice
     ? 'Present your financial analysis of Clarkson Lumber Company to Mr. Keith Clarkson, the company owner. He will ask questions about your group\'s analysis, assumptions, calculations, and recommendations. Be prepared to defend your work and demonstrate understanding of the underlying financial concepts.'
     : 'Complete this assessment by answering questions from the AI interviewer about your analysis and recommendations.');
@@ -70,7 +70,7 @@ export default function PracticeOverview({
         <div>
           {/* Title */}
           <h1 className="text-2xl font-bold text-gray-900 font-serif">
-            {isPractice ? 'Practice' : 'Real'} Session: {title}
+            {title}
           </h1>
 
           {/* Meta badges */}

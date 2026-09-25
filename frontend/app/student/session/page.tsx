@@ -97,7 +97,7 @@ export default function SessionPage() {
           setPersona(clarksonPersona);
           // Set title for practice sessions based on persona
           if (sessionType === 'practice') {
-            setAssessmentTitle('Clarkson Lumber Company');
+            setAssessmentTitle('Clarkson Lumber Case Analysis');
           }
           console.log('[SessionPage] Using Clarkson Lumber persona for practice:', clarksonPersona.name);
         } else {
@@ -107,7 +107,7 @@ export default function SessionPage() {
             setPersonaId(active.personaID);
             setPersona(active);
             if (sessionType === 'practice') {
-              setAssessmentTitle(active.name || 'Financial Case Analysis');
+              setAssessmentTitle('Clarkson Lumber Case Analysis');
             }
             console.log('[SessionPage] Using fallback active persona:', active.name);
           }
