@@ -111,20 +111,34 @@ export default function AnamAvatarPanel({
   }, [sessionToken, isActive]);
 
   // Register text callback — pipes Nova Sonic transcript TEXT to Anam for TTS + lip sync
+  // Text is streamed chunk by chunk as it arrives from Nova Sonic
   useEffect(() => {
     if (!connected) {
       console.log('[AnamAvatar] Not connected yet, skipping callback registration');
       return;
     }
 
-    console.log('[AnamAvatar] Registering text callback for Anam TTS');
+    let lastTextLength = 0; // Track how much text we've already sent
+
+    console.log('[AnamAvatar] Registering text callback for Anam TTS (streaming mode)');
     onAssistantTextRef.current = (text: string, isFinal: boolean) => {
       if (!clientRef.current || !connected) {
         console.warn('[AnamAvatar] Received text but not ready:', { hasClient: !!clientRef.current, connected });
         return;
       }
 
-      console.log('[AnamAvatar] Received text:', { text, isFinal });
+      // Only send the NEW portion of text (delta), not the full accumulated text
+      const newText = text.slice(lastTextLength);
+
+      if (newText.length === 0 && !isFinal) {
+        return; // No new text to send
+      }
+
+      console.log('[AnamAvatar] Streaming text delta to Anam:', {
+        deltaLength: newText.length,
+        totalLength: text.length,
+        isFinal
+      });
 
       try {
         // Create a new talk stream if needed
@@ -134,20 +148,28 @@ export default function AnamAvatarPanel({
         }
 
         if (talkStreamRef.current.isActive()) {
-          console.log('[AnamAvatar] Streaming message chunk');
-          talkStreamRef.current.streamMessageChunk(text, isFinal);
+          // Stream only the new text chunk
+          if (newText.length > 0) {
+            talkStreamRef.current.streamMessageChunk(newText, isFinal);
+            lastTextLength = text.length; // Update tracker
+          } else if (isFinal) {
+            // Just signal final even if no new text
+            talkStreamRef.current.streamMessageChunk('', true);
+          }
         } else {
           console.warn('[AnamAvatar] Talk stream not active');
         }
 
         // Reset stream ref on final so next turn gets a new stream
         if (isFinal) {
-          console.log('[AnamAvatar] Final chunk, resetting stream');
+          console.log('[AnamAvatar] Final chunk received, resetting for next turn');
           talkStreamRef.current = null;
+          lastTextLength = 0; // Reset for next turn
         }
       } catch (e) {
         console.error('[AnamAvatar] Talk stream error:', e);
         talkStreamRef.current = null;
+        lastTextLength = 0;
       }
     };
 
