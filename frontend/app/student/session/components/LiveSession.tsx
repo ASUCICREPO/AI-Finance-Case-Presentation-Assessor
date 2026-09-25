@@ -65,28 +65,36 @@ export default function LiveSession({
   const { transcript, isAISpeaking, currentAIText, personaName, status, setMuteAudioPlayback, onAssistantText } = agentCore;
   const { formattedTime, isLowTime, timeRemaining } = timer;
 
-  const shouldUseAnam = useAnamAvatar && anamPersonaId && config.anamEnabled;
+  // Determine if we should use Anam avatar
+  // Use Anam when: persona has avatar enabled AND has a valid anamPersonaId
+  // Note: config.anamEnabled is a global kill switch, but if persona specifically has avatar configured, respect that
+  const shouldUseAnam = useAnamAvatar && anamPersonaId;
   const hasWorkbookData = workbookSheets.length > 0;
 
   // Fetch Anam session token on mount
   useEffect(() => {
     if (!shouldUseAnam) {
+      console.log('[LiveSession] Anam avatar not enabled for this persona, using Nova Sonic voice-only mode');
       setVoiceMode('nova-sonic');
       setAnamFailed(true);
       setMuteAudioPlayback(false);
       return;
     }
 
+    console.log('[LiveSession] Fetching Anam session token for persona:', anamPersonaId);
     getAnamSessionToken(anamPersonaId!, false)
       .then((token) => {
+        console.log('[LiveSession] ✅ Anam session token received, enabling avatar mode');
         setAnamSessionToken(token);
         setVoiceMode('anam');
+        // CRITICAL: Mute Nova Sonic audio - Anam will handle TTS from text
         setMuteAudioPlayback(true);
       })
       .catch((err) => {
-        console.error('[LiveSession] Failed to get Anam token:', err);
+        console.error('[LiveSession] ❌ Failed to get Anam token, falling back to Nova Sonic:', err);
         setVoiceMode('nova-sonic');
         setAnamFailed(true);
+        // Nova Sonic plays audio directly in fallback mode
         setMuteAudioPlayback(false);
       });
 
@@ -98,7 +106,9 @@ export default function LiveSession({
   // Register text callback for Anam TTS
   useEffect(() => {
     if (shouldUseAnam && anamSessionToken) {
+      console.log('[LiveSession] Registering onAssistantText callback for Anam TTS');
       onAssistantText((text: string, isFinal: boolean) => {
+        console.log('[LiveSession] Forwarding text to Anam:', { textLength: text.length, isFinal });
         if (onAssistantTextRef.current) {
           onAssistantTextRef.current(text, isFinal);
         }
