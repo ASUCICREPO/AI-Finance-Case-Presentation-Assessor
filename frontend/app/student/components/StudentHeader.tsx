@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Bell, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import StudentTutorialModal from './StudentTutorialModal';
 
 export default function StudentHeader() {
@@ -44,9 +44,6 @@ export default function StudentHeader() {
           <span className="hidden sm:inline">Tutorial</span>
         </button>
 
-        <button className="relative rounded-full p-2 hover:bg-gray-100 transition-colors">
-          <Bell size={20} className="text-gray-600" />
-        </button>
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-maroon-100 flex items-center justify-center overflow-hidden">
             <span className="text-sm font-medium text-maroon-600">
