@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Bell, Settings, LogOut, X, Check, AlertCircle, Info, HelpCircle } from 'lucide-react';
 import InstructorTutorialModal from './InstructorTutorialModal';
+import Image from 'next/image';
 
 // Mock notifications for now - in production this would come from an API
 const mockNotifications = [
@@ -45,13 +46,17 @@ export default function TAHeader() {
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
       {/* Left - Logo */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-bold text-maroon-600 font-serif">ASU</span>
-          <span className="text-sm text-gray-600 font-sans">W. P. Carey</span>
-          <span className="ml-2 rounded-full bg-maroon-100 px-2 py-0.5 text-xs font-medium text-maroon-700">
-            Admin Dashboard
-          </span>
-        </div>
+        <Image
+          src="/ASU_WP_Carey_Horiz_RGB_MaroonGold_600ppi.png"
+          alt="ASU W.P. Carey School of Business"
+          width={180}
+          height={45}
+          className="h-10 w-auto"
+          priority
+        />
+        <span className="ml-2 rounded-full bg-maroon-100 px-2 py-0.5 text-xs font-medium text-maroon-700">
+          Admin Dashboard
+        </span>
       </div>
 
       {/* Right - Tutorial, Notifications & User */}

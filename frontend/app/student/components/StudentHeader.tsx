@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { HelpCircle } from 'lucide-react';
 import StudentTutorialModal from './StudentTutorialModal';
+import Image from 'next/image';
 
 export default function StudentHeader() {
   const { userName } = useAuth();
@@ -22,15 +23,15 @@ export default function StudentHeader() {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
       {/* Left - Logo */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1">
-          <span className="text-xl font-bold text-maroon-600 font-serif">ASU</span>
-          <div className="h-6 w-px bg-gray-300 mx-2" />
-          <div>
-            <span className="text-sm font-semibold text-gray-800 font-sans">W.P. Carey</span>
-            <p className="text-xs text-gray-500 font-sans">Arizona State University</p>
-          </div>
-        </div>
+      <div className="flex items-center">
+        <Image
+          src="/ASU_WP_Carey_Horiz_RGB_MaroonGold_600ppi.png"
+          alt="ASU W.P. Carey School of Business"
+          width={180}
+          height={45}
+          className="h-10 w-auto"
+          priority
+        />
       </div>
 
       {/* Right - Tutorial, Notifications & User */}
