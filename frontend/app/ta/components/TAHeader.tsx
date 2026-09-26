@@ -198,16 +198,6 @@ export default function TAHeader() {
             <p className="text-xs text-gray-500 font-sans">Admin / Instructor</p>
           </div>
         </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={logout}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-          title="Logout"
-        >
-          <LogOut size={16} />
-          <span className="hidden sm:inline">Logout</span>
-        </button>
       </div>
 
       {/* Click outside to close dropdowns */}
