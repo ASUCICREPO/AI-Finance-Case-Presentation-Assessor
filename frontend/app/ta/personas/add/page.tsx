@@ -535,7 +535,7 @@ export default function AddPersonaPage() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description of this persona's background and expertise..."
+              placeholder="e.g., A seasoned CFO with 20+ years in corporate finance, specializing in working capital management, credit analysis, and growth financing. Known for challenging assumptions and probing financial model mechanics."
               rows={3}
               className={`w-full rounded-lg border ${errors.description ? 'border-red-300' : 'border-gray-200'} px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500 resize-none`}
             />

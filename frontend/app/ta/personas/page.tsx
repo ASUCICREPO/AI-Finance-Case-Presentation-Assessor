@@ -153,14 +153,14 @@ export default function AvatarConfigurationPage() {
             <span className="text-gray-500">Loading avatars from Anam...</span>
           </div>
         ) : (
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {avatars.map((avatar, index) => (
               <div
                 key={avatar.id}
-                className="rounded-xl border border-gray-200 bg-white p-3 text-center hover:border-maroon-200 hover:shadow-sm transition-all"
+                className="rounded-xl border border-gray-200 bg-white p-4 text-center hover:border-maroon-200 hover:shadow-sm transition-all"
               >
                 {avatar.imageUrl ? (
-                  <div className="h-16 w-16 mx-auto rounded-full overflow-hidden bg-gray-100 mb-2">
+                  <div className="h-20 w-20 mx-auto rounded-full overflow-hidden bg-gray-100 mb-3">
                     <img
                       src={avatar.imageUrl}
                       alt={avatar.name}
@@ -168,12 +168,12 @@ export default function AvatarConfigurationPage() {
                     />
                   </div>
                 ) : (
-                  <div className="h-16 w-16 mx-auto rounded-full bg-gradient-to-br from-maroon-100 to-maroon-200 flex items-center justify-center text-maroon-600 text-xl font-bold mb-2">
+                  <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-maroon-100 to-maroon-200 flex items-center justify-center text-maroon-600 text-2xl font-bold mb-3">
                     {index + 1}
                   </div>
                 )}
-                <p className="text-xs font-medium text-gray-900">{avatar.name}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2">{avatar.description}</p>
+                <p className="text-sm font-medium text-gray-900 mb-1">{avatar.name}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{avatar.description}</p>
               </div>
             ))}
           </div>

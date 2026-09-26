@@ -247,13 +247,6 @@ export default function CaseAssessmentPage() {
                     <div className="px-5 py-3 border-t border-gray-100">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</span>
-                        <button
-                          onClick={() => router.push(`/ta/assessments/edit?id=${assessment.assessmentId}`)}
-                          className="flex items-center gap-1 text-xs font-medium text-maroon-600 hover:underline"
-                        >
-                          <Users size={12} />
-                          Manage Assignment
-                        </button>
                       </div>
 
                       {(assessment.assignedSessions?.length || assessment.assignedGroups?.length) ? (
@@ -289,10 +282,6 @@ export default function CaseAssessmentPage() {
                       <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/30">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Case Materials</span>
-                          <button className="flex items-center gap-1 text-xs font-medium text-maroon-600 hover:underline">
-                            <Upload size={12} />
-                            Upload File
-                          </button>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {assessment.materials.map((material, idx) => (
