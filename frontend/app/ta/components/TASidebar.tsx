@@ -32,7 +32,7 @@ export default function TASidebar() {
 
   return (
     <aside
-      className={`sticky top-16 h-[calc(100vh-4rem)] border-r border-gray-200 bg-gray-900 transition-all duration-300 flex flex-col ${collapsed ? 'w-16' : 'w-56'
+      className={`sticky top-16 h-[calc(100vh-4rem)] border-r border-gray-200 bg-white transition-all duration-300 flex flex-col ${collapsed ? 'w-16' : 'w-56'
         }`}
     >
       <nav className="flex flex-col gap-1 p-2 pt-4 flex-1">
@@ -44,7 +44,7 @@ export default function TASidebar() {
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
                 ? 'bg-maroon-600 text-white'
-                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 } ${collapsed ? 'justify-center' : ''}`}
               title={collapsed ? item.label : undefined}
             >
@@ -56,10 +56,10 @@ export default function TASidebar() {
       </nav>
 
       {/* Bottom section with Logout */}
-      <div className="p-2 border-t border-gray-700">
+      <div className="p-2 border-t border-gray-200">
         <button
           onClick={logout}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors w-full ${collapsed ? 'justify-center' : ''}`}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors w-full ${collapsed ? 'justify-center' : ''}`}
           title={collapsed ? 'Logout' : undefined}
         >
           <LogOut size={20} />
