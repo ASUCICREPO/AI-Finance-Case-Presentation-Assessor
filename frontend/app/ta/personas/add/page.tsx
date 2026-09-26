@@ -421,7 +421,7 @@ export default function AddPersonaPage() {
                   <span className="text-gray-500 text-sm">Loading avatars from Anam...</span>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-4">
                   {avatars.map((avatar, index) => (
                     <button
                       key={avatar.id}
@@ -433,7 +433,7 @@ export default function AddPersonaPage() {
                         }`}
                     >
                       {avatar.imageUrl ? (
-                        <div className={`h-14 w-14 mx-auto rounded-full overflow-hidden mb-2 ${selectedAvatar?.id === avatar.id ? 'ring-2 ring-maroon-500' : ''}`}>
+                        <div className={`h-16 w-16 mx-auto rounded-full overflow-hidden mb-3 ${selectedAvatar?.id === avatar.id ? 'ring-2 ring-maroon-500' : ''}`}>
                           <img
                             src={avatar.imageUrl}
                             alt={avatar.name}
@@ -441,15 +441,15 @@ export default function AddPersonaPage() {
                           />
                         </div>
                       ) : (
-                        <div className={`h-14 w-14 mx-auto rounded-full flex items-center justify-center text-xl font-bold mb-2 ${selectedAvatar?.id === avatar.id
+                        <div className={`h-16 w-16 mx-auto rounded-full flex items-center justify-center text-xl font-bold mb-3 ${selectedAvatar?.id === avatar.id
                           ? 'bg-maroon-600 text-white'
                           : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'
                           }`}>
                           {index + 1}
                         </div>
                       )}
-                      <p className="text-xs font-medium text-gray-900">{avatar.name}</p>
-                      <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2">{avatar.description}</p>
+                      <p className="text-sm font-medium text-gray-900 mb-1">{avatar.name}</p>
+                      <p className="text-xs text-gray-500 leading-relaxed">{avatar.description}</p>
                       {selectedAvatar?.id === avatar.id && (
                         <div className="absolute top-2 right-2">
                           <Check size={16} className="text-maroon-600" />
