@@ -7,13 +7,9 @@ import {
   ClipboardCheck,
   Clock,
   TrendingUp,
-  UserCircle,
-  FileText,
   Loader2,
   AlertCircle,
   Eye,
-  Calendar,
-  BookOpen,
 } from 'lucide-react';
 import {
   listStudents,
@@ -140,9 +136,9 @@ export default function TADashboard() {
         ))}
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+      <div className="mt-8">
         {/* Recent Submissions */}
-        <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900 font-serif">Recent Submissions</h2>
             <Link
@@ -211,72 +207,6 @@ export default function TADashboard() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-gray-900 font-serif">Quick Actions</h2>
-            <div className="mt-4 space-y-2">
-              <Link
-                href="/ta/sessions"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-              >
-                <Calendar size={18} className="text-maroon-600" />
-                Manage Sessions
-              </Link>
-              <Link
-                href="/ta/students"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-              >
-                <Users size={18} className="text-maroon-600" />
-                Manage Students
-              </Link>
-              <Link
-                href="/ta/assessments"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-              >
-                <FileText size={18} className="text-maroon-600" />
-                Case Assessments
-              </Link>
-              <Link
-                href="/ta/personas"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-              >
-                <UserCircle size={18} className="text-maroon-600" />
-                Avatar Config
-              </Link>
-              <Link
-                href="/ta/gradebook"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors font-sans"
-              >
-                <BookOpen size={18} className="text-maroon-600" />
-                Grade Book
-              </Link>
-            </div>
-          </div>
-
-          {/* Review Progress */}
-          {stats && (
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
-              <h2 className="text-lg font-bold text-gray-900 font-serif">Review Progress</h2>
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">Graded</span>
-                  <span className="font-medium">{stats.reviewProgress.reviewed} / {stats.total}</span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-maroon-600 transition-all"
-                    style={{ width: `${stats.reviewProgress.percentComplete}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  {stats.byStatus.pending} pending • {stats.byStatus.overridden} overridden
-                </p>
-              </div>
             </div>
           )}
         </div>
