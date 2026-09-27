@@ -74,23 +74,16 @@ export default function TAHeader() {
                   Manage Personas
                 </button>
                 <button
-                  onClick={() => { setShowSettings(false); router.push('/ta/rubrics'); }}
+                  onClick={() => { setShowSettings(false); router.push('/ta/assessments'); }}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  Assessment Rubrics
+                  Case Assessments
                 </button>
                 <button
-                  onClick={() => { setShowSettings(false); router.push('/ta/groups'); }}
+                  onClick={() => { setShowSettings(false); router.push('/ta/students'); }}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  Student Groups
-                </button>
-                <div className="border-t border-gray-100 my-2" />
-                <button
-                  className="w-full px-4 py-2 text-left text-sm text-gray-400 cursor-not-allowed"
-                  disabled
-                >
-                  Account Settings (Coming Soon)
+                  Students
                 </button>
               </div>
             </div>
