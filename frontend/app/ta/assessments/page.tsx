@@ -176,9 +176,9 @@ export default function CaseAssessmentPage() {
 
             {/* Module Content */}
             {expandedModules.has(module) && (
-              <div className="border-t border-gray-200">
+              <div className="border-t border-gray-200 p-4 space-y-4">
                 {moduleAssessments.map((assessment) => (
-                  <div key={assessment.assessmentId} className="border-b border-gray-100 last:border-0">
+                  <div key={assessment.assessmentId} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
                     {/* Case Header */}
                     <div className="px-5 py-4 bg-gray-50/50">
                       <div className="flex items-start justify-between">
