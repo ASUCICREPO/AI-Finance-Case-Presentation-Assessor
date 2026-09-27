@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -11,9 +11,8 @@ import {
   UserCog,
   BookOpen,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
+  Menu,
 } from 'lucide-react';
 
 const navItems = [
@@ -32,10 +31,21 @@ export default function TASidebar() {
 
   return (
     <aside
-      className={`sticky top-16 h-[calc(100vh-4rem)] border-r border-gray-200 bg-white transition-all duration-300 flex flex-col ${collapsed ? 'w-16' : 'w-56'
+      className={`sticky top-16 h-[calc(100vh-4rem)] border-r border-gray-200 bg-white flex flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'
         }`}
     >
-      <nav className="flex flex-col gap-1 p-2 pt-4 flex-1">
+      {/* Hamburger menu toggle */}
+      <div className="p-3 border-b border-gray-100">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center justify-center w-full rounded-lg p-2 bg-maroon-600 hover:bg-maroon-700 transition-colors"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <Menu size={20} className="text-white" />
+        </button>
+      </div>
+
+      <nav className="flex flex-col gap-1 p-3 flex-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
           return (
@@ -43,10 +53,10 @@ export default function TASidebar() {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                ? 'bg-maroon-600 text-white'
-                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-maroon-50 text-maroon-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 } ${collapsed ? 'justify-center' : ''}`}
-              title={collapsed ? item.label : undefined}
+              title={item.label}
             >
               <item.icon size={20} />
               {!collapsed && <span className="font-sans">{item.label}</span>}
@@ -55,25 +65,18 @@ export default function TASidebar() {
         })}
       </nav>
 
-      {/* Bottom section with Logout */}
-      <div className="p-2 border-t border-gray-200">
+      {/* Logout at bottom */}
+      <div className="p-3 border-t border-gray-100">
         <button
           onClick={logout}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors w-full ${collapsed ? 'justify-center' : ''}`}
-          title={collapsed ? 'Logout' : undefined}
+          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors ${collapsed ? 'justify-center' : ''
+            }`}
+          title="Logout"
         >
           <LogOut size={20} />
           {!collapsed && <span className="font-sans">Logout</span>}
         </button>
       </div>
-
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute bottom-16 left-1/2 -translate-x-1/2 rounded-full bg-maroon-600 p-1.5 text-white hover:bg-maroon-700 transition-colors"
-      >
-        {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-      </button>
     </aside>
   );
 }
