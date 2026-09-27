@@ -20,6 +20,7 @@ interface AssessmentDisplay {
   assessmentId: string;
   name: string;
   description?: string;
+  session: string;
   group: string;
   deadline: string;
   duration: string;
@@ -120,6 +121,7 @@ export default function StudentDashboard() {
           assessmentId,
           name: assessment.title || assessment.caseName || 'Assessment',
           description: assessment.description,
+          session: `Session ${studentInfo.sessionNumber || userSessionNumber || '1'}`,
           group: `Group ${studentInfo.groupNumber || userGroupNumber || '1'}`,
           deadline: assessment.dueDate ? formatDeadline(assessment.dueDate) : '-',
           duration: `${assessment.duration || 15} min`,
@@ -446,6 +448,9 @@ export default function StudentDashboard() {
                   Assessment Name
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Session
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   Group
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -468,7 +473,7 @@ export default function StudentDashboard() {
             <tbody className="divide-y divide-gray-50">
               {filteredAssessments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     {!hasActiveFilters
                       ? 'No assessments assigned yet. Check back later!'
                       : 'No assessments match your filters.'}
@@ -479,6 +484,9 @@ export default function StudentDashboard() {
                   <tr key={assessment.assessmentId} className="hover:bg-gray-50/50">
                     <td className="px-6 py-5">
                       <p className="text-sm font-medium text-gray-900">{assessment.name}</p>
+                    </td>
+                    <td className="px-6 py-5 text-sm text-gray-500">
+                      {assessment.session}
                     </td>
                     <td className="px-6 py-5 text-sm text-gray-500">
                       {assessment.group}
