@@ -74,6 +74,12 @@ export default function TAHeader() {
                   Manage Personas
                 </button>
                 <button
+                  onClick={() => { setShowSettings(false); router.push('/ta/rubrics'); }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Assessment Rubrics
+                </button>
+                <button
                   onClick={() => { setShowSettings(false); router.push('/ta/assessments'); }}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
