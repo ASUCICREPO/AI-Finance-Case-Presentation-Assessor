@@ -184,42 +184,56 @@ export default function StudentsPage() {
               {/* Section Filter */}
               <div className="mb-4">
                 <p className="text-xs font-medium text-maroon-600 mb-2">Section</p>
-                <label className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                <div
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 mb-1.5 cursor-pointer"
+                >
                   <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.sections.length === 0 ? 'bg-green-500 border-green-500' : 'border-gray-300'
                     }`}>
                     {filters.sections.length === 0 && <Check size={12} className="text-white" />}
                   </div>
                   <span className="text-sm text-gray-700">All Sections</span>
-                </label>
+                </div>
                 {sections.map(section => (
-                  <label key={section} className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                  <div
+                    key={section}
+                    onClick={() => toggleSection(section)}
+                    className="flex items-center gap-2 mb-1.5 cursor-pointer"
+                  >
                     <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.sections.includes(section) ? 'bg-green-500 border-green-500' : 'border-gray-300'
                       }`}>
                       {filters.sections.includes(section) && <Check size={12} className="text-white" />}
                     </div>
                     <span className="text-sm text-gray-700">{section}</span>
-                  </label>
+                  </div>
                 ))}
               </div>
 
               {/* Group Filter */}
               <div className="mb-4">
                 <p className="text-xs font-medium text-maroon-600 mb-2">Group</p>
-                <label className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                <div
+                  onClick={() => setFilters(prev => ({ ...prev, groups: [] }))}
+                  className="flex items-center gap-2 mb-1.5 cursor-pointer"
+                >
                   <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.groups.length === 0 ? 'bg-green-500 border-green-500' : 'border-gray-300'
                     }`}>
                     {filters.groups.length === 0 && <Check size={12} className="text-white" />}
                   </div>
                   <span className="text-sm text-gray-700">All groups</span>
-                </label>
+                </div>
                 {groups.slice(0, 4).map(group => (
-                  <label key={group.groupId} className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                  <div
+                    key={group.groupId}
+                    onClick={() => toggleGroup(group.groupId)}
+                    className="flex items-center gap-2 mb-1.5 cursor-pointer"
+                  >
                     <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.groups.includes(group.groupId) ? 'bg-green-500 border-green-500' : 'border-gray-300'
                       }`}>
                       {filters.groups.includes(group.groupId) && <Check size={12} className="text-white" />}
                     </div>
                     <span className="text-sm text-gray-700">{group.groupName}</span>
-                  </label>
+                  </div>
                 ))}
               </div>
 
@@ -231,13 +245,17 @@ export default function StudentsPage() {
                   { value: 'active', label: 'Active recently' },
                   { value: 'inactive', label: 'No recent activity' },
                 ].map(opt => (
-                  <label key={opt.value} className="flex items-center gap-2 mb-1.5 cursor-pointer">
+                  <div
+                    key={opt.value}
+                    onClick={() => setFilters(prev => ({ ...prev, lastActivity: opt.value as 'all' | 'active' | 'inactive' }))}
+                    className="flex items-center gap-2 mb-1.5 cursor-pointer"
+                  >
                     <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.lastActivity === opt.value ? 'bg-green-500 border-green-500' : 'border-gray-300'
                       }`}>
                       {filters.lastActivity === opt.value && <Check size={12} className="text-white" />}
                     </div>
                     <span className="text-sm text-gray-700">{opt.label}</span>
-                  </label>
+                  </div>
                 ))}
               </div>
 
