@@ -435,21 +435,6 @@ export default function EditPersonaPage() {
               </p>
             )}
           </div>
-
-          {/* Active Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700 font-sans">Active Status</p>
-              <p className="text-xs text-gray-500">Inactive personas won't appear in assessments</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsActive(!isActive)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isActive ? 'bg-maroon-600' : 'bg-gray-300'}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-          </div>
         </div>
 
         {/* Personality Type */}
