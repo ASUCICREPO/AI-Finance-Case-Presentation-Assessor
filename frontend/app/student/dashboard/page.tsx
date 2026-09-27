@@ -462,9 +462,6 @@ export default function StudentDashboard() {
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   Submission Time
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Status
-                </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
                   Action
                 </th>
@@ -473,7 +470,7 @@ export default function StudentDashboard() {
             <tbody className="divide-y divide-gray-50">
               {filteredAssessments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     {!hasActiveFilters
                       ? 'No assessments assigned yet. Check back later!'
                       : 'No assessments match your filters.'}
@@ -499,16 +496,6 @@ export default function StudentDashboard() {
                     </td>
                     <td className="px-6 py-5 text-sm text-gray-500">
                       {assessment.submissionTime}
-                    </td>
-                    <td className="px-6 py-5">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${assessment.status === 'Submitted'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-600'
-                          }`}
-                      >
-                        {assessment.status}
-                      </span>
                     </td>
                     <td className="px-6 py-5 text-right">
                       {assessment.status === 'Submitted' ? (
