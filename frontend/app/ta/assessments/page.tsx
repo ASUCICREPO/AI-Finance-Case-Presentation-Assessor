@@ -49,7 +49,7 @@ export default function CaseAssessmentPage() {
       setAssessments(mapped);
       // Expand first module by default
       if (mapped.length > 0) {
-        const firstModule = mapped[0].module || 'Unassigned';
+        const firstModule = mapped[0].module || 'General';
         setExpandedModules(new Set([firstModule]));
       }
     } catch (err) {
@@ -62,7 +62,7 @@ export default function CaseAssessmentPage() {
 
   // Group assessments by module
   const assessmentsByModule = assessments.reduce((acc, assessment) => {
-    const module = assessment.module || 'Unassigned';
+    const module = assessment.module || 'General';
     if (!acc[module]) {
       acc[module] = [];
     }

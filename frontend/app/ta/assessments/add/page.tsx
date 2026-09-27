@@ -29,6 +29,7 @@ export default function AddAssessmentPage() {
   const [form, setForm] = useState({
     title: '',
     description: '',
+    module: '',
     personaId: '',
     dueDate: '',
     duration: 15,
@@ -100,6 +101,7 @@ export default function AddAssessmentPage() {
         title: form.title,
         description: form.description,
         caseName: form.title,
+        module: form.module || undefined,
         personaId: form.personaId || undefined,
         dueDate: form.dueDate,
         duration: form.duration,
@@ -195,6 +197,21 @@ export default function AddAssessmentPage() {
             {errors.description && (
               <p className="mt-1 text-sm text-red-500">{errors.description}</p>
             )}
+          </div>
+
+          {/* Module */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Module
+            </label>
+            <input
+              type="text"
+              value={form.module}
+              onChange={(e) => setForm({ ...form, module: e.target.value })}
+              placeholder="e.g., Module 1: Financial Analysis, Module 2: Valuation"
+              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">Group assessments by module for easier organization</p>
           </div>
 
           {/* Persona - Native Select */}
