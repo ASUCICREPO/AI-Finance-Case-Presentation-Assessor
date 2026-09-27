@@ -67,7 +67,7 @@ export default function StudentTutorialModal({ isOpen, onClose, userName }: Stud
           <p className="mb-1 text-xs text-maroon-200">Step {step} of {TOTAL_STEPS}</p>
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-white font-serif">
-              {step === 1 && `Welcome to AI-powered oral assessment${displayName ? `, ${displayName}` : ''}!`}
+              {step === 1 && `Welcome to AI-powered assessment${displayName ? `, ${displayName}` : ''}!`}
               {step === 2 && 'Step 1: Read the Assignment'}
               {step === 3 && 'Step 2: Device Check'}
               {step === 4 && 'Step 3: Upload Materials'}
@@ -80,7 +80,7 @@ export default function StudentTutorialModal({ isOpen, onClose, userName }: Stud
             {step === 2 && 'Review the case materials and prepare concise, data-backed responses.'}
             {step === 3 && 'Ensure your devices are properly connected and working.'}
             {step === 4 && 'Prepare your spreadsheet files for the AI session.'}
-            {step === 5 && 'Understand the flow of your oral assessment session.'}
+            {step === 5 && 'Understand the flow of your assessment session.'}
             {step === 6 && 'Ready to start practicing?'}
           </p>
         </div>
@@ -171,7 +171,7 @@ export default function StudentTutorialModal({ isOpen, onClose, userName }: Stud
                 <h3 className="text-sm font-semibold text-gray-900 mb-2">Upload Your Spreadsheet</h3>
                 <p className="text-xs text-gray-500 mb-4">Upload your financial analysis workbook. The AI will reference this during the Q&A session.</p>
               </div>
-              
+
               {/* Upload zone mock */}
               <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-10">
                 <div className="rounded-full bg-gray-100 p-3 mb-3">
@@ -184,7 +184,7 @@ export default function StudentTutorialModal({ isOpen, onClose, userName }: Stud
                   Choose File
                 </button>
               </div>
-              
+
               <p className="text-xs text-gray-400">
                 Maximum file size: 50MB. These files are allowed.
               </p>
@@ -197,7 +197,7 @@ export default function StudentTutorialModal({ isOpen, onClose, userName }: Stud
                 <h3 className="text-sm font-semibold text-gray-900 mb-2">Session Timeline:</h3>
                 <p className="text-xs text-gray-500 mb-4">Review the expected pace before the AI session begins.</p>
               </div>
-              
+
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="rounded-full bg-blue-100 p-3">
@@ -208,7 +208,7 @@ export default function StudentTutorialModal({ isOpen, onClose, userName }: Stud
                     <p className="text-sm font-semibold text-maroon-600">5 min</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <div className="rounded-full bg-blue-100 p-3">
                     <Clock size={20} className="text-blue-600" />
@@ -228,7 +228,7 @@ export default function StudentTutorialModal({ isOpen, onClose, userName }: Stud
               <div className="flex flex-col items-center rounded-xl bg-green-50 py-8">
                 <CheckCircle2 size={48} className="mb-3 text-green-500" />
                 <p className="text-lg font-bold text-gray-900">Ready to Begin!</p>
-                <p className="text-sm text-gray-500">Let's get started with your AI-powered oral assessment.</p>
+                <p className="text-sm text-gray-500">Let's get started with your AI-powered assessment.</p>
               </div>
 
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">

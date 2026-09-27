@@ -78,7 +78,7 @@ export default function InstructorTutorialModal({ isOpen, onClose, userName }: I
             </span>
             <div>
               <h2 className="text-xl font-bold text-white font-serif">
-                {step === 1 && `Welcome to AI Oral Assessment${displayName ? `, ${displayName}` : ''}!`}
+                {step === 1 && `Welcome to AI Assessment${displayName ? `, ${displayName}` : ''}!`}
                 {step === 2 && 'Step 1: Manage Students'}
                 {step === 3 && 'Step 2: Organize Sessions & Groups'}
                 {step === 4 && 'Step 3: Create Assessments'}
@@ -104,7 +104,7 @@ export default function InstructorTutorialModal({ isOpen, onClose, userName }: I
           {step === 1 && (
             <div className="space-y-5">
               <p className="text-sm leading-relaxed text-gray-600">
-                This platform enables AI-powered oral assessments where students present financial case analyses and answer questions from an AI interviewer. As an instructor, you can manage the entire workflow.
+                This platform enables AI-powered assessments where students present financial case analyses and answer questions from an AI interviewer. As an instructor, you can manage the entire workflow.
               </p>
               <div className="rounded-xl border border-maroon-100 bg-maroon-50/50 p-5">
                 <h3 className="mb-3 text-sm font-semibold text-gray-900">What you'll learn in this tutorial:</h3>
@@ -322,7 +322,7 @@ export default function InstructorTutorialModal({ isOpen, onClose, userName }: I
               <div className="flex flex-col items-center rounded-xl bg-green-50 py-8">
                 <CheckCircle2 size={48} className="mb-3 text-green-600" />
                 <p className="text-lg font-bold text-gray-900">Ready to Begin!</p>
-                <p className="text-sm text-gray-500">Let's get started with your AI-powered oral assessment.</p>
+                <p className="text-sm text-gray-500">Let's get started with your AI-powered assessment.</p>
               </div>
 
               <div className="rounded-xl border border-gray-200 p-4">
