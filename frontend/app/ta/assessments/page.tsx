@@ -169,7 +169,7 @@ export default function CaseAssessmentPage() {
       {/* Module Accordions */}
       <div className="space-y-4">
         {Object.entries(assessmentsByModule).map(([module, moduleAssessments]) => (
-          <div key={module} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div key={module} className="rounded-xl border border-gray-200 bg-white">
             {/* Module Header */}
             <button
               onClick={() => toggleModule(module)}
@@ -191,7 +191,7 @@ export default function CaseAssessmentPage() {
             {expandedModules.has(module) && (
               <div className="border-t border-gray-200 p-4 space-y-3">
                 {moduleAssessments.map((assessment) => (
-                  <div key={assessment.assessmentId} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                  <div key={assessment.assessmentId} className="rounded-lg border border-gray-200 bg-white">
                     {/* Compact Card Header */}
                     <div className="px-4 py-3">
                       <div className="flex items-center justify-between">
