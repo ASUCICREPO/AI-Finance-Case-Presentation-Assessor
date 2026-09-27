@@ -3,26 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Bell, Settings, LogOut, X, Check, AlertCircle, Info, HelpCircle } from 'lucide-react';
+import { Settings, HelpCircle } from 'lucide-react';
 import InstructorTutorialModal from './InstructorTutorialModal';
 import Image from 'next/image';
 
-// Mock notifications for now - in production this would come from an API
-const mockNotifications = [
-  { id: 1, type: 'info', message: 'New student submission received', time: '5 min ago', read: false },
-  { id: 2, type: 'alert', message: 'Session #42 completed - pending review', time: '1 hour ago', read: false },
-  { id: 3, type: 'success', message: 'Assessment "Midterm Case" published', time: '2 hours ago', read: true },
-];
-
 export default function TAHeader() {
-  const { userName, logout } = useAuth();
+  const { userName } = useAuth();
   const router = useRouter();
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   // Show tutorial on first visit
   useEffect(() => {
@@ -33,14 +22,6 @@ export default function TAHeader() {
       return () => clearTimeout(timer);
     }
   }, []);
-
-  const markAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-  };
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
-  };
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
@@ -59,7 +40,7 @@ export default function TAHeader() {
         </span>
       </div>
 
-      {/* Right - Tutorial, Notifications & User */}
+      {/* Right - Tutorial, Settings & User */}
       <div className="flex items-center gap-4">
         {/* Tutorial Button */}
         <button
@@ -70,78 +51,10 @@ export default function TAHeader() {
           <span className="hidden sm:inline">Tutorial</span>
         </button>
 
-        {/* Notifications Button */}
-        <div className="relative">
-          <button
-            onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }}
-            className="relative rounded-full p-2 hover:bg-gray-100 transition-colors"
-          >
-            <Bell size={20} className="text-gray-600" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-            )}
-          </button>
-
-          {/* Notifications Dropdown */}
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 rounded-xl border border-gray-200 bg-white shadow-lg">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h3 className="font-medium text-gray-900">Notifications</h3>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    className="text-xs text-maroon-600 hover:text-maroon-700"
-                  >
-                    Mark all read
-                  </button>
-                )}
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <p className="p-4 text-sm text-gray-500 text-center">No notifications</p>
-                ) : (
-                  notifications.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => markAsRead(n.id)}
-                      className={`px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 ${!n.read ? 'bg-maroon-50/50' : ''}`}
-                    >
-                      <div className="flex gap-3">
-                        <div className={`mt-0.5 rounded-full p-1 ${n.type === 'alert' ? 'bg-amber-100 text-amber-600' :
-                          n.type === 'success' ? 'bg-green-100 text-green-600' :
-                            'bg-blue-100 text-blue-600'
-                          }`}>
-                          {n.type === 'alert' ? <AlertCircle size={14} /> :
-                            n.type === 'success' ? <Check size={14} /> :
-                              <Info size={14} />}
-                        </div>
-                        <div className="flex-1">
-                          <p className={`text-sm ${!n.read ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
-                            {n.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-0.5">{n.time}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="px-4 py-2 border-t border-gray-100">
-                <button
-                  onClick={() => { setShowNotifications(false); router.push('/ta/submissions'); }}
-                  className="w-full text-center text-sm text-maroon-600 hover:text-maroon-700 font-medium transition-colors"
-                >
-                  View all notifications
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Settings Button */}
         <div className="relative">
           <button
-            onClick={() => { setShowSettings(!showSettings); setShowNotifications(false); }}
+            onClick={() => setShowSettings(!showSettings)}
             className="rounded-full p-2 hover:bg-gray-100 transition-colors"
           >
             <Settings size={20} className="text-gray-600" />
@@ -201,10 +114,10 @@ export default function TAHeader() {
       </div>
 
       {/* Click outside to close dropdowns */}
-      {(showNotifications || showSettings) && (
+      {showSettings && (
         <div
           className="fixed inset-0 z-[-1]"
-          onClick={() => { setShowNotifications(false); setShowSettings(false); }}
+          onClick={() => setShowSettings(false)}
         />
       )}
 
