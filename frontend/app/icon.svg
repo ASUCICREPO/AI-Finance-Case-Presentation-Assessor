@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- ASU Maroon background -->
+  <rect width="32" height="32" rx="4" fill="#8C1D40"/>
+  <!-- Stylized "F" for Finance in gold -->
+  <text x="16" y="24" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#FFC627" text-anchor="middle">F</text>
+</svg>
