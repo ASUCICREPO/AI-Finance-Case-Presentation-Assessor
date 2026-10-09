@@ -94,6 +94,7 @@ export default function PresentationSession({
   const [currentSpeech, setCurrentSpeech] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const isListeningRef = useRef(false); // Ref to avoid stale closure in callbacks
   const cameraRef = useRef<StudentCameraViewRef>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
 
@@ -102,66 +103,90 @@ export default function PresentationSession({
 
   const hasWorkbookData = workbookSheets.length > 0;
 
-  // Initialize Speech Recognition
+  // Keep ref in sync with state
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
+    isListeningRef.current = isListening;
+  }, [isListening]);
 
-        recognition.onresult = (event) => {
-          let interimTranscript = '';
-          let finalTranscript = '';
+  // Initialize Speech Recognition (only once on mount)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            if (result.isFinal) {
-              finalTranscript += result[0].transcript + ' ';
-            } else {
-              interimTranscript += result[0].transcript;
-            }
-          }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('[PresentationSession] Speech recognition not supported');
+      return;
+    }
 
-          if (finalTranscript) {
-            setTranscript(prev => [...prev, finalTranscript.trim()]);
-          }
-          setCurrentSpeech(interimTranscript);
-        };
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
 
-        recognition.onerror = (event) => {
-          console.error('[PresentationSession] Speech recognition error:', event.error);
-          if (event.error === 'no-speech' || event.error === 'audio-capture') {
-            // Restart recognition
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript + ' ';
+        } else {
+          interimTranscript += result[0].transcript;
+        }
+      }
+
+      if (finalTranscript) {
+        setTranscript(prev => [...prev, finalTranscript.trim()]);
+      }
+      setCurrentSpeech(interimTranscript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('[PresentationSession] Speech recognition error:', event.error);
+      // On recoverable errors, restart if we should be listening
+      if (event.error === 'no-speech' || event.error === 'audio-capture' || event.error === 'network') {
+        setTimeout(() => {
+          if (isListeningRef.current && recognitionRef.current) {
             try {
-              recognition.stop();
-              setTimeout(() => {
-                if (isListening) recognition.start();
-              }, 100);
-            } catch (e) {
-              // Ignore
-            }
-          }
-        };
-
-        recognition.onend = () => {
-          // Auto-restart if still listening
-          if (isListening) {
-            try {
-              recognition.start();
+              recognitionRef.current.start();
+              console.log('[PresentationSession] Restarted speech recognition after error');
             } catch (e) {
               // Ignore - might already be running
             }
           }
-        };
-
-        recognitionRef.current = recognition;
+        }, 300);
       }
-    }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if we should still be listening (use ref to avoid stale closure)
+      if (isListeningRef.current) {
+        try {
+          recognition.start();
+          console.log('[PresentationSession] Auto-restarted speech recognition');
+        } catch (e) {
+          // Ignore - might already be running
+        }
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    // Auto-start listening immediately after setup
+    const startTimer = setTimeout(() => {
+      try {
+        recognition.start();
+        setIsListening(true);
+        isListeningRef.current = true;
+        console.log('[PresentationSession] ✅ Speech recognition auto-started');
+      } catch (e) {
+        console.error('[PresentationSession] Failed to auto-start speech recognition:', e);
+      }
+    }, 300);
 
     return () => {
+      clearTimeout(startTimer);
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -170,26 +195,7 @@ export default function PresentationSession({
         }
       }
     };
-  }, [isListening]);
-
-  // Auto-start listening and recording when component mounts
-  useEffect(() => {
-    const startListening = async () => {
-      if (recognitionRef.current && !isListening) {
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-          console.log('[PresentationSession] Started speech recognition');
-        } catch (e) {
-          console.error('[PresentationSession] Failed to start speech recognition:', e);
-        }
-      }
-    };
-
-    // Small delay to ensure component is mounted
-    const timer = setTimeout(startListening, 500);
-    return () => clearTimeout(timer);
-  }, []);
+  }, []); // Only run once on mount
 
   // Track presentation time
   useEffect(() => {
@@ -218,10 +224,12 @@ export default function PresentationSession({
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
+      isListeningRef.current = false;
     } else {
       try {
         recognitionRef.current.start();
         setIsListening(true);
+        isListeningRef.current = true;
       } catch (e) {
         console.error('Failed to start recognition:', e);
       }
@@ -239,6 +247,7 @@ export default function PresentationSession({
       }
     }
     setIsListening(false);
+    isListeningRef.current = false;
 
     // Stop video recording and get blob
     let videoBlob: Blob | null = null;

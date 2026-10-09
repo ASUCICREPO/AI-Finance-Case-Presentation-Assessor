@@ -50,10 +50,12 @@ export default function StudentsPage() {
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
 
   // Filter state
-  const [filters, setFilters] = useState({
-    sections: [] as string[],
-    groups: [] as string[],
-    lastActivity: 'all' as 'all' | 'active' | 'inactive',
+  const [filters, setFilters] = useState<{
+    sections: string[];
+    groups: string[];
+  }>({
+    sections: [],
+    groups: [],
   });
 
   useEffect(() => {
@@ -104,19 +106,11 @@ export default function StudentsPage() {
       if (!filters.groups.includes(student.groupId)) return false;
     }
 
-    // Last activity filter
-    if (filters.lastActivity !== 'all') {
-      const hasRecentActivity = student.lastActivity &&
-        new Date(student.lastActivity) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      if (filters.lastActivity === 'active' && !hasRecentActivity) return false;
-      if (filters.lastActivity === 'inactive' && hasRecentActivity) return false;
-    }
-
     return true;
   });
 
   function clearFilters() {
-    setFilters({ sections: [], groups: [], lastActivity: 'all' });
+    setFilters({ sections: [], groups: [] });
   }
 
   function toggleSection(section: string) {
@@ -237,28 +231,6 @@ export default function StudentsPage() {
                 ))}
               </div>
 
-              {/* Last Activity Filter */}
-              <div className="mb-4">
-                <p className="text-xs font-medium text-maroon-600 mb-2">Last Activity</p>
-                {[
-                  { value: 'all', label: 'All' },
-                  { value: 'active', label: 'Active recently' },
-                  { value: 'inactive', label: 'No recent activity' },
-                ].map(opt => (
-                  <div
-                    key={opt.value}
-                    onClick={() => setFilters(prev => ({ ...prev, lastActivity: opt.value as 'all' | 'active' | 'inactive' }))}
-                    className="flex items-center gap-2 mb-1.5 cursor-pointer"
-                  >
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.lastActivity === opt.value ? 'bg-green-500 border-green-500' : 'border-gray-300'
-                      }`}>
-                      {filters.lastActivity === opt.value && <Check size={12} className="text-white" />}
-                    </div>
-                    <span className="text-sm text-gray-700">{opt.label}</span>
-                  </div>
-                ))}
-              </div>
-
               {/* Filter Actions */}
               <div className="flex gap-2 pt-2 border-t border-gray-100">
                 <button
@@ -316,17 +288,16 @@ export default function StudentsPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Login ID</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session / Group</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? 'No students match your search' : 'No students found. Add students to get started.'}
                   </td>
                 </tr>
@@ -345,7 +316,7 @@ export default function StudentsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{student.loginId || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{student.email || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{student.section || '—'}</td>
                     <td className="px-4 py-3">
                       {student.sessionNumber && student.groupNumber ? (
@@ -355,15 +326,6 @@ export default function StudentsPage() {
                       ) : (
                         <span className="text-gray-400 text-xs">Not assigned</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {student.lastActivity
-                        ? new Date(student.lastActivity).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })
-                        : '—'}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="relative">
