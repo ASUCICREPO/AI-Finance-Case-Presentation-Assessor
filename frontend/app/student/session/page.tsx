@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
@@ -15,6 +15,7 @@ import PresentationSession from './components/PresentationSession';
 import LiveSession from './components/LiveSession';
 import SessionComplete from './components/SessionComplete';
 import StartSessionModal from './components/StartSessionModal';
+import LeaveSessionModal from './components/LeaveSessionModal';
 
 export type SessionView = 'overview' | 'calibration' | 'upload' | 'presentation' | 'live' | 'complete';
 export type SessionType = 'practice' | 'graded';
@@ -59,6 +60,74 @@ export default function SessionPage() {
   const [assessmentTitle, setAssessmentTitle] = useState<string>('');
   const [personaId, setPersonaId] = useState<string>(DEFAULT_PRACTICE_PERSONA_ID);
   const [persona, setPersona] = useState<Persona | null>(null);
+
+  // Navigation protection state
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  const router = useRouter();
+
+  // Determine if session is active (should warn before leaving)
+  const isSessionActive = sessionView === 'presentation' || sessionView === 'live';
+
+  // Warn user before closing tab/browser during active session
+  useEffect(() => {
+    if (!isSessionActive) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'You have an active session in progress. Are you sure you want to leave?';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isSessionActive]);
+
+  // Handle browser back button during active session
+  useEffect(() => {
+    if (!isSessionActive) return;
+
+    // Push a dummy state to detect back button
+    window.history.pushState({ sessionActive: true }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (isSessionActive) {
+        // Push the state back to prevent navigation
+        window.history.pushState({ sessionActive: true }, '');
+        // Show confirmation modal
+        setShowLeaveModal(true);
+        setPendingNavigation(() => () => {
+          // If user confirms, actually navigate back
+          window.history.go(-2);
+        });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isSessionActive]);
+
+  // Handle confirmed leave
+  const handleConfirmLeave = useCallback(() => {
+    setShowLeaveModal(false);
+    // End the session gracefully
+    try {
+      agentCore.endSession();
+    } catch (e) {
+      // Ignore errors
+    }
+    if (pendingNavigation) {
+      pendingNavigation();
+    } else {
+      router.push('/student/dashboard');
+    }
+  }, [pendingNavigation, agentCore, router]);
+
+  // Handle cancel leave
+  const handleCancelLeave = useCallback(() => {
+    setShowLeaveModal(false);
+    setPendingNavigation(null);
+  }, []);
 
   // Load assessment details and its persona
   useEffect(() => {
@@ -427,6 +496,13 @@ export default function SessionPage() {
         sessionType={sessionType}
         onConfirm={handleConfirmStart}
         onCancel={() => setShowStartModal(false)}
+      />
+
+      {/* Leave Session Warning Modal */}
+      <LeaveSessionModal
+        isOpen={showLeaveModal}
+        onConfirm={handleConfirmLeave}
+        onCancel={handleCancelLeave}
       />
     </div>
   );
