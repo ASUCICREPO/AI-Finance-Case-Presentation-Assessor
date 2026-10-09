@@ -45,95 +45,140 @@ export default function ForgotPasswordPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-sm text-center">
-          <CheckCircle size={48} className="mx-auto text-green-600" />
-          <h2 className="mt-4 text-xl font-bold text-gray-900 font-serif">Password Reset!</h2>
-          <p className="mt-2 text-sm text-gray-500 font-sans">You can now sign in with your new password.</p>
-          <Link href="/" className="mt-4 inline-block text-sm font-medium text-maroon-600 hover:underline font-sans">
-            Back to Sign In
-          </Link>
+      <div className="flex min-h-screen">
+        {/* Left — Hero Image */}
+        <div className="hidden lg:flex lg:w-1/2 relative bg-gray-100 items-center justify-center overflow-hidden">
+          <img
+            src="/login-hero.png"
+            alt="AI-powered presentation assessment"
+            className="w-full h-full object-contain"
+          />
+        </div>
+
+        {/* Right — Success Message */}
+        <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
+          <div className="w-full max-w-md text-center">
+            <CheckCircle size={48} className="mx-auto text-green-600" />
+            <h2 className="mt-4 text-xl font-bold text-gray-900 font-serif">Password Reset!</h2>
+            <p className="mt-2 text-sm text-gray-500 font-sans">You can now sign in with your new password.</p>
+            <Link href="/" className="mt-4 inline-block text-sm font-medium text-maroon-600 hover:underline font-sans">
+              Back to Sign In
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900 text-center font-serif">Reset Password</h1>
-        <p className="mt-1 text-sm text-gray-500 text-center font-sans">
-          {step === 'email' ? 'Enter your email to receive a reset code.' : 'Enter the code and your new password.'}
-        </p>
+    <div className="flex min-h-screen">
+      {/* Left — Hero Image */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gray-100 items-center justify-center overflow-hidden">
+        <img
+          src="/login-hero.png"
+          alt="AI-powered presentation assessment"
+          className="w-full h-full object-contain"
+        />
+      </div>
 
-        {error && (
-          <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 font-sans">
-            {error}
+      {/* Right — Reset Password Form */}
+      <div className="flex w-full lg:w-1/2 items-start justify-center px-6 py-12 pt-24">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <span className="text-3xl font-bold text-maroon-600 font-serif">ASU</span>
+              <div className="text-left">
+                <p className="text-sm font-bold text-gray-900 leading-tight">W. P. Carey</p>
+                <p className="text-xs text-gray-600 leading-tight">School of Business</p>
+              </div>
+            </div>
+            <p className="text-xs text-maroon-600 font-sans">Arizona State University</p>
           </div>
-        )}
 
-        {step === 'email' ? (
-          <form onSubmit={handleSendCode} className="mt-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 font-sans">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="username@asu.edu"
-                required
-                className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full rounded-lg bg-maroon-600 py-3 text-sm font-medium text-white hover:bg-maroon-700 disabled:opacity-50 font-sans flex items-center justify-center gap-2"
-            >
-              {isLoading && <Loader2 size={16} className="animate-spin" />}
-              Send Reset Code
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleResetPassword} className="mt-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 font-sans">Code</label>
-              <input
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="6-digit code"
-                required
-                className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 font-sans">New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min. 8 characters"
-                required
-                className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full rounded-lg bg-maroon-600 py-3 text-sm font-medium text-white hover:bg-maroon-700 disabled:opacity-50 font-sans flex items-center justify-center gap-2"
-            >
-              {isLoading && <Loader2 size={16} className="animate-spin" />}
-              Reset Password
-            </button>
-          </form>
-        )}
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-gray-900 text-center font-serif">Reset Password</h1>
+          <p className="mt-1 text-sm text-gray-500 text-center font-sans">
+            {step === 'email' ? 'Enter your email to receive a reset code.' : 'Enter the code and your new password.'}
+          </p>
 
-        <p className="mt-4 text-center text-sm text-gray-500 font-sans">
-          <Link href="/" className="font-medium text-maroon-600 hover:underline">
-            Back to Sign In
-          </Link>
-        </p>
+          {/* Error */}
+          {error && (
+            <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 font-sans">
+              {error}
+            </div>
+          )}
+
+          {step === 'email' ? (
+            <form onSubmit={handleSendCode} className="mt-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 font-sans">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="username@asu.edu"
+                  required
+                  className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-lg bg-maroon-600 py-3 text-sm font-medium text-white hover:bg-maroon-700 disabled:opacity-50 font-sans flex items-center justify-center gap-2"
+              >
+                {isLoading && <Loader2 size={16} className="animate-spin" />}
+                Send Reset Code
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleResetPassword} className="mt-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 font-sans">
+                  Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="6-digit code"
+                  required
+                  className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 font-sans">
+                  New Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  required
+                  className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-lg bg-maroon-600 py-3 text-sm font-medium text-white hover:bg-maroon-700 disabled:opacity-50 font-sans flex items-center justify-center gap-2"
+              >
+                {isLoading && <Loader2 size={16} className="animate-spin" />}
+                Reset Password
+              </button>
+            </form>
+          )}
+
+          {/* Back to sign in */}
+          <p className="mt-6 text-center text-sm text-gray-500 font-sans">
+            <Link href="/" className="font-medium text-maroon-600 hover:underline">
+              Back to Sign In
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
