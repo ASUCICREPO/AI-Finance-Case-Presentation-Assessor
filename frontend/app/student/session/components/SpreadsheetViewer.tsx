@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, CSSProperties } from 'react';
-import { ChevronLeft, ChevronRight, FunctionSquare, Hash, Palette, X } from 'lucide-react';
+import { useState, useMemo, useCallback, useRef, useEffect, CSSProperties } from 'react';
+import { ChevronLeft, ChevronRight, FunctionSquare, Hash, Palette, X, GripVertical } from 'lucide-react';
 
 // Cell style from backend
 interface CellStyle {
@@ -48,6 +48,9 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
   const [showFormulas, setShowFormulas] = useState(false);
   const [showStyles, setShowStyles] = useState(true);
   const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);
+  const [customColWidths, setCustomColWidths] = useState<Record<string, Record<number, number>>>({});
+  const [resizing, setResizing] = useState<{ col: number; startX: number; startWidth: number } | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   const rowsPerPage = 25;
 
   const currentSheet = data[activeTab];
@@ -142,6 +145,54 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
     return String(value);
   };
 
+  // Get effective column width (custom > backend > default)
+  const getColWidth = (colIdx: number): number => {
+    const customWidth = customColWidths[activeTab]?.[colIdx];
+    if (customWidth) return customWidth;
+    if (colWidths[colIdx]) return colWidths[colIdx];
+    return 100; // Default width increased from 80 to 100
+  };
+
+  // Handle column resize start
+  const handleResizeStart = useCallback((e: React.MouseEvent, colIdx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startWidth = getColWidth(colIdx);
+    setResizing({ col: colIdx, startX: e.clientX, startWidth });
+  }, [activeTab, customColWidths, colWidths]);
+
+  // Handle column resize move
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizing) return;
+    const delta = e.clientX - resizing.startX;
+    const newWidth = Math.max(50, resizing.startWidth + delta); // Minimum 50px
+
+    setCustomColWidths(prev => ({
+      ...prev,
+      [activeTab]: {
+        ...prev[activeTab],
+        [resizing.col]: newWidth,
+      }
+    }));
+  }, [resizing, activeTab]);
+
+  // Handle column resize end
+  const handleResizeEnd = useCallback(() => {
+    setResizing(null);
+  }, []);
+
+  // Attach/detach mouse events for resizing
+  useEffect(() => {
+    if (resizing) {
+      window.addEventListener('mousemove', handleResizeMove);
+      window.addEventListener('mouseup', handleResizeEnd);
+      return () => {
+        window.removeEventListener('mousemove', handleResizeMove);
+        window.removeEventListener('mouseup', handleResizeEnd);
+      };
+    }
+  }, [resizing, handleResizeMove, handleResizeEnd]);
+
   if (sheets.length === 0) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-500">
@@ -188,7 +239,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
           )}
         </div>
         <span className="text-xs text-gray-400">
-          {totalRows} rows total • Click a cell to see its formula
+          {totalRows} rows • Click cell for formula • Drag column edges to resize
         </span>
       </div>
 
@@ -233,23 +284,32 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto flex-1 overflow-y-auto">
-        <table className="w-full text-sm font-sans border-collapse" style={{ tableLayout: 'fixed' }}>
+      <div className={`overflow-x-auto flex-1 overflow-y-auto ${resizing ? 'select-none cursor-col-resize' : ''}`}>
+        <table ref={tableRef} className="w-full text-sm font-sans border-collapse" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '40px' }} /> {/* Row number column */}
             {colLetters.map((_, i) => (
-              <col key={i} style={{ width: colWidths[i] ? `${colWidths[i]}px` : '80px' }} />
+              <col key={i} style={{ width: `${getColWidth(i)}px` }} />
             ))}
           </colgroup>
           <thead className="sticky top-0 bg-white z-10">
-            {/* Column letters row */}
+            {/* Column letters row with resize handles */}
             <tr className="border-b border-gray-300 bg-gray-100">
               <th className="px-1 py-1.5 text-center text-xs font-medium text-gray-500 border-r border-gray-300 bg-gray-100 sticky left-0 z-20">
                 {/* Row number column */}
               </th>
               {colLetters.map((letter, i) => (
-                <th key={i} className="px-1 py-1.5 text-center text-xs font-medium text-gray-500 border-r border-gray-200">
+                <th
+                  key={i}
+                  className="relative px-1 py-1.5 text-center text-xs font-medium text-gray-500 border-r border-gray-200 group"
+                >
                   {letter}
+                  {/* Resize handle */}
+                  <div
+                    onMouseDown={(e) => handleResizeStart(e, i)}
+                    className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-maroon-300 group-hover:bg-maroon-200/50 transition-colors"
+                    title="Drag to resize column"
+                  />
                 </th>
               ))}
             </tr>
