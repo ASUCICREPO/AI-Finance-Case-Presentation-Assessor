@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, CSSProperties } from 'react';
-import { ChevronLeft, ChevronRight, FunctionSquare, Hash, Palette } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FunctionSquare, Hash, Palette, X } from 'lucide-react';
 
 // Cell style from backend
 interface CellStyle {
@@ -29,15 +29,25 @@ interface SpreadsheetViewerProps {
   data: Record<string, SheetData>;
 }
 
+// Selected cell info
+interface SelectedCell {
+  row: number;      // 1-indexed row number
+  col: number;      // 0-indexed column
+  colLetter: string;
+  value: string | number | null;
+  formula: string | null;
+}
+
 /**
  * Spreadsheet Viewer - Displays uploaded Excel data with original formatting
- * Supports colors, fonts, alignment, and merged cells.
+ * Supports colors, fonts, alignment, merged cells, and cell-level formula viewing.
  */
 export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerProps) {
   const [activeTab, setActiveTab] = useState<string>(sheets[0] || '');
   const [page, setPage] = useState(0);
   const [showFormulas, setShowFormulas] = useState(false);
-  const [showStyles, setShowStyles] = useState(true); // NEW: toggle styles
+  const [showStyles, setShowStyles] = useState(true);
+  const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);
   const rowsPerPage = 25;
 
   const currentSheet = data[activeTab];
@@ -142,7 +152,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white h-full flex flex-col">
-      {/* Header */}
+      {/* Header with Formula Bar */}
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500 font-sans">Spreadsheet Viewer</span>
@@ -162,7 +172,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
             </button>
           )}
 
-          {/* Formula Toggle */}
+          {/* Formula Toggle (show all formulas) */}
           {hasFormulas && (
             <button
               onClick={() => setShowFormulas(!showFormulas)}
@@ -170,7 +180,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
                 ? 'bg-blue-100 text-blue-700 border border-blue-200'
                 : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
                 }`}
-              title={showFormulas ? 'Show Values' : 'Show Formulas'}
+              title={showFormulas ? 'Show Values' : 'Show All Formulas'}
             >
               {showFormulas ? <Hash size={12} /> : <FunctionSquare size={12} />}
               {showFormulas ? 'Values' : 'Formulas'}
@@ -178,9 +188,49 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
           )}
         </div>
         <span className="text-xs text-gray-400">
-          {totalRows} rows total
+          {totalRows} rows total • Click a cell to see its formula
         </span>
       </div>
+
+      {/* Formula Bar - Shows selected cell info */}
+      {selectedCell && (
+        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-2 bg-gray-50 shrink-0">
+          {/* Cell reference */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="inline-flex items-center justify-center h-7 min-w-[50px] px-2 rounded bg-maroon-100 text-maroon-700 text-sm font-mono font-semibold">
+              {selectedCell.colLetter}{selectedCell.row}
+            </span>
+          </div>
+
+          {/* Formula/Value display */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            {selectedCell.formula ? (
+              <>
+                <FunctionSquare size={14} className="text-blue-600 shrink-0" />
+                <code className="text-sm text-blue-700 font-mono bg-blue-50 px-2 py-1 rounded truncate">
+                  {selectedCell.formula}
+                </code>
+                <span className="text-gray-400 mx-1">=</span>
+                <span className="text-sm text-gray-700 truncate">
+                  {formatValue(selectedCell.value, null)}
+                </span>
+              </>
+            ) : (
+              <span className="text-sm text-gray-700 truncate">
+                {formatValue(selectedCell.value, null) || '(empty)'}
+              </span>
+            )}
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={() => setSelectedCell(null)}
+            className="p-1 hover:bg-gray-200 rounded transition-colors shrink-0"
+          >
+            <X size={14} className="text-gray-400" />
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto flex-1 overflow-y-auto">
@@ -229,6 +279,10 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
                     const cell = row[colIdx];
                     const formula = formulaRow[colIdx];
                     const style = styleRow[colIdx];
+                    const colLetter = colLetters[colIdx];
+
+                    // Check if this cell is selected
+                    const isSelected = selectedCell?.row === actualRowNum && selectedCell?.col === colIdx;
 
                     // Show formula if in formula mode AND formula exists, otherwise show value
                     const isFormulaDisplay = showFormulas && formula;
@@ -248,17 +302,35 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
                       }
                     }
 
+                    // Handle cell click
+                    const handleCellClick = () => {
+                      setSelectedCell({
+                        row: actualRowNum,
+                        col: colIdx,
+                        colLetter: colLetter,
+                        value: cell,
+                        formula: formula || null,
+                      });
+                    };
+
                     return (
                       <td
                         key={colIdx}
                         rowSpan={mergeInfo?.rowSpan}
                         colSpan={mergeInfo?.colSpan}
-                        className={`px-1.5 py-0.5 text-xs border-r border-gray-100 overflow-hidden text-ellipsis whitespace-nowrap ${isFormulaDisplay
-                            ? 'text-blue-600 font-mono bg-blue-50/30'
+                        onClick={handleCellClick}
+                        className={`px-1.5 py-0.5 text-xs border-r border-gray-100 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:bg-blue-50 transition-colors ${isFormulaDisplay
+                          ? 'text-blue-600 font-mono bg-blue-50/30'
+                          : ''
+                          } ${isSelected
+                            ? 'ring-2 ring-maroon-500 ring-inset bg-maroon-50'
+                            : ''
+                          } ${formula && !showFormulas
+                            ? 'border-b-2 border-b-blue-300'
                             : ''
                           }`}
                         style={cellStyle}
-                        title={isFormulaDisplay ? formula : displayValue}
+                        title={formula ? `Click to see formula: ${formula}` : displayValue}
                       >
                         {displayValue}
                       </td>
