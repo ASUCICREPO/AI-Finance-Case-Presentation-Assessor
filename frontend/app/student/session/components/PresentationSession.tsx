@@ -66,6 +66,7 @@ interface PresentationSessionProps {
   sessionType: 'practice' | 'graded';
   assessmentTitle?: string;
   studentName?: string;
+  personaName?: string;
   timer: TimerState;
   workbookSheets: string[];
   workbookData: Record<string, { headers: string[]; rows: (string | number | null)[][]; rowCount: number }>;
@@ -82,12 +83,14 @@ export default function PresentationSession({
   sessionType,
   assessmentTitle,
   studentName,
+  personaName = 'Mr. Clarkson',
   timer,
   workbookSheets,
   workbookData,
   onProceedToQA,
   presentationDuration,
 }: PresentationSessionProps) {
+  const [showIntro, setShowIntro] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [transcript, setTranscript] = useState<string[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -281,6 +284,80 @@ export default function PresentationSession({
   // Check if minimum presentation time reached (1 minute)
   const minPresentationTime = 60;
   const canProceed = elapsedTime >= minPresentationTime;
+
+  // Handle intro completion - start the actual presentation
+  const handleStartPresentation = useCallback(() => {
+    setShowIntro(false);
+  }, []);
+
+  // Intro screen with persona welcome message
+  if (showIntro) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-140px)] items-center justify-center">
+        <div className="max-w-2xl w-full mx-auto p-8">
+          {/* Persona Avatar */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="h-24 w-24 rounded-full bg-maroon-600 flex items-center justify-center mb-4 shadow-lg">
+              <span className="text-4xl text-white font-bold font-serif">
+                {personaName.charAt(0)}
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 font-serif">{personaName}</h2>
+            <p className="text-gray-500 text-sm">Evaluator</p>
+          </div>
+
+          {/* Welcome Message Card */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="h-10 w-10 rounded-full bg-maroon-100 flex items-center justify-center shrink-0">
+                <span className="text-lg text-maroon-600 font-bold">{personaName.charAt(0)}</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-lg text-gray-800 leading-relaxed">
+                  &ldquo;Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, {studentName || 'student'}. I&apos;m {personaName}, and I&apos;ll be evaluating your presentation today on <strong>{assessmentTitle || 'this case analysis'}</strong>.
+                </p>
+                <p className="text-lg text-gray-800 leading-relaxed mt-4">
+                  Please walk me through your financial analysis. Take your time, and when you&apos;re ready, click the button below to begin. I&apos;ll have some questions for you after your presentation.&rdquo;
+                </p>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">What to expect:</h3>
+              <ul className="text-sm text-gray-600 space-y-1.5">
+                <li className="flex items-start gap-2">
+                  <span className="text-maroon-600">•</span>
+                  <span>Present your analysis while viewing your spreadsheet</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-maroon-600">•</span>
+                  <span>Your presentation will be recorded for context</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-maroon-600">•</span>
+                  <span>After presenting, I&apos;ll ask follow-up questions</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-maroon-600">•</span>
+                  <span>Minimum presentation time: 1 minute</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Start Button */}
+            <button
+              onClick={handleStartPresentation}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-maroon-600 px-6 py-4 text-base font-semibold text-white hover:bg-maroon-700 transition-colors"
+            >
+              Begin Presentation
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)]">

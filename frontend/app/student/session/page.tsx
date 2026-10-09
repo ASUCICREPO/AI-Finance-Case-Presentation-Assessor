@@ -389,6 +389,7 @@ export default function SessionPage() {
           sessionType={sessionType}
           assessmentTitle={assessmentTitle}
           studentName={userName || 'Student'}
+          personaName={persona?.name || 'Mr. Clarkson'}
           timer={timer}
           workbookSheets={workbookSheets}
           workbookData={workbookData}
