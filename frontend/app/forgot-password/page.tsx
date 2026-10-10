@@ -45,16 +45,14 @@ export default function ForgotPasswordPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen bg-white p-4 lg:p-6">
-        {/* Left — Hero Image with Border */}
-        <div className="hidden lg:flex lg:w-1/2 p-2">
-          <div className="relative w-full h-full rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
-            <img
-              src="/Women's image.png"
-              alt="AI-powered presentation assessment"
-              className="w-full h-full object-cover"
-            />
-          </div>
+      <div className="flex min-h-screen bg-white">
+        {/* Left — Hero Image */}
+        <div className="hidden lg:block lg:w-1/2">
+          <img
+            src="/Women's image.png"
+            alt="AI-powered presentation assessment"
+            className="w-full h-full object-cover object-top"
+          />
         </div>
 
         {/* Right — Success Message */}
@@ -73,31 +71,22 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white p-4 lg:p-6">
-      {/* Left — Hero Image with Border */}
-      <div className="hidden lg:flex lg:w-1/2 p-2">
-        <div className="relative w-full h-full rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
-          <img
-            src="/Women's image.png"
-            alt="AI-powered presentation assessment"
-            className="w-full h-full object-cover"
-          />
-        </div>
+    <div className="flex min-h-screen bg-white">
+      {/* Left — Hero Image */}
+      <div className="hidden lg:block lg:w-1/2">
+        <img
+          src="/Women's image.png"
+          alt="AI-powered presentation assessment"
+          className="w-full h-full object-cover object-top"
+        />
       </div>
 
       {/* Right — Reset Password Form */}
       <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <span className="text-3xl font-bold text-maroon-600 font-serif">ASU</span>
-              <div className="text-left">
-                <p className="text-sm font-bold text-gray-900 leading-tight">W. P. Carey</p>
-                <p className="text-xs text-gray-600 leading-tight">School of Business</p>
-              </div>
-            </div>
-            <p className="text-xs text-maroon-600 font-sans">Arizona State University</p>
+          <div className="flex justify-center mb-8">
+            <img src="/Logo.svg" alt="ASU W. P. Carey School of Business" className="h-12" />
           </div>
 
           {/* Title */}
