@@ -47,8 +47,8 @@ function ConfirmForm() {
   return (
     <>
       {/* Logo */}
-      <div className="flex justify-center mb-8">
-        <img src="/Logo.svg" alt="ASU W. P. Carey School of Business" className="h-12" />
+      <div className="flex justify-center mb-6">
+        <img src="/Logo.svg" alt="ASU W. P. Carey School of Business" className="h-16" />
       </div>
 
       {/* Title */}
@@ -113,19 +113,21 @@ function ConfirmForm() {
 
 export default function ConfirmPage() {
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Left — Hero Image */}
-      <div className="hidden lg:block lg:w-1/2">
-        <img
-          src="/Women's image.png"
-          alt="AI-powered presentation assessment"
-          className="w-full h-full object-cover object-top"
-        />
+    <div className="flex min-h-screen bg-white p-6">
+      {/* Left — Hero Image with rounded border */}
+      <div className="hidden lg:block lg:w-1/2 pr-6">
+        <div className="h-full w-full rounded-3xl overflow-hidden border border-gray-200">
+          <img
+            src="/Women's image.png"
+            alt="AI-powered presentation assessment"
+            className="w-full h-full object-contain"
+          />
+        </div>
       </div>
 
       {/* Right — Confirm Form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6">
+        <div className="w-full max-w-sm">
           <Suspense fallback={<Loader2 size={24} className="mx-auto animate-spin text-maroon" />}>
             <ConfirmForm />
           </Suspense>

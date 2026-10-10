@@ -45,19 +45,21 @@ export default function ForgotPasswordPage() {
 
   if (done) {
     return (
-      <div className="flex min-h-screen bg-white">
-        {/* Left — Hero Image */}
-        <div className="hidden lg:block lg:w-1/2">
-          <img
-            src="/Women's image.png"
-            alt="AI-powered presentation assessment"
-            className="w-full h-full object-cover object-top"
-          />
+      <div className="flex min-h-screen bg-white p-6">
+        {/* Left — Hero Image with rounded border */}
+        <div className="hidden lg:block lg:w-1/2 pr-6">
+          <div className="h-full w-full rounded-3xl overflow-hidden border border-gray-200">
+            <img
+              src="/Women's image.png"
+              alt="AI-powered presentation assessment"
+              className="w-full h-full object-contain"
+            />
+          </div>
         </div>
 
         {/* Right — Success Message */}
-        <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
-          <div className="w-full max-w-md text-center">
+        <div className="flex w-full lg:w-1/2 items-center justify-center px-6">
+          <div className="w-full max-w-sm text-center">
             <CheckCircle size={48} className="mx-auto text-green-600" />
             <h2 className="mt-4 text-xl font-bold text-gray-900 font-serif">Password Reset!</h2>
             <p className="mt-2 text-sm text-gray-500 font-sans">You can now sign in with your new password.</p>
@@ -71,22 +73,24 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Left — Hero Image */}
-      <div className="hidden lg:block lg:w-1/2">
-        <img
-          src="/Women's image.png"
-          alt="AI-powered presentation assessment"
-          className="w-full h-full object-cover object-top"
-        />
+    <div className="flex min-h-screen bg-white p-6">
+      {/* Left — Hero Image with rounded border */}
+      <div className="hidden lg:block lg:w-1/2 pr-6">
+        <div className="h-full w-full rounded-3xl overflow-hidden border border-gray-200">
+          <img
+            src="/Women's image.png"
+            alt="AI-powered presentation assessment"
+            className="w-full h-full object-contain"
+          />
+        </div>
       </div>
 
       {/* Right — Reset Password Form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6">
+        <div className="w-full max-w-sm">
           {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <img src="/Logo.svg" alt="ASU W. P. Carey School of Business" className="h-12" />
+          <div className="flex justify-center mb-6">
+            <img src="/Logo.svg" alt="ASU W. P. Carey School of Business" className="h-16" />
           </div>
 
           {/* Title */}

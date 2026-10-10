@@ -33,7 +33,6 @@ export default function SignUpPage() {
 
     setIsLoading(true);
     try {
-      // Group and course will be assigned by TA/admin later
       const result = await signUp(email, password, name, role, '', '');
       if (!result.userConfirmed) {
         router.push(`/confirm/?email=${encodeURIComponent(email)}`);
@@ -48,22 +47,24 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Left — Hero Image */}
-      <div className="hidden lg:block lg:w-1/2">
-        <img
-          src="/Women's image.png"
-          alt="AI-powered presentation assessment"
-          className="w-full h-full object-cover object-top"
-        />
+    <div className="flex min-h-screen bg-white p-6">
+      {/* Left — Hero Image with rounded border */}
+      <div className="hidden lg:block lg:w-1/2 pr-6">
+        <div className="h-full w-full rounded-3xl overflow-hidden border border-gray-200">
+          <img
+            src="/Women's image.png"
+            alt="AI-powered presentation assessment"
+            className="w-full h-full object-contain"
+          />
+        </div>
       </div>
 
       {/* Right — Sign Up Form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-8">
-        <div className="w-full max-w-md">
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6">
+        <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <img src="/Logo.svg" alt="ASU W. P. Carey School of Business" className="h-12" />
+            <img src="/Logo.svg" alt="ASU W. P. Carey School of Business" className="h-16" />
           </div>
 
           {/* Title */}
@@ -124,11 +125,6 @@ export default function SignUpPage() {
                 <option value="student">Student</option>
                 <option value="instructor">Admin</option>
               </select>
-              {role === 'student' && (
-                <p className="mt-1.5 text-xs text-gray-500">
-                  Your group and session will be assigned by your instructor.
-                </p>
-              )}
             </div>
 
             {/* Password */}
