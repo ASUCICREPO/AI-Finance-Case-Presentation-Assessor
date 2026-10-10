@@ -82,7 +82,7 @@ function ConfirmForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+            className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-maroon-500"
           />
         </div>
         <div>
@@ -95,13 +95,13 @@ function ConfirmForm() {
             onChange={(e) => setCode(e.target.value)}
             placeholder="Enter 6-digit code"
             required
-            className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-sans text-center tracking-widest placeholder:text-gray-400 focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+            className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-sans text-center tracking-widest placeholder:text-gray-400 focus:border-maroon-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-maroon-500"
           />
         </div>
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full rounded-lg bg-maroon-600 py-3 text-sm font-medium text-white hover:bg-maroon-700 transition-colors disabled:opacity-50 font-sans flex items-center justify-center gap-2"
+          className="w-full rounded-full bg-maroon-600 py-3 text-sm font-medium text-white hover:bg-maroon-700 transition-colors disabled:opacity-50 font-sans flex items-center justify-center gap-2"
         >
           {isLoading && <Loader2 size={16} className="animate-spin" />}
           Confirm
@@ -120,18 +120,20 @@ function ConfirmForm() {
 
 export default function ConfirmPage() {
   return (
-    <div className="flex min-h-screen">
-      {/* Left — Hero Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gray-100 items-center justify-center overflow-hidden">
-        <img
-          src="/login-hero.png"
-          alt="AI-powered presentation assessment"
-          className="w-full h-full object-contain"
-        />
+    <div className="flex min-h-screen bg-white p-4 lg:p-6">
+      {/* Left — Hero Image with Border */}
+      <div className="hidden lg:flex lg:w-1/2 p-2">
+        <div className="relative w-full h-full rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+          <img
+            src="/Women's image.png"
+            alt="AI-powered presentation assessment"
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
 
       {/* Right — Confirm Form */}
-      <div className="flex w-full lg:w-1/2 items-start justify-center px-6 py-12 pt-24">
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <Suspense fallback={<Loader2 size={24} className="mx-auto animate-spin text-maroon" />}>
             <ConfirmForm />
