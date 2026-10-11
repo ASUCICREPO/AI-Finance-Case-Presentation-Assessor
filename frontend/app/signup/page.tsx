@@ -52,7 +52,7 @@ export default function SignUpPage() {
       <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-4">
         <div className="w-full max-w-lg rounded-3xl overflow-hidden border border-gray-200">
           <img
-            src="/Women's image.png"
+            src="/hero-image.png"
             alt="AI-powered presentation assessment"
             className="w-full h-auto"
           />
