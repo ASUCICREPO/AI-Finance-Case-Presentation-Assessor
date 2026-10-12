@@ -53,14 +53,14 @@ export default function LoginPage() {
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-gray-900 text-center font-serif">Sign In</h1>
-          <p className="mt-1 text-sm text-gray-500 text-center font-sans">
+          <h1 className="text-3xl font-bold text-gray-900 text-center font-serif">Sign In</h1>
+          <p className="mt-2 text-base text-gray-500 text-center font-sans">
             Enter your details to get started.
           </p>
 
           {/* Error */}
           {error && (
-            <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 font-sans">
+            <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-base text-red-700 font-sans">
               {error}
             </div>
           )}
@@ -69,7 +69,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 font-sans">
+              <label className="block text-base font-medium text-gray-700 font-sans">
                 Email <span className="text-red-500">*</span>
               </label>
               <input
@@ -78,13 +78,13 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="username@asu.edu"
                 required
-                className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-maroon-500"
+                className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-base font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-maroon-500"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 font-sans">
+              <label className="block text-base font-medium text-gray-700 font-sans">
                 Password <span className="text-red-500">*</span>
               </label>
               <div className="relative mt-1.5">
@@ -94,21 +94,21 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 pr-10 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-maroon-500"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 pr-10 text-base font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-maroon-500"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
             {/* Remember me + Forgot */}
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm font-sans text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-base font-sans text-gray-600 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -119,7 +119,7 @@ export default function LoginPage() {
               </label>
               <Link
                 href="/forgot-password/"
-                className="text-sm font-medium text-maroon-600 hover:underline font-sans"
+                className="text-base font-medium text-maroon-600 hover:underline font-sans"
               >
                 Forgot Password
               </Link>
@@ -129,15 +129,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-full bg-maroon-600 py-3 text-sm font-medium text-white hover:bg-maroon-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-sans flex items-center justify-center gap-2"
+              className="w-full rounded-full bg-maroon-600 py-3.5 text-base font-medium text-white hover:bg-maroon-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-sans flex items-center justify-center gap-2"
             >
-              {isLoading && <Loader2 size={16} className="animate-spin" />}
+              {isLoading && <Loader2 size={18} className="animate-spin" />}
               Sign In
             </button>
           </form>
 
           {/* Sign up link */}
-          <p className="mt-6 text-center text-sm text-gray-500 font-sans">
+          <p className="mt-6 text-center text-base text-gray-500 font-sans">
             Don&apos;t have an account?{' '}
             <Link href="/signup/" className="font-medium text-gray-900 hover:underline">
               Sign up
