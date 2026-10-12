@@ -1,24 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand Colors - ASU Maroon Scale */
-  --maroon-50: #fdf2f2;
-  --maroon-100: #fce4e4;
-  --maroon-200: #facbcb;
-  --maroon-300: #f7a3a3;
-  --maroon-400: #f27272;
-  --maroon-500: #e84545;
-  --maroon-600: #800001;
-  --maroon-700: #6b0001;
-  --maroon-800: #590001;
-  --maroon-900: #4a0001;
+  /* Brand Colors - ASU Maroon Scale (Official: #8C1D40) */
+  --maroon-50: #fdf2f4;
+  --maroon-100: #fce4e8;
+  --maroon-200: #f9ccd5;
+  --maroon-300: #f4a3b4;
+  --maroon-400: #ec6b87;
+  --maroon-500: #df3d5f;
+  --maroon-600: #8C1D40;
+  --maroon-700: #761834;
+  --maroon-800: #63152c;
+  --maroon-900: #541528;
 
   /* Gold Accent */
   --gold-500: #FFC627;
   --gold-600: #E5B000;
 
-  /* Accent Colors */
+  /* Accent Colors - ASU Rich Black (#000000) */
   --accent-gray: #404040;
+  --rich-black: #000000;
 
   /* UI Semantic Mapping */
   --color-brand-primary: var(--maroon-600);
@@ -27,7 +28,7 @@
 
   --color-background: #f9fafb;
   --color-surface: #ffffff;
-  --color-foreground: #171717;
+  --color-foreground: var(--rich-black);
 }
 
 @theme {
