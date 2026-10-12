@@ -9,7 +9,6 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  Eye,
   Copy,
   Clock,
   Archive,
@@ -113,12 +112,6 @@ export default function SessionsPage() {
           </span>
         );
     }
-  };
-
-  // Handle View Details
-  const handleViewDetails = (session: CourseSession) => {
-    setActiveMenu(null);
-    router.push(`/ta/sessions/view?id=${session.sessionId}`);
   };
 
   // Handle Edit
@@ -293,13 +286,6 @@ export default function SessionsPage() {
                       className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-gray-200 bg-white shadow-lg z-10"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
-                        onClick={() => handleViewDetails(session)}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <Eye size={14} />
-                        View Details
-                      </button>
                       <button
                         onClick={() => handleEdit(session)}
                         className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
