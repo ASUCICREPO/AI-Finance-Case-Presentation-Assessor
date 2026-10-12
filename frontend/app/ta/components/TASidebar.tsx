@@ -12,7 +12,8 @@ import {
   BookOpen,
   Calendar,
   LogOut,
-  Menu,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 const navItems = [
@@ -34,14 +35,18 @@ export default function TASidebar() {
       className={`sticky top-16 h-[calc(100vh-4rem)] border-r border-gray-200 bg-white flex flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'
         }`}
     >
-      {/* Hamburger menu toggle */}
-      <div className="p-3 border-b border-gray-100">
+      {/* Sidebar toggle */}
+      <div className={`p-3 border-b border-gray-100 flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center justify-center w-full rounded-lg p-2 bg-maroon-600 hover:bg-maroon-700 transition-colors"
+          className="flex items-center justify-center w-10 h-10 rounded-lg bg-maroon-600 hover:bg-maroon-700 transition-colors"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <Menu size={20} className="text-white" />
+          {collapsed ? (
+            <ChevronRight size={20} className="text-white" />
+          ) : (
+            <ChevronLeft size={20} className="text-white" />
+          )}
         </button>
       </div>
 
