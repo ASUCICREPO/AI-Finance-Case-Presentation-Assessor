@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { generateSessionId, config } from '../../config/config';
-import { uploadFile, parseExcel, listPersonas, createSubmission, getAssessment, Assessment } from '../../services/api';
+import { uploadFile, parseExcel, listPersonas, createSubmission, getAssessment, Assessment, getDownloadUrl } from '../../services/api';
 import { Persona } from '../../config/config';
 import PracticeOverview from './components/PracticeOverview';
 import CalibrationCheck from './components/CalibrationCheck';
@@ -244,6 +244,31 @@ export default function SessionPage() {
     }
   }, [sessionId]);
 
+  // From Upload -> Live (using pre-uploaded material from assessment)
+  const handleSelectMaterial = useCallback(async (material: { name: string; s3Key: string; type: string; uploadedAt: string }) => {
+    setUploadError(null);
+    setIsUploading(true);
+    setUploadProgress(50); // Show some progress
+
+    try {
+      // Save S3 key for submission (use the existing material's key)
+      setSpreadsheetS3Key(material.s3Key);
+
+      // Parse the pre-uploaded Excel file
+      const parsed = await parseExcel(material.s3Key, sessionId);
+      setWorkbookSheets(parsed.sheets);
+      setWorkbookData(parsed.data);
+
+      setUploadProgress(100);
+      // Show confirmation modal
+      setShowStartModal(true);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to load spreadsheet');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [sessionId]);
+
   // Confirm start -> Begin Presentation phase
   const handleConfirmStart = async () => {
     setShowStartModal(false);
@@ -446,10 +471,12 @@ export default function SessionPage() {
       {sessionView === 'upload' && (
         <DocumentUpload
           onComplete={handleFileUpload}
+          onSelectMaterial={handleSelectMaterial}
           onBack={() => setSessionView('calibration')}
           isUploading={isUploading}
           uploadProgress={uploadProgress}
           error={uploadError}
+          assessmentMaterials={assessment?.materials}
         />
       )}
 
