@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
       <div className="flex min-h-screen bg-white p-4">
         {/* Left — Hero Image with rounded border */}
         <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-3xl overflow-hidden border border-gray-200">
+          <div className="w-full max-w-xl rounded-3xl overflow-hidden border border-gray-200">
             <img
               src="/hero-image.png"
               alt="AI-powered presentation assessment"
