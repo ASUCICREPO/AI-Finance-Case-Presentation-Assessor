@@ -65,19 +65,29 @@ def get_all_submissions(query_params):
                 KeyConditionExpression=Key("assessmentId").eq(assessment_id),
             )
         elif student_id:
-            # First try the studentId directly
+            # Query by studentId (Cognito sub or Students table ID)
             result = submissions_table.query(
                 IndexName="studentId-index",
                 KeyConditionExpression=Key("studentId").eq(student_id),
             )
-            # If no results and we have email, also search by email
             items = result.get("Items", [])
-            if not items and student_email:
-                # Fallback: scan by email (submissions have studentEmail field)
-                scan_result = submissions_table.scan(
+            
+            # Also search by email to catch submissions with different studentId
+            # This handles cases where submissions were created with Students table ID
+            # but user is querying with Cognito sub (or vice versa)
+            if student_email:
+                email_result = submissions_table.scan(
                     FilterExpression=Attr("studentEmail").eq(student_email)
                 )
-                items = scan_result.get("Items", [])
+                email_items = email_result.get("Items", [])
+                
+                # Merge and dedupe by submissionId
+                seen_ids = {item["submissionId"] for item in items}
+                for email_item in email_items:
+                    if email_item["submissionId"] not in seen_ids:
+                        items.append(email_item)
+                        seen_ids.add(email_item["submissionId"])
+                
                 result = {"Items": items}
         elif student_email:
             # Search by email directly
