@@ -20,9 +20,8 @@ import {
   Persona,
 } from '../../../services/api';
 
-// Session numbers and group numbers for assignment
+// Session numbers for assignment - groups are now free-form input
 const sessionNumbers = ['1', '2', '3', '4', '5'];
-const groupNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 export default function EditAssessmentPage() {
   const router = useRouter();
@@ -363,28 +362,27 @@ export default function EditAssessmentPage() {
             )}
           </div>
 
-          {/* Group Numbers - Checkbox Grid */}
+          {/* Group Numbers - Free form input */}
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Assign to Group Numbers
             </label>
-            <p className="text-xs text-gray-500 mb-2">Leave all unchecked to assign to all groups</p>
-            <div className="flex flex-wrap gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              {groupNumbers.map((num) => (
-                <label
-                  key={num}
-                  className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-md border border-gray-200 hover:border-maroon-300 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedGroups.includes(num)}
-                    onChange={() => toggleGroup(num)}
-                    className="h-4 w-4 rounded border-gray-300 text-maroon-600 focus:ring-maroon-500"
-                  />
-                  <span className="text-sm text-gray-900">Group {num}</span>
-                </label>
-              ))}
-            </div>
+            <p className="text-xs text-gray-500 mb-2">Enter group numbers separated by commas (e.g., 1, 2, 3, 4, 5). Leave empty to assign to all groups.</p>
+            <input
+              type="text"
+              value={selectedGroups.join(', ')}
+              onChange={(e) => {
+                const input = e.target.value;
+                // Parse comma-separated numbers
+                const groups = input
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(s => /^\d+$/.test(s));
+                setSelectedGroups(groups);
+              }}
+              placeholder="e.g., 1, 2, 3, 4, 5 (leave empty for all groups)"
+              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-maroon-500 focus:outline-none focus:ring-1 focus:ring-maroon-500"
+            />
             {selectedGroups.length > 0 && (
               <p className="mt-2 text-xs text-green-600">
                 Selected: {selectedGroups.map(g => `Group ${g}`).join(', ')}
