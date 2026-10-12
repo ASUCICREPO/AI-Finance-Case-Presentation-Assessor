@@ -439,6 +439,21 @@ export class FinanceAssessorStack extends cdk.Stack {
     studentsTable.grantReadData(courseSessionsCrudFn);
     groupsTable.grantReadData(courseSessionsCrudFn);
 
+    // Validate Admin Code Lambda - validates access code for instructor signup
+    const validateAdminCodeFn = new lambda.Function(this, 'ValidateAdminCodeFn', {
+      runtime: lambda.Runtime.PYTHON_3_12,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/validate-admin-code'),
+      description: 'Validates admin access code for instructor signup',
+      environment: {
+        // The actual access code is set via CDK context or environment variable
+        // Never hardcode the actual value here!
+        ADMIN_ACCESS_CODE: this.node.tryGetContext('adminAccessCode') || process.env.ADMIN_ACCESS_CODE || '',
+      },
+    });
+
     // ──────────────────────────────────────────────────────────
     // API Gateway
     // ──────────────────────────────────────────────────────────
@@ -566,6 +581,10 @@ export class FinanceAssessorStack extends cdk.Stack {
     // Duplicate a course session
     const courseSessionDuplicate = courseSessionById.addResource('duplicate');
     courseSessionDuplicate.addMethod('POST', new apigateway.LambdaIntegration(courseSessionsCrudFn));
+
+    // /validate-admin-code (public endpoint for admin signup validation)
+    const validateAdminCodeResource = api.root.addResource('validate-admin-code');
+    validateAdminCodeResource.addMethod('POST', new apigateway.LambdaIntegration(validateAdminCodeFn));
 
     this.apiUrl = api.url;
 

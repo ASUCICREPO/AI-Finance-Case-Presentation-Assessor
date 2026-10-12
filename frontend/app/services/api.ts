@@ -1068,3 +1068,25 @@ export async function createCaseAssessment(data: Partial<CaseAssessment>): Promi
     updatedAt: result.updatedAt || '',
   };
 }
+
+
+// ──────────────────────────────────────────────────────────
+// Admin Access Code Validation
+// ──────────────────────────────────────────────────────────
+
+/**
+ * Validate admin access code for instructor signup.
+ * The actual code is stored server-side only - never exposed to frontend.
+ */
+export async function validateAdminAccessCode(accessCode: string): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const response = await fetch(`${config.apiUrl.replace(/\/$/, '')}/validate-admin-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessCode }),
+    });
+    return response.json();
+  } catch (err) {
+    return { valid: false, error: 'Failed to validate access code' };
+  }
+}

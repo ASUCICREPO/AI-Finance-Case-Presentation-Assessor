@@ -5,6 +5,7 @@ import { useAuth, UserRole } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { validateAdminAccessCode } from '../services/api';
 
 export default function SignUpPage() {
   const { signUp } = useAuth();
@@ -14,6 +15,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
+  const [accessCode, setAccessCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +31,22 @@ export default function SignUpPage() {
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
+    }
+
+    // Validate admin access code if signing up as instructor
+    if (role === 'instructor') {
+      if (!accessCode.trim()) {
+        setError('Access code is required for Admin accounts');
+        return;
+      }
+
+      setIsLoading(true);
+      const validation = await validateAdminAccessCode(accessCode);
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid access code');
+        setIsLoading(false);
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -126,6 +144,26 @@ export default function SignUpPage() {
                 <option value="instructor">Admin</option>
               </select>
             </div>
+
+            {/* Access Code - only shown for Admin */}
+            {role === 'instructor' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 font-sans">
+                  Access Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  placeholder="Enter admin access code"
+                  required
+                  className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-sans placeholder:text-gray-400 focus:border-maroon-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-maroon-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Contact your administrator to get the access code.
+                </p>
+              </div>
+            )}
 
             {/* Password */}
             <div>
