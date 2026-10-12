@@ -258,13 +258,6 @@ export default function StudentsPage() {
           <Plus size={16} />
           Add student
         </Link>
-        <Link
-          href="/ta/groups/add"
-          className="flex items-center gap-2 rounded-lg bg-maroon-600 px-4 py-2 text-sm font-medium text-white hover:bg-maroon-700"
-        >
-          <Plus size={16} />
-          Add Group
-        </Link>
       </div>
 
       {/* Error State */}
