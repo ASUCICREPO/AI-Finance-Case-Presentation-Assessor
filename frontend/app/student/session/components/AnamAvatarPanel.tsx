@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { createClient, AnamEvent } from '@anam-ai/js-sdk';
-import { Loader2, Volume2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface AnamAvatarPanelProps {
   anamPersonaId: string;
@@ -217,18 +217,6 @@ export default function AnamAvatarPanel({
         playsInline
         className="w-full h-full object-cover"
       />
-
-      {/* Persona name badge */}
-      <div className="absolute top-3 left-3 flex items-center gap-2">
-        <span className="text-xs font-medium text-white font-sans bg-black/40 px-2 py-1 rounded">
-          {personaName}
-        </span>
-      </div>
-
-      {/* Volume indicator */}
-      <button className="absolute top-3 right-3 rounded-full bg-white/20 p-1.5 hover:bg-white/30 transition-colors">
-        <Volume2 size={14} className="text-white" />
-      </button>
 
       {/* Loading overlay */}
       {!connected && (
