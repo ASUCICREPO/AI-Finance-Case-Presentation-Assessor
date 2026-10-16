@@ -22,8 +22,8 @@ In group-based finance and real estate courses, students collaborate on case ana
 - **Two-dashboard architecture** — Separate Student and TA/Instructor interfaces
 - **Spreadsheet-aware questioning** — AI reads and references the group's actual Excel workbook during Q&A
 - **Persona-based stakeholder simulation** — Configurable AI personas (CEO, CFO, Board Members, Investors) with role-specific questioning styles
-- **Structured rubric scoring** — Evaluates across 7 categories with configurable weights
-- **Voice-based interaction** — Real-time bidirectional voice Q&A powered by Amazon Nova Sonic
+- **Structured rubric scoring** — Evaluates across 6 standardized dimensions with configurable weights
+- **Voice-based interaction** — Real-time bidirectional voice Q&A powered by Amazon Nova 2 Sonic
 - **Practice mode** — Unlimited practice sessions that don't count toward final grade
 - **Instructor controls** — Persona management, rubric configuration, question customization, weight adjustments
 - **Automated reporting** — PDF/JSON assessment reports with evidence citations from transcripts
@@ -34,50 +34,26 @@ In group-based finance and real estate courses, students collaborate on case ana
 
 Built on a serverless AWS architecture:
 
-```
-Students/TAs
-    │
-    ▼
-┌─────────────────────────┐
-│   AWS Amplify Hosting    │  ← Next.js frontend (Student + TA dashboards)
-└───────────┬─────────────┘
-            │
-┌───────────┴─────────────┐
-│   Amazon Cognito         │  ← User Authentication (Student/TA roles)
-└───────────┬─────────────┘
-            │
-     ┌──────┴──────┐
-     ▼             ▼
-┌─────────┐  ┌──────────────────────────┐
-│ API GW  │  │  Bedrock AgentCore       │  ← Live voice Q&A (WebSocket)
-│ REST    │  │  Nova 2 Sonic            │
-└────┬────┘  │  Claude 3.5 Sonnet       │
-     │       │  Nova 2 Lite             │
-     │       │  + Bedrock Guardrails    │
-     │       └──────────┬───────────────┘
-     │                  │
-     ▼                  ▼
-┌─────────────────────────────────┐
-│        AWS Lambda Functions      │
-├──────────────────────────────────┤
-│  • Persona CRUD                  │
-│  • Excel Parser                  │
-│  • Validation Agent              │
-│  • Post-Session Analytics        │
-│  • S3 Pre-signed URL             │
-└───────────┬──────────────────────┘
-            │
-     ┌──────┴──────┐
-     ▼             ▼
-┌─────────┐  ┌─────────┐
-│ DynamoDB│  │   S3    │
-│         │  │         │
-│ Personas│  │ Uploads │
-│ Cases   │  │ Records │
-│ Sessions│  │ Reports │
-│ Assess. │  │ Transcr.│
-└─────────┘  └─────────┘
-```
+![Architecture](./Architecture.png)
+
+**Flow**
+
+- **Students & TAs** access a Next.js frontend hosted on **AWS Amplify**, authenticated via **Amazon Cognito** (Student/TA roles).
+- Standard requests route through **API Gateway (REST)** to a set of **AWS Lambda** functions, each handling one task:
+  - **Persona CRUD** — manage AI stakeholder personas (DynamoDB)
+  - **Excel Parser** — parse the uploaded workbook into structured JSON (S3)
+  - **Validation Agent** — file/structure checks only; writes session status (S3 + DynamoDB, no AI model)
+  - **Post-Session Analytics** — rubric scoring of the transcript (calls Claude)
+  - **Pre-signed S3 URL** — secure upload/download links (S3)
+- The **live voice Q&A** runs on **Bedrock AgentCore** over a WebSocket — a long-lived, stateful session (not Lambda, which is short and stateless).
+- **Amazon Transcribe** (streaming, browser-side) captions the student's spoken presentation.
+- Data is stored in **DynamoDB** (personas, sessions, assessments) and **Amazon S3** (uploads, transcripts, reports).
+
+**Models (Amazon Bedrock, with Guardrails)**
+
+- **Amazon Nova 2 Sonic** — real-time speech-to-speech voice for the live Q&A conversation.
+- **Anthropic Claude Sonnet 4.5** — rubric-based assessment scoring. Called from three places, all using the same model and rubric: AgentCore (in-session, at session end), the Post-Session Analytics Lambda (stored assessment), and the Generate-AI-Score Lambda (TA-triggered scoring).
+- **Amazon Bedrock Guardrails** screen the voice output in real time for content safety.
 
 ---
 
@@ -189,15 +165,16 @@ NEXT_PUBLIC_AWS_REGION=us-east-1
 
 ## Assessment Categories
 
-| Category | Default Weight | Description |
-|----------|---------------|-------------|
-| Financial Reasoning | 20% | Ability to explain financial concepts and their implications |
-| Understanding of Calculations | 20% | Knowledge of how key metrics were derived |
-| Assumption Validation | 15% | Can identify, justify, and defend model assumptions |
-| Recommendation Defense | 15% | Clear logical argument for investment recommendation |
-| Analytical Depth | 15% | Goes beyond surface-level to explore nuances |
-| Decision-Making Quality | 10% | Sound judgment in weighing trade-offs |
-| Communication Effectiveness | 5% | Clear, concise, professional communication |
+Scored with a standardized 6-dimension rubric (4 performance levels: Strong, Competent, Partial, Insufficient).
+
+| Dimension | Weight | Description |
+|-----------|--------|-------------|
+| Problem Diagnosis and Financial Reasoning | 20% | Identifies the underlying problem; distinguishes causes from symptoms; connects evidence to business and financing consequences |
+| Understanding of Calculations and Model Mechanics | 20% | Explains material formulas, methods, and statement linkages; traces numbers to assumptions; interprets rather than recites |
+| Assumption Validation and Analytical Judgment | 20% | Identifies material assumptions; explains why they are reasonable; considers alternatives, sensitivity, and uncertainty |
+| Analytical Integration and Ownership | 15% | Understands the entire submission; reconciles workbook, summary, and presentation; identifies inconsistencies |
+| Recommendation Defense and Decision Quality | 20% | Provides feasible, evidence-based recommendations; quantifies impact; considers risks, trade-offs, and implementation |
+| Executive Communication | 5% | Answers directly, organizes reasoning, explains clearly, acknowledges uncertainty, remains professional |
 
 ---
 
