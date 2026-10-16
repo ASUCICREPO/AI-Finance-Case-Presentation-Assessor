@@ -341,7 +341,7 @@ export default function PresentationSession({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)]">
+    <div className="flex flex-col">
       {/* Header bar */}
       <div className="mb-3 rounded-xl border border-gray-200 bg-white px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
@@ -381,11 +381,10 @@ export default function PresentationSession({
       </p>
 
       {/* Main content: Spreadsheet LEFT, Camera RIGHT */}
-      <div className="flex gap-4 flex-1 min-h-0">
+      <div className="flex gap-4" style={{ minHeight: '75vh' }}>
         {/* LEFT - Spreadsheet Viewer (takes most of the space) */}
-        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-          {/* Spreadsheet takes all available space */}
-          <div className="flex-1 min-h-0 overflow-hidden" style={{ minHeight: '70vh' }}>
+        <div className="flex-1 min-w-0">
+          <div className="h-full overflow-hidden">
             {hasWorkbookData ? (
               <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
             ) : (
@@ -393,18 +392,6 @@ export default function PresentationSession({
                 <p className="text-gray-500 font-sans text-sm">No spreadsheet uploaded</p>
               </div>
             )}
-          </div>
-
-          {/* Live transcript preview - compact, user can scroll to see it */}
-          <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3 shrink-0">
-            <p className="text-xs text-gray-500 mb-1">Live Transcript Preview:</p>
-            <p className="text-sm text-gray-700 font-sans line-clamp-2">
-              {transcript.slice(-2).join(' ')}
-              {currentSpeech && <span className="text-gray-400 italic"> {currentSpeech}</span>}
-              {!transcript.length && !currentSpeech && (
-                <span className="text-gray-400 italic">Start speaking to see your transcript...</span>
-              )}
-            </p>
           </div>
         </div>
 
@@ -447,6 +434,18 @@ export default function PresentationSession({
             <ChevronRight size={16} />
           </button>
         </div>
+      </div>
+
+      {/* Live transcript preview - pushed below, scroll to see */}
+      <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4">
+        <p className="text-xs text-gray-500 mb-2">Live Transcript Preview:</p>
+        <p className="text-sm text-gray-700 font-sans">
+          {transcript.slice(-3).join(' ')}
+          {currentSpeech && <span className="text-gray-400 italic"> {currentSpeech}</span>}
+          {!transcript.length && !currentSpeech && (
+            <span className="text-gray-400 italic">Start speaking to see your transcript...</span>
+          )}
+        </p>
       </div>
     </div>
   );
