@@ -111,65 +111,94 @@ export default function AnamAvatarPanel({
   }, [sessionToken, isActive]);
 
   // Register text callback — pipes Nova Sonic transcript TEXT to Anam for TTS + lip sync
-  // Text is streamed chunk by chunk as it arrives from Nova Sonic
+  // Buffer text until sentence boundaries to prevent cut-off speech
   useEffect(() => {
     if (!connected) {
       console.log('[AnamAvatar] Not connected yet, skipping callback registration');
       return;
     }
 
-    let lastTextLength = 0; // Track how much text we've already sent
+    let textBuffer = ''; // Buffer to accumulate text until sentence boundary
+    let lastSentIndex = 0; // Track where we last sent from
 
-    console.log('[AnamAvatar] Registering text callback for Anam TTS (streaming mode)');
+    console.log('[AnamAvatar] Registering text callback for Anam TTS (sentence-buffered mode)');
     onAssistantTextRef.current = (text: string, isFinal: boolean) => {
       if (!clientRef.current || !connected) {
         console.warn('[AnamAvatar] Received text but not ready:', { hasClient: !!clientRef.current, connected });
         return;
       }
 
-      // Only send the NEW portion of text (delta), not the full accumulated text
-      const newText = text.slice(lastTextLength);
+      // Get the new text since last callback
+      const newText = text.slice(lastSentIndex);
+      textBuffer += newText;
+      lastSentIndex = text.length;
 
-      if (newText.length === 0 && !isFinal) {
-        return; // No new text to send
+      // Find complete sentences in the buffer (end with . ? ! or newline)
+      // Keep incomplete sentence in buffer for next chunk
+      const sentenceEndRegex = /[.!?]\s+|[.!?]$/g;
+      let lastSentenceEnd = -1;
+      let match;
+
+      while ((match = sentenceEndRegex.exec(textBuffer)) !== null) {
+        lastSentenceEnd = match.index + match[0].length;
       }
 
-      console.log('[AnamAvatar] Streaming text delta to Anam:', {
-        deltaLength: newText.length,
-        totalLength: text.length,
-        isFinal
-      });
+      // If we found complete sentences OR this is the final chunk, send to Anam
+      const shouldSend = lastSentenceEnd > 0 || isFinal;
 
-      try {
-        // Create a new talk stream if needed
-        if (!talkStreamRef.current || !talkStreamRef.current.isActive()) {
-          console.log('[AnamAvatar] Creating new talk stream');
-          talkStreamRef.current = clientRef.current.createTalkMessageStream();
-        }
+      if (shouldSend) {
+        let textToSend: string;
 
-        if (talkStreamRef.current.isActive()) {
-          // Stream only the new text chunk
-          if (newText.length > 0) {
-            talkStreamRef.current.streamMessageChunk(newText, isFinal);
-            lastTextLength = text.length; // Update tracker
-          } else if (isFinal) {
-            // Just signal final even if no new text
-            talkStreamRef.current.streamMessageChunk('', true);
-          }
-        } else {
-          console.warn('[AnamAvatar] Talk stream not active');
-        }
-
-        // Reset stream ref on final so next turn gets a new stream
         if (isFinal) {
-          console.log('[AnamAvatar] Final chunk received, resetting for next turn');
-          talkStreamRef.current = null;
-          lastTextLength = 0; // Reset for next turn
+          // On final, send everything remaining
+          textToSend = textBuffer;
+          textBuffer = '';
+        } else if (lastSentenceEnd > 0) {
+          // Send complete sentences, keep remainder in buffer
+          textToSend = textBuffer.slice(0, lastSentenceEnd);
+          textBuffer = textBuffer.slice(lastSentenceEnd);
+        } else {
+          return; // Nothing to send yet
         }
-      } catch (e) {
-        console.error('[AnamAvatar] Talk stream error:', e);
-        talkStreamRef.current = null;
-        lastTextLength = 0;
+
+        if (textToSend.trim().length === 0 && !isFinal) {
+          return;
+        }
+
+        console.log('[AnamAvatar] Sending to Anam:', {
+          textLength: textToSend.length,
+          remainingBuffer: textBuffer.length,
+          isFinal,
+          preview: textToSend.slice(0, 50) + (textToSend.length > 50 ? '...' : '')
+        });
+
+        try {
+          // Create a new talk stream if needed
+          if (!talkStreamRef.current || !talkStreamRef.current.isActive()) {
+            console.log('[AnamAvatar] Creating new talk stream');
+            talkStreamRef.current = clientRef.current.createTalkMessageStream();
+          }
+
+          if (talkStreamRef.current.isActive()) {
+            // Send the buffered text
+            talkStreamRef.current.streamMessageChunk(textToSend, isFinal);
+          } else {
+            console.warn('[AnamAvatar] Talk stream not active');
+          }
+
+          // Reset on final for next turn
+          if (isFinal) {
+            console.log('[AnamAvatar] Final chunk received, resetting for next turn');
+            talkStreamRef.current = null;
+            textBuffer = '';
+            lastSentIndex = 0;
+          }
+        } catch (e) {
+          console.error('[AnamAvatar] Talk stream error:', e);
+          talkStreamRef.current = null;
+          textBuffer = '';
+          lastSentIndex = 0;
+        }
       }
     };
 
