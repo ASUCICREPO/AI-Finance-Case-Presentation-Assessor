@@ -382,9 +382,10 @@ export default function PresentationSession({
 
       {/* Main content: Spreadsheet LEFT, Camera RIGHT */}
       <div className="flex gap-4 flex-1 min-h-0">
-        {/* LEFT - Spreadsheet Viewer */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex-1 min-h-0 overflow-hidden">
+        {/* LEFT - Spreadsheet Viewer (takes most of the space) */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          {/* Spreadsheet takes all available space */}
+          <div className="flex-1 min-h-0 overflow-hidden" style={{ minHeight: '70vh' }}>
             {hasWorkbookData ? (
               <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
             ) : (
@@ -394,11 +395,11 @@ export default function PresentationSession({
             )}
           </div>
 
-          {/* Live transcript preview */}
-          <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4 max-h-32 overflow-y-auto">
-            <p className="text-xs text-gray-500 mb-2">Live Transcript Preview:</p>
-            <p className="text-sm text-gray-700 font-sans">
-              {transcript.slice(-3).join(' ')}
+          {/* Live transcript preview - compact, user can scroll to see it */}
+          <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3 shrink-0">
+            <p className="text-xs text-gray-500 mb-1">Live Transcript Preview:</p>
+            <p className="text-sm text-gray-700 font-sans line-clamp-2">
+              {transcript.slice(-2).join(' ')}
               {currentSpeech && <span className="text-gray-400 italic"> {currentSpeech}</span>}
               {!transcript.length && !currentSpeech && (
                 <span className="text-gray-400 italic">Start speaking to see your transcript...</span>

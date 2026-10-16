@@ -1,0 +1,131 @@
+<mxfile host="app.diagrams.net" version="24.0.0">
+  <diagram name="Architecture" id="finassessor-arch">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================= TITLE ================= -->
+        <mxCell id="title" value="AI Finance Case Presentation Assessor — Architecture" style="text;html=1;fontSize=20;fontStyle=1;align=left;verticalAlign=middle;fontColor=#232F3E;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="760" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ================= USERS ================= -->
+        <mxCell id="users" value="Students &amp; TAs" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#232F3E;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.users;" vertex="1" parent="1">
+          <mxGeometry x="60" y="400" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Amazon Transcribe (browser-side streaming for presentation captions) -->
+        <mxCell id="transcribe" value="Amazon Transcribe&#10;(streaming, browser-side)&#10;presentation captions" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#116D5B;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.transcribe;" vertex="1" parent="1">
+          <mxGeometry x="55" y="600" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================= APP LAYER ================= -->
+        <mxCell id="appgroup" value="App Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#D5D5D5;verticalAlign=top;fontStyle=1;fontColor=#879196;" vertex="1" parent="1">
+          <mxGeometry x="190" y="300" width="190" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="amplify" value="AWS Amplify&#10;(Next.js hosting)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.amplify;" vertex="1" parent="1">
+          <mxGeometry x="230" y="330" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cognito" value="Amazon Cognito&#10;(auth: Student/TA)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#DD344C;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cognito;" vertex="1" parent="1">
+          <mxGeometry x="230" y="440" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="apigw" value="API Gateway&#10;(REST)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#E7157B;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.api_gateway;" vertex="1" parent="1">
+          <mxGeometry x="320" y="510" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================= LAMBDA LAYER ================= -->
+        <mxCell id="lambdagroup" value="Lambda Functions (short, stateless tasks)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF4EC;strokeColor=#ED7100;verticalAlign=top;fontStyle=1;fontColor=#ED7100;" vertex="1" parent="1">
+          <mxGeometry x="470" y="120" width="230" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="l_persona" value="Persona CRUD&#10;(manage AI personas)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;" vertex="1" parent="1">
+          <mxGeometry x="520" y="150" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l_excel" value="Excel Parser&#10;(parse workbook)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;" vertex="1" parent="1">
+          <mxGeometry x="520" y="250" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l_valid" value="Validation Agent&#10;(file/structure checks)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;" vertex="1" parent="1">
+          <mxGeometry x="520" y="350" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l_analytics" value="Post-Session Analytics&#10;(rubric scoring)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;" vertex="1" parent="1">
+          <mxGeometry x="520" y="450" width="50" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="l_presign" value="Pre-signed S3 URL&#10;(secure up/download)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#ED7100;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;" vertex="1" parent="1">
+          <mxGeometry x="520" y="560" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ================= AGENTCORE (LIVE VOICE) ================= -->
+        <mxCell id="agentcore" value="Bedrock AgentCore&#10;Live Voice Q&amp;A (WebSocket)&#10;long-lived, stateful session" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#01A88D;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.bedrock;" vertex="1" parent="1">
+          <mxGeometry x="810" y="110" width="70" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ================= DATA LAYER ================= -->
+        <mxCell id="ddb" value="DynamoDB&#10;Personas, Sessions,&#10;Assessments" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#C925D1;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;" vertex="1" parent="1">
+          <mxGeometry x="820" y="330" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="Amazon S3&#10;Uploads, Transcripts,&#10;Reports" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#7AA116;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.simple_storage_service;" vertex="1" parent="1">
+          <mxGeometry x="820" y="470" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================= BEDROCK MODELS ================= -->
+        <mxCell id="modelgroup" value="Amazon Bedrock (with Guardrails)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF9;strokeColor=#01A88D;verticalAlign=top;fontStyle=1;fontColor=#01A88D;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="90" width="240" height="470" as="geometry" />
+        </mxCell>
+        <mxCell id="sonic" value="Nova 2 Sonic&#10;speech-to-speech voice" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#01A88D;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.bedrock;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="130" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="claude" value="Claude Sonnet 4.5&#10;rubric scoring" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#01A88D;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.bedrock;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="280" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="novalite" value="Nova 2 Lite&#10;in-session Q&amp;A analytics" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#01A88D;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=11;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.bedrock;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="430" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================= EDGES ================= -->
+        <!-- users -> amplify -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="users" target="amplify"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <!-- amplify <-> cognito -->
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="amplify" target="cognito"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <!-- amplify -> apigw -->
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="amplify" target="apigw"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <!-- amplify -> agentcore (direct WS for live voice) -->
+        <mxCell id="e4" value="WebSocket (live audio)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;startArrow=block;dashed=1;fontSize=10;" edge="1" parent="1" source="amplify" target="agentcore"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- apigw -> lambdas -->
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="apigw" target="l_persona"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="apigw" target="l_excel"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="apigw" target="l_valid"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="apigw" target="l_analytics"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="apigw" target="l_presign"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- lambda -> data -->
+        <mxCell id="e10" value="personas" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=9;" edge="1" parent="1" source="l_persona" target="ddb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" value="parsed JSON" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=9;" edge="1" parent="1" source="l_excel" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" value="session status" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=9;" edge="1" parent="1" source="l_valid" target="ddb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" value="assessments" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=9;" edge="1" parent="1" source="l_analytics" target="ddb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e14" value="files/reports" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=9;" edge="1" parent="1" source="l_presign" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- analytics -> claude (THE real Bedrock scoring call) -->
+        <mxCell id="e15" value="scores transcript" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#01A88D;strokeWidth=2;fontSize=10;fontColor=#01A88D;" edge="1" parent="1" source="l_analytics" target="claude"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- agentcore -> models -->
+        <mxCell id="e16" value="voice" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;startArrow=block;strokeColor=#01A88D;strokeWidth=2;fontSize=10;fontColor=#01A88D;" edge="1" parent="1" source="agentcore" target="sonic"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e17" value="in-session analytics (get_analytics)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#01A88D;fontSize=10;fontColor=#01A88D;" edge="1" parent="1" source="agentcore" target="novalite"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- transcribe edges: user speaks -> transcribe -> captions back to app; transcript stored in S3 -->
+        <mxCell id="e20" value="presentation audio" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;fontSize=9;" edge="1" parent="1" source="users" target="transcribe"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e21" value="live captions / transcript" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;fontSize=9;" edge="1" parent="1" source="transcribe" target="amplify"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- agentcore -> data (reads persona + parsed workbook, writes transcript) -->
+        <mxCell id="e18" value="persona" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;fontSize=9;" edge="1" parent="1" source="agentcore" target="ddb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e19" value="workbook / transcript" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;fontSize=9;" edge="1" parent="1" source="agentcore" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- legend note -->
+        <mxCell id="note" value="Model usage (verified in code):&#10;• AgentCore (live session) uses TWO models: Nova 2 Sonic for the speech-to-speech voice conversation, and Nova 2 Lite for in-session Q&amp;A analytics (triggered by get_analytics, writes qa_analytics.json to S3).&#10;• Post-Session Analytics Lambda uses Claude Sonnet 4.5 for the final rubric scoring — this is a separate step, after the session.&#10;• Amazon Transcribe runs in the browser (streaming) to caption the student's spoken presentation; the transcript is shown in the TA review UI.&#10;• The Validation Agent does S3/DynamoDB file &amp; structure checks only — no AI model." style="text;html=1;align=left;verticalAlign=top;fontSize=10;fontColor=#879196;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="200" y="690" width="900" height="110" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
