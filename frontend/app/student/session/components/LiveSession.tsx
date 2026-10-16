@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Clock, Flag, ChevronRight, CheckCircle, Table2, Volume2 } from 'lucide-react';
+import { Clock, Flag, ChevronRight, CheckCircle, Table2, Volume2, ArrowLeft } from 'lucide-react';
 import SpreadsheetViewer from './SpreadsheetViewer';
 import SubmitModal from './SubmitModal';
 import AnamAvatarPanel from './AnamAvatarPanel';
@@ -57,6 +57,7 @@ export default function LiveSession({
   const [anamSessionToken, setAnamSessionToken] = useState<string | null>(null);
   const [anamFailed, setAnamFailed] = useState(false);
   const [voiceMode, setVoiceMode] = useState<'anam' | 'nova-sonic' | 'text-chat'>(() => getVoiceAgentMode());
+  const [activeView, setActiveView] = useState<'qa' | 'spreadsheet'>('qa'); // Toggle between Q&A and Spreadsheet
 
   const onAssistantTextRef = useRef<((text: string, isFinal: boolean) => void) | null>(null);
 
@@ -139,68 +140,86 @@ export default function LiveSession({
 
       <p className="mb-3 text-xs text-gray-400 font-sans shrink-0">This session is being recorded</p>
 
-      {/* Main content: Spreadsheet LEFT, Q&A CENTER, Avatar RIGHT */}
+      {/* Main content: Toggle between Q&A and Spreadsheet views */}
       <div className="flex gap-3 flex-1 min-h-0">
-        {/* LEFT PANEL - Spreadsheet (always visible during Q&A) */}
-        {hasWorkbookData && (
-          <div className="w-[45%] min-w-[400px] rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0 bg-gray-50">
-              <div className="flex items-center gap-2">
-                <Table2 size={16} className="text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Your Spreadsheet</span>
-              </div>
-              <span className="text-xs text-gray-400">Reference while answering</span>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
-            </div>
-          </div>
-        )}
-
-        {/* CENTER PANEL - Q&A Transcript */}
-        <div className={`${hasWorkbookData ? 'flex-1 min-w-[300px]' : 'flex-1'} rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col`}>
-          <div className="px-4 py-3 border-b border-gray-100 shrink-0 bg-gray-50">
-            <div className="flex items-center gap-2">
-              <CheckCircle size={16} className="text-green-500" />
-              <h2 className="text-sm font-medium text-gray-700">Q&A with {displayPersonaName}</h2>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {finalTranscript.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-400 italic text-sm">Waiting for {displayPersonaName} to start...</p>
-              </div>
-            ) : (
-              finalTranscript.map((entry, idx) => (
-                <div key={idx}>
-                  {entry.role === 'assistant' ? (
-                    <div className="flex items-start gap-2">
-                      <div className="mt-0.5 shrink-0">
-                        <div className="h-6 w-6 rounded-full bg-maroon-100 flex items-center justify-center">
-                          <span className="text-xs font-bold text-maroon-600">{displayPersonaName.charAt(0)}</span>
-                        </div>
-                      </div>
-                      <div className="flex-1 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
-                        <p className="text-sm text-gray-800">{entry.text}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2 justify-end">
-                      <div className="flex-1 rounded-lg bg-maroon-50 border border-maroon-200 px-3 py-2">
-                        <p className="text-sm text-gray-700">{entry.text}</p>
-                      </div>
-                      <div className="mt-0.5 shrink-0">
-                        <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-xs font-bold text-blue-600">{displayStudentName.charAt(0)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+        {/* LEFT PANEL - Either Q&A or Spreadsheet (full width toggle) */}
+        <div className="flex-1 rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col">
+          {activeView === 'qa' ? (
+            <>
+              {/* Q&A Header with Spreadsheet toggle button */}
+              <div className="px-4 py-3 border-b border-gray-100 shrink-0 bg-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-green-500" />
+                  <h2 className="text-sm font-medium text-gray-700">Q&A with {displayPersonaName}</h2>
                 </div>
-              ))
-            )}
-          </div>
+                {hasWorkbookData && (
+                  <button
+                    onClick={() => setActiveView('spreadsheet')}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Table2 size={14} />
+                    Spreadsheet
+                  </button>
+                )}
+              </div>
+
+              {/* Q&A Transcript */}
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                {finalTranscript.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 italic text-sm">Waiting for {displayPersonaName} to start...</p>
+                  </div>
+                ) : (
+                  finalTranscript.map((entry, idx) => (
+                    <div key={idx}>
+                      {entry.role === 'assistant' ? (
+                        <div className="flex items-start gap-2">
+                          <div className="mt-0.5 shrink-0">
+                            <div className="h-6 w-6 rounded-full bg-maroon-100 flex items-center justify-center">
+                              <span className="text-xs font-bold text-maroon-600">{displayPersonaName.charAt(0)}</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
+                            <p className="text-sm text-gray-800">{entry.text}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2 justify-end">
+                          <div className="flex-1 rounded-lg bg-maroon-50 border border-maroon-200 px-3 py-2">
+                            <p className="text-sm text-gray-700">{entry.text}</p>
+                          </div>
+                          <div className="mt-0.5 shrink-0">
+                            <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-xs font-bold text-blue-600">{displayStudentName.charAt(0)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Spreadsheet Header with Back to Q&A button */}
+              <div className="px-4 py-3 border-b border-gray-100 shrink-0 bg-gray-50 flex items-center justify-between">
+                <button
+                  onClick={() => setActiveView('qa')}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  <ArrowLeft size={16} />
+                  Back to Q&A
+                </button>
+                <span className="text-xs text-gray-400">Spreadsheet Sandbox Viewer</span>
+              </div>
+
+              {/* Spreadsheet Viewer - Full width */}
+              <div className="flex-1 overflow-hidden">
+                <SpreadsheetViewer sheets={workbookSheets} data={workbookData} />
+              </div>
+            </>
+          )}
         </div>
 
         {/* RIGHT PANEL - Timer, Avatar, Camera */}
