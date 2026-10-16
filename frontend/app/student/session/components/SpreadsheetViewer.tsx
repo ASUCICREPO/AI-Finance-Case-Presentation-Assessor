@@ -38,6 +38,35 @@ interface SelectedCell {
   formula: string | null;
 }
 
+// Parse cell references from formula (e.g., "=A1+B2*C3" → ["A1", "B2", "C3"])
+function parseCellReferences(formula: string | null): Set<string> {
+  if (!formula) return new Set();
+
+  // Match cell references like A1, B2, AA10, $A$1, A$1, $A1, etc.
+  // Also handles ranges like A1:B5
+  const cellRefRegex = /\$?([A-Z]+)\$?(\d+)/gi;
+  const refs = new Set<string>();
+
+  let match;
+  while ((match = cellRefRegex.exec(formula)) !== null) {
+    // Normalize to uppercase without $ signs
+    const col = match[1].toUpperCase();
+    const row = match[2];
+    refs.add(`${col}${row}`);
+  }
+
+  return refs;
+}
+
+// Convert column letter to 0-indexed number (A=0, B=1, AA=26, etc.)
+function colLetterToIndex(letter: string): number {
+  let index = 0;
+  for (let i = 0; i < letter.length; i++) {
+    index = index * 26 + (letter.charCodeAt(i) - 64);
+  }
+  return index - 1;
+}
+
 /**
  * Spreadsheet Viewer - Displays uploaded Excel data with original formatting
  * Supports colors, fonts, alignment, merged cells, and cell-level formula viewing.
@@ -48,6 +77,7 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
   const [showFormulas, setShowFormulas] = useState(false);
   const [showStyles, setShowStyles] = useState(true);
   const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);
+  const [referencedCells, setReferencedCells] = useState<Set<string>>(new Set());
   const [customColWidths, setCustomColWidths] = useState<Record<string, Record<number, number>>>({});
   const [resizing, setResizing] = useState<{ col: number; startX: number; startWidth: number } | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -265,6 +295,12 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
                 <span className="text-sm text-gray-700 truncate">
                   {formatValue(selectedCell.value, null)}
                 </span>
+                {/* Show referenced cells */}
+                {referencedCells.size > 0 && (
+                  <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded ml-2">
+                    References: {Array.from(referencedCells).join(', ')}
+                  </span>
+                )}
               </>
             ) : (
               <span className="text-sm text-gray-700 truncate">
@@ -275,7 +311,10 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
 
           {/* Close button */}
           <button
-            onClick={() => setSelectedCell(null)}
+            onClick={() => {
+              setSelectedCell(null);
+              setReferencedCells(new Set());
+            }}
             className="p-1 hover:bg-gray-200 rounded transition-colors shrink-0"
           >
             <X size={14} className="text-gray-400" />
@@ -364,14 +403,21 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
 
                     // Handle cell click
                     const handleCellClick = () => {
-                      setSelectedCell({
+                      const newSelected = {
                         row: actualRowNum,
                         col: colIdx,
                         colLetter: colLetter,
                         value: cell,
                         formula: formula || null,
-                      });
+                      };
+                      setSelectedCell(newSelected);
+                      // Parse and set referenced cells from formula
+                      setReferencedCells(parseCellReferences(formula));
                     };
+
+                    // Check if this cell is referenced by the selected cell's formula
+                    const cellRef = `${colLetter}${actualRowNum}`;
+                    const isReferenced = referencedCells.has(cellRef);
 
                     return (
                       <td
@@ -384,6 +430,9 @@ export default function SpreadsheetViewer({ sheets, data }: SpreadsheetViewerPro
                           : ''
                           } ${isSelected
                             ? 'ring-2 ring-maroon-500 ring-inset bg-maroon-50'
+                            : ''
+                          } ${isReferenced
+                            ? 'ring-2 ring-green-500 ring-inset bg-green-100'
                             : ''
                           } ${formula && !showFormulas
                             ? 'border-b-2 border-b-blue-300'
