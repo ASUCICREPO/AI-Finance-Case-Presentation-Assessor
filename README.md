@@ -15,17 +15,27 @@ In group-based finance and real estate courses, students collaborate on case ana
 3. **AI Assessment** — The system evaluates responses across rubric categories: financial reasoning, assumption validation, recommendation defense, analytical depth, and more
 4. **Instructor Review** — TAs and instructors review AI-generated assessment reports, override scores, and export results
 
+### Student Q&A Session Features
+
+- **Toggle View Mode** — Switch between full-width Q&A transcript and spreadsheet views for focused attention
+- **Interactive Spreadsheet Viewer** — Browse the uploaded Excel workbook with formula dependency highlighting (referenced cells highlighted when selecting a formula cell)
+- **AI Avatar with Anam Integration** — Visual avatar representation of the stakeholder persona with sentence-buffered text-to-speech for natural conversation flow
+- **Live Transcript** — Real-time transcription of the conversation with speaker labels
+
 ---
 
 ## Key Features
 
 - **Two-dashboard architecture** — Separate Student and TA/Instructor interfaces
 - **Spreadsheet-aware questioning** — AI reads and references the group's actual Excel workbook during Q&A
+- **Interactive spreadsheet viewer** — Excel-like formula dependency highlighting shows which cells are referenced
 - **Persona-based stakeholder simulation** — Configurable AI personas (CEO, CFO, Board Members, Investors) with role-specific questioning styles
+- **AI avatar visualization** — Anam-powered avatar with sentence-buffered TTS for natural speech flow
 - **Structured rubric scoring** — Evaluates across 6 standardized dimensions with configurable weights
 - **Voice-based interaction** — Real-time bidirectional voice Q&A powered by Amazon Nova 2 Sonic
 - **Practice mode** — Unlimited practice sessions that don't count toward final grade
 - **Instructor controls** — Persona management, rubric configuration, question customization, weight adjustments
+- **Access code authentication** — Instructors set course access codes for streamlined student onboarding
 - **Automated reporting** — PDF/JSON assessment reports with evidence citations from transcripts
 
 ---
