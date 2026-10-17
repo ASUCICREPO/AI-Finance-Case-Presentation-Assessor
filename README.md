@@ -200,15 +200,12 @@ The platform supports configurable AI personas for Q&A sessions:
 
 ---
 
-## Project Status
-
-🚧 **In Development** — Targeting Fall 2026 pilot deployment.
-
----
-
 ## Credits
 
-Developed by the ASU AI Cloud Innovation Center powered by AWS.
+This application was developed by :
+
+- <a href="https://www.linkedin.com/in/sreeram-s-5454961aa/" target="_blank">Sreeram Saravana Prasad</a>
+- <a href="https://www.linkedin.com/in/arti-javkar-4910a51bb/" target="_blank">Arti Sandeep Javkar</a>
 
 ---
 
