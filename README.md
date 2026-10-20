@@ -8,6 +8,16 @@ An AI-powered platform that assesses individual student understanding of group f
 
 In group-based finance and real estate courses, students collaborate on case analyses but individual comprehension can be difficult to evaluate. This platform addresses that challenge by simulating a real-world executive presentation environment where each student must independently defend their group's analysis to an AI-powered stakeholder persona.
 
+---
+
+## Visual Demo
+
+[Student Dashboard](https://drive.google.com/file/d/1XVo_EEkCwnlLLG-oWQ5eSCG-GAUj6GgM/view?usp=drive_link)
+
+[Faculty Dashboard](https://drive.google.com/file/d/1mPEsHLNtsuRqjYCeGo4YrTCiPqZpBoga/view?usp=sharing)
+
+---
+
 ### How It Works
 
 1. **Group Submission** — Student groups submit their financial case analysis (Excel workbook with financial models, assumptions, and property data)
