@@ -224,7 +224,3 @@ This application was developed by :
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ---
-
-## Disclaimers
-
-This application is a proof-of-concept developed for educational assessment purposes. It is not intended to replace faculty grading authority or serve as an automated academic misconduct determination system. AI-generated assessments are provisional and subject to instructor review and override.
