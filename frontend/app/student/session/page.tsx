@@ -503,7 +503,7 @@ export default function SessionPage() {
           workbookSheets={workbookSheets}
           workbookData={workbookData}
           anamPersonaId={persona?.anamPersonaId}
-          useAnamAvatar={persona?.useAnamAvatar ?? (!!persona?.anamPersonaId)}
+          useAnamAvatar={sessionType === 'practice' ? false : (persona?.useAnamAvatar ?? (!!persona?.anamPersonaId))}
           onSubmit={handleSubmitSession}
         />
       )}
