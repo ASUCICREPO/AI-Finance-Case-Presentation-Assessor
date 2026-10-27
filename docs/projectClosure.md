@@ -1,12 +1,12 @@
-![ASU AI CIC Logo](./media/project-closure/ASU-AI-CIC-logo.png)
+![ASU AI CIC Logo](../frontend/public/ASU-AI-CIC-logo.png)
 
 **Project Completion Documentation** 
 
 AI Finance Case Presentation Assessor
 
-![WP Carey School of Business](../WP%20Carey%20PPT%20Assessment.jpg)
+![WP Carey School of Business](../frontend/public/ASU_WP_Carey_Horiz_RGB_MaroonGold_600ppi.png)
 
-![Powered by AWS](./media/project-closure/powered-by-aws.png)
+![Powered by AWS](../frontend/public/powered-by-aws.png)
 
 **Authors:** 
 
