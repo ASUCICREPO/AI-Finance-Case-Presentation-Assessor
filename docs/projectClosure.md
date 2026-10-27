@@ -172,3 +172,107 @@ In group-based finance and real estate courses at the W. P. Carey School of Busi
 * Architecture diagrams
 * Source code repository with version control
 
+---
+
+### **4\. Development** {#4-development}
+
+#### **4.1 UI/UX** {#41-uiux}
+
+![UI/UX Design Process](./media/project-closure/UI-UX-design-process.png)
+
+#### **Who are the users of this application?**
+
+**Primary Users:**
+1. **Students** – Finance and real estate students enrolled in group-based case analysis courses who need to demonstrate individual understanding of their group's work
+2. **Teaching Assistants (TAs)** – Graduate assistants responsible for reviewing student submissions and managing assessments
+3. **Instructors** – Faculty members who configure assessments, manage personas, set rubric weights, and oversee the grading process
+
+#### **Why are the users using this application?**
+
+**Students use this application to:**
+- Practice defending their group's financial analysis in a risk-free environment
+- Complete graded assessments that test their individual comprehension
+- Experience realistic executive presentation scenarios with AI stakeholders
+- Review their uploaded Excel workbooks during Q&A sessions
+- Receive immediate AI-generated feedback on their performance
+
+**Instructors/TAs use this application to:**
+- Create and configure AI personas that match course stakeholder scenarios
+- Assign assessments to student groups with uploaded case materials
+- Review AI-generated assessment reports with transcript evidence
+- Override AI scores when human judgment is required
+- Export grades and analytics for course management
+
+#### **What is the customer opportunity statement?**
+
+Finance instructors at W. P. Carey need a scalable way to assess individual student understanding in group projects. Current methods either don't test individual comprehension or require prohibitive instructor time for one-on-one oral assessments. This platform automates individual assessment through AI-powered stakeholder Q&A sessions, providing authentic executive presentation practice while generating rubric-aligned scores that instructors can review and override.
+
+#### **User Interface**
+
+**Student Dashboard**
+![Student Dashboard](./media/project-closure/student-dashboard.png)
+> Students access their assigned assessments, view upcoming deadlines, and launch practice or graded Q&A sessions.
+
+**Live Q&A Session**
+![Live Q&A Session](./media/project-closure/live-session.png)
+> During the live session, students see the AI avatar, Q&A transcript, and can toggle to view their uploaded spreadsheet.
+
+**Instructor Dashboard**
+![Instructor Dashboard](./media/project-closure/instructor-dashboard.png)
+> Instructors manage personas, create assessments, review submissions, and configure rubric weights.
+
+#### **4.2 System Architecture** {#42-system-architecture}
+
+The platform is built on a fully serverless AWS architecture, designed for scalability, cost-efficiency, and minimal operational overhead.
+
+##### **Architecture Diagram**
+
+![Architecture Diagram](../Architecture.png)
+
+##### **Workflow Description**
+
+1. **Authentication:** Students and TAs authenticate via Amazon Cognito. Role-based access controls route users to appropriate dashboards.
+
+2. **File Upload:** Students upload their group's Excel workbook. The file is stored in S3, and a Lambda function parses it into structured JSON for AI consumption.
+
+3. **Session Initialization:** When starting a Q&A session, the frontend establishes a WebSocket connection to Bedrock AgentCore, passing the persona configuration, workbook context, and presentation transcript.
+
+4. **Live Voice Q&A:** Amazon Nova 2 Sonic handles real-time bidirectional voice streaming. The AI persona asks questions based on the student's actual workbook data. Optional Anam avatar provides visual representation with lip-synced speech.
+
+5. **Assessment Scoring:** At session end, Claude Sonnet 4.5 evaluates the transcript against the 6-dimension rubric, generating scores and evidence citations.
+
+6. **Review & Export:** Instructors review AI assessments, override scores if needed, and export results for gradebook import.
+
+#### **4.3 Technology Stack** {#43-technology-stack}
+
+##### **Frontend**
+- **Next.js 16 + React 19**: Modern React framework with App Router for server and client components
+- **Tailwind CSS 4**: Utility-first styling with custom ASU maroon theme
+- **TypeScript**: Type-safe development across the codebase
+- **Hosting**: AWS Amplify with automatic deployments from GitHub
+
+##### **Backend Services**
+- **AWS Lambda (Python 3.12)**: 14 serverless functions handling API operations
+- **Amazon API Gateway**: REST API with CORS configuration
+- **Amazon Cognito**: User authentication with Student/TA/Instructor roles
+- **Bedrock AgentCore**: Long-lived WebSocket sessions for voice Q&A
+
+##### **Data Storage**
+- **Amazon DynamoDB**: NoSQL tables for personas, sessions, assessments, students, groups, submissions
+- **Amazon S3**: Object storage for Excel workbooks, transcripts, reports, and video recordings
+
+##### **AI/ML Services**
+- **Amazon Nova 2 Sonic**: Real-time speech-to-speech voice model for bidirectional Q&A
+- **Anthropic Claude Sonnet 4.5**: Rubric-based assessment scoring and feedback generation
+- **Amazon Nova 2 Lite**: Quick Q&A feedback during sessions
+- **Amazon Bedrock Guardrails**: Content safety screening for voice output
+- **Amazon Transcribe**: Browser-side streaming transcription for presentation phase
+
+##### **External Services**
+- **Anam AI**: 3D avatar visualization with text-to-speech lip-sync
+
+##### **Infrastructure**
+- **AWS CDK (TypeScript)**: Infrastructure as Code with 4 stacks
+- **Docker**: Container builds for AgentCore runtime
+- **Amazon ECR**: Container registry for AgentCore images
+
