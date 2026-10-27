@@ -16,7 +16,7 @@ AI Finance Case Presentation Assessor
 
 **[TO BE DETERMINED]**
 
-### 
+---
 
 **Table of Contents**
 
@@ -58,11 +58,9 @@ AI Finance Case Presentation Assessor
 
 [**7\. Appendix**](#7-appendix)
 
-### 
+---
 
 ### **1\. Executive Summary** {#1-executive-summary}
-
----
 
 The W. P. Carey School of Business at Arizona State University required an innovative solution to address a fundamental challenge in finance education: assessing individual student understanding within group-based case analysis projects. Traditional methods could not effectively differentiate individual comprehension when students collaborate on financial analyses.
 
@@ -82,11 +80,9 @@ The AI Finance Case Presentation Assessor is an AI-powered platform that simulat
 - Provides students with realistic executive presentation practice
 - Maintains academic integrity by testing individual comprehension
 
-### 
+---
 
 ### **2\. Project Overview** {#2-project-overview}
-
----
 
 #### **2.1 AWS Leads** {#21-aws-leads}
 
