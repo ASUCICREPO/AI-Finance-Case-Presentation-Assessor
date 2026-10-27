@@ -276,3 +276,91 @@ The platform is built on a fully serverless AWS architecture, designed for scala
 - **Docker**: Container builds for AgentCore runtime
 - **Amazon ECR**: Container registry for AgentCore images
 
+#### **4.4 Key Features Implementation** {#44-key-features-implementation}
+
+##### **Feature 1: Real-Time Voice Q&A with AI Personas**
+
+The core feature uses Amazon Bedrock AgentCore to maintain a persistent WebSocket connection for bidirectional voice streaming. The AI persona is configured with a Jinja2 template that incorporates:
+- Persona characteristics (name, role, questioning style)
+- The student's parsed Excel workbook data
+- The presentation transcript from the first phase
+- Rubric categories for assessment focus
+
+Amazon Nova 2 Sonic processes student speech in real-time and generates contextually relevant questions that reference specific cells, formulas, and assumptions from their workbook.
+
+##### **Feature 2: Spreadsheet-Aware Questioning**
+
+When students upload their Excel workbook, a Lambda function parses it using openpyxl, extracting:
+- Sheet names and structure
+- Headers and data rows
+- Formulas and cell references
+- Numerical values and calculations
+
+This structured data is injected into the AI prompt, enabling questions like "I see your IRR calculation in cell D15 assumes a 5% cap rate. Walk me through why you chose that assumption."
+
+##### **Feature 3: Interactive Spreadsheet Viewer with Formula Highlighting**
+
+Students can toggle between the Q&A transcript and a full-width spreadsheet viewer during their session. The viewer includes Excel-like formula dependency highlighting – when selecting a cell containing a formula, all referenced cells are highlighted with a green border, helping students trace calculations during their explanation.
+
+##### **Feature 4: 6-Dimension Rubric Assessment**
+
+Claude Sonnet 4.5 evaluates transcripts against a standardized rubric:
+
+| Dimension | Weight |
+|-----------|--------|
+| Problem Diagnosis and Financial Reasoning | 20% |
+| Understanding of Calculations and Model Mechanics | 20% |
+| Assumption Validation and Analytical Judgment | 20% |
+| Analytical Integration and Ownership | 15% |
+| Recommendation Defense and Decision Quality | 20% |
+| Executive Communication | 5% |
+
+Each dimension is scored across 4 performance levels: Strong, Competent, Partial, Insufficient.
+
+##### **Feature 5: Anam Avatar Integration**
+
+For graded sessions, an optional 3D avatar powered by Anam AI provides visual representation of the stakeholder persona. The implementation includes sentence-buffered text-to-speech – text is accumulated until sentence boundaries (. ! ?) before being sent to the avatar, preventing choppy mid-sentence speech.
+
+##### **Feature 6: Practice vs. Graded Modes**
+
+Students can take unlimited practice sessions that don't affect their grade, allowing them to prepare before the graded assessment. Practice sessions use voice-only mode (no avatar) to reduce API costs while maintaining the same Q&A experience.
+
+#### **4.5 Deployment** {#45-deployment}
+
+##### **Prerequisites**
+- Node.js 18+ and npm
+- AWS CLI configured with appropriate credentials
+- AWS CDK CLI (`npm install -g aws-cdk`)
+- Docker (for AgentCore container builds)
+- Python 3.12 (for Lambda development)
+- Amazon Bedrock model access enabled (Nova 2 Sonic, Claude Sonnet 4.5, Nova 2 Lite)
+
+##### **Deployment Steps**
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/ASUCICREPO/AI-Finance-Case-Presentation-Assessor.git
+   cd AI-Finance-Case-Presentation-Assessor
+   ```
+
+2. **Deploy backend infrastructure:**
+   ```bash
+   cd backend
+   npm install
+   npx cdk bootstrap  # First time only
+   npx cdk deploy --all -c branchName=main
+   ```
+
+3. **Configure frontend environment:**
+   Create `frontend/.env.local` with CDK stack outputs:
+   ```
+   NEXT_PUBLIC_API_URL=<ApiUrl output>
+   NEXT_PUBLIC_USER_POOL_ID=<UserPoolId output>
+   NEXT_PUBLIC_USER_POOL_CLIENT_ID=<UserPoolClientId output>
+   NEXT_PUBLIC_IDENTITY_POOL_ID=<IdentityPoolId output>
+   NEXT_PUBLIC_AGENTCORE_WS_URL=<AgentCoreWebSocketUrl output>
+   NEXT_PUBLIC_AWS_REGION=us-east-1
+   ```
+
+4. **Frontend auto-deploys via Amplify** when changes are pushed to the main branch.
+
