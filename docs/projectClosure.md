@@ -364,3 +364,66 @@ Students can take unlimited practice sessions that don't affect their grade, all
 
 4. **Frontend auto-deploys via Amplify** when changes are pushed to the main branch.
 
+---
+
+### **5\. Challenges** {#5-challenges}
+
+- **Challenge 1: Anam Avatar Integration Latency**
+  - **Problem:** Coordinating real-time speech from Amazon Nova 2 Sonic with Anam avatar lip-sync created noticeable latency and synchronization issues. Text sent mid-sentence resulted in choppy, unnatural speech.
+  - **Solution:** Implemented sentence-buffered text-to-speech – accumulating text until sentence boundaries (. ! ?) before forwarding to Anam. This ensures complete, natural-sounding sentences while maintaining acceptable latency.
+
+- **Challenge 2: Nova 2 Sonic Voice Response Timing**
+  - **Problem:** The bidirectional voice model occasionally had response delays, and handling interruptions gracefully required careful state management.
+  - **Solution:** Implemented proper WebSocket event handling with status tracking, audio playback queuing, and graceful fallback to text display when voice streaming experiences issues.
+
+- **Challenge 3: Persona Customization and Prompt Engineering**
+  - **Problem:** Creating AI personas that consistently stayed in character while asking relevant, spreadsheet-aware questions required extensive prompt iteration. Generic prompts produced questions that didn't reference the student's actual work.
+  - **Solution:** Developed a Jinja2 template system that dynamically injects workbook data, presentation transcript, and persona characteristics. Iterative testing with real student workbooks refined the prompt to produce contextually relevant questions.
+
+- **Challenge 4: Excel Workbook Parsing Complexity**
+  - **Problem:** Student workbooks vary significantly in structure, formatting, and complexity. Some contain multiple sheets, merged cells, formulas with external references, and inconsistent layouts.
+  - **Solution:** Built a robust parsing Lambda using openpyxl that extracts structured data while handling edge cases. The parser generates a normalized JSON representation that the AI can consistently interpret regardless of original formatting.
+
+- **Challenge 5: Assessment Scoring Consistency**
+  - **Problem:** Ensuring Claude Sonnet 4.5 applied rubric criteria consistently across different transcripts and produced actionable feedback with specific evidence citations.
+  - **Solution:** Developed detailed scoring prompts with explicit rubric definitions, scoring examples, and output format requirements. The prompt instructs the model to cite specific transcript excerpts as evidence for each score.
+
+---
+
+### **6\. Future Scope** {#6-future-scope}
+
+* **Bulk Excel Workbook Upload:** Enable instructors to upload multiple group workbooks at once, automatically assigning them to corresponding student groups based on naming conventions or metadata.
+
+* **LMS Integration:** Direct integration with Canvas and Blackboard for automatic grade sync, assignment creation, and roster import.
+
+* **Enhanced Analytics Dashboard:** Detailed analytics showing class-wide performance trends, common areas of weakness, and comparison across sections or semesters.
+
+* **Multi-Language Support:** Extend the platform to support non-English Q&A sessions for international programs.
+
+* **Custom Rubric Builder:** Allow instructors to define their own rubric categories and weights beyond the default 6-dimension framework.
+
+* **Peer Review Mode:** Enable students to review anonymized transcripts of their peers as a learning exercise.
+
+* **Mobile-Responsive Design:** Optimize the interface for tablet use, allowing students to complete sessions on mobile devices.
+
+* **Session Recording Playback:** Store and provide playback of full session recordings (audio + video) for instructor review.
+
+---
+
+### **7\. Appendix** {#7-appendix}
+
+**GitHub Repository:** [https://github.com/ASUCICREPO/AI-Finance-Case-Presentation-Assessor](https://github.com/ASUCICREPO/AI-Finance-Case-Presentation-Assessor)
+
+**Figma Design (Internal):** [W.P. AI Presentation Application](https://www.figma.com/design/7TROjdgEmoJqDOjVfNEVzU/W.P.-AI-presentation-Application?node-id=4-2&t=pT6gD8O8MiYJ24Bv-1)
+
+**Project Demo Recordings:**
+- [Student Dashboard Demo](https://drive.google.com/file/d/1XVo_EEkCwnlLLG-oWQ5eSCG-GAUj6GgM/view?usp=drive_link)
+- [Faculty Dashboard Demo](https://drive.google.com/file/d/1mPEsHLNtsuRqjYCeGo4YrTCiPqZpBoga/view?usp=sharing)
+
+**Drive Link:** [Project Materials Folder](https://drive.google.com/drive/folders/1DJ0pjvYGJNmGWhCJ3zNyEUO-a-IrFh-l?usp=drive_link)
+
+**Technology Documentation:**
+- [Amazon Bedrock AgentCore](https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html)
+- [Amazon Nova 2 Sonic](https://docs.aws.amazon.com/bedrock/latest/userguide/nova-sonic.html)
+- [Anthropic Claude on Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude.html)
+- [Anam AI SDK](https://docs.anam.ai/)
