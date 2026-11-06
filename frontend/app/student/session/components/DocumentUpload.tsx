@@ -35,13 +35,13 @@ export default function DocumentUpload({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialFile | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [uploadMode, setUploadMode] = useState<'material' | 'upload'>(
-    assessmentMaterials.some(m => m.name.match(/\.(xlsx|xls|csv)$/i)) ? 'material' : 'upload'
-  );
-
-  // Filter to only show Excel/CSV files from materials
+  // Only show Excel/CSV materials that were actually stored in S3
+  // (legacy entries saved with an empty s3Key were never uploaded and cannot be parsed)
   const spreadsheetMaterials = assessmentMaterials.filter(m =>
-    m.name.match(/\.(xlsx|xls|csv)$/i)
+    m.s3Key && m.name.match(/\.(xlsx|xls|csv)$/i)
+  );
+  const [uploadMode, setUploadMode] = useState<'material' | 'upload'>(
+    spreadsheetMaterials.length > 0 ? 'material' : 'upload'
   );
 
   const handleFileSelect = useCallback((file: File) => {
