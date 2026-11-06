@@ -17,6 +17,7 @@ import {
   getAssessment,
   updateAssessment,
   listPersonas,
+  uploadFile,
   Persona,
 } from '../../../services/api';
 
@@ -147,12 +148,21 @@ export default function EditAssessmentPage() {
           type: f.type,
           uploadedAt: f.uploadedAt || new Date().toISOString(),
         })),
-        ...newFiles.map(f => ({
-          name: f.name,
-          s3Key: '',
-          type: f.type,
-          uploadedAt: new Date().toISOString(),
-        })),
+        ...(await Promise.all(
+          newFiles.map(async f => {
+            // Only spreadsheets are parsed by students (and accepted by the presign Lambda)
+            const isSpreadsheet = /\.(xlsx|xls|csv)$/i.test(f.name);
+            const { s3Key } = isSpreadsheet
+              ? await uploadFile(`assessment-materials-${assessmentId}`, f)
+              : { s3Key: '' };
+            return {
+              name: f.name,
+              s3Key,
+              type: f.type,
+              uploadedAt: new Date().toISOString(),
+            };
+          })
+        )),
       ];
 
       await updateAssessment(assessmentId!, {
