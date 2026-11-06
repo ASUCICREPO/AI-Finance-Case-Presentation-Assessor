@@ -12,7 +12,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { createAssessment, listPersonas, Persona } from '../../../services/api';
+import { createAssessment, listPersonas, uploadFile, Persona } from '../../../services/api';
 
 // Session numbers for assignment - groups are now free-form input
 const sessionNumbers = ['1', '2', '3', '4', '5'];
@@ -96,6 +96,24 @@ export default function AddAssessmentPage() {
 
     setIsSubmitting(true);
     try {
+      // Upload each material to S3 so students can parse it later
+      const materialsFolderId = `assessment-materials-${Date.now()}`;
+      const materials = await Promise.all(
+        uploadedFiles.map(async f => {
+          // Only spreadsheets are parsed by students (and accepted by the presign Lambda)
+          const isSpreadsheet = /\.(xlsx|xls|csv)$/i.test(f.name);
+          const { s3Key } = isSpreadsheet
+            ? await uploadFile(materialsFolderId, f)
+            : { s3Key: '' };
+          return {
+            name: f.name,
+            s3Key,
+            type: f.type,
+            uploadedAt: new Date().toISOString(),
+          };
+        })
+      );
+
       await createAssessment({
         title: form.title,
         description: form.description,
@@ -107,12 +125,7 @@ export default function AddAssessmentPage() {
         assignedSessions: selectedSessions,
         assignedGroups: selectedGroups,
         status: form.status,
-        materials: uploadedFiles.map(f => ({
-          name: f.name,
-          s3Key: '',
-          type: f.type,
-          uploadedAt: new Date().toISOString(),
-        })),
+        materials,
       });
       setShowSuccess(true);
       setTimeout(() => {
