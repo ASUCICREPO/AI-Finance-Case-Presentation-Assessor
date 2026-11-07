@@ -322,11 +322,24 @@ export class FinanceAssessorStack extends cdk.Stack {
       memorySize: 512,
     } as lambda.FunctionProps);
     submissionsTable.grantReadWriteData(generateAiScoreFn);
-    // Grant Bedrock permissions for AI scoring
+    // Grant Bedrock permissions for AI scoring, scoped to the assessment model.
+    // ASSESSMENT_MODEL_ID is a cross-region inference profile (us.anthropic.claude-sonnet-4-5-...),
+    // so the policy must allow both the inference-profile ARN and the foundation-model ARNs it
+    // routes to across regions, otherwise Converse fails with AccessDenied.
+    const assessmentModelId = 'anthropic.claude-sonnet-4-5-20250929-v1:0';
+    generateAiScoreFn.addEnvironment(
+      'ASSESSMENT_MODEL_ID',
+      `us.${assessmentModelId}`,
+    );
     generateAiScoreFn.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: ['bedrock:Converse', 'bedrock:InvokeModel'],
-      resources: ['*'],
+      resources: [
+        // Cross-region inference profile in this account
+        `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.${assessmentModelId}`,
+        // Foundation model the profile routes to, in any region it may dispatch to
+        `arn:aws:bedrock:*::foundation-model/${assessmentModelId}`,
+      ],
     }));
 
     // S3 Pre-signed URL Lambda
