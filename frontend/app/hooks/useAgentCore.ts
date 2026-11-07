@@ -35,6 +35,7 @@ export interface UseAgentCoreReturn {
   requestAnalytics: () => void;
   disconnect: () => void;
   setMuteAudioPlayback: (mute: boolean) => void;
+  setMicEnabled: (enabled: boolean) => void;
   /** Register callback to receive audio chunks for Anam lip-sync (audio passthrough mode) */
   onAudioChunk: (callback: (audioBase64: string, isFinal: boolean) => void) => void;
   /** Register callback to receive assistant TEXT for Anam TTS (text mode - preferred) */
@@ -207,6 +208,11 @@ export function useAgentCore(): UseAgentCoreReturn {
     }
   }, []);
 
+  // Enable/disable the student's microphone input for Q&A
+  const setMicEnabled = useCallback((enabled: boolean) => {
+    clientRef.current?.setMicEnabled(enabled);
+  }, []);
+
   // Register callback for audio chunks (for Anam lip-sync)
   const onAudioChunk = useCallback((callback: (audioBase64: string, isFinal: boolean) => void) => {
     audioChunkCallbackRef.current = callback;
@@ -250,6 +256,7 @@ export function useAgentCore(): UseAgentCoreReturn {
     requestAnalytics,
     disconnect,
     setMuteAudioPlayback,
+    setMicEnabled,
     onAudioChunk,
     onAssistantText,
     sendTextCommand,

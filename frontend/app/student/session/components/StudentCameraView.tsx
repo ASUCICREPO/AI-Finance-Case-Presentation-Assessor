@@ -10,6 +10,8 @@ interface StudentCameraViewProps {
   compact?: boolean;
   showControls?: boolean;
   onStreamReady?: (stream: MediaStream) => void;
+  /** Called when the student toggles their microphone in showControls mode */
+  onMicChange?: (enabled: boolean) => void;
 }
 
 export interface StudentCameraViewRef {
@@ -22,8 +24,23 @@ export interface StudentCameraViewRef {
  * Exposes stream for recording via ref.
  */
 const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProps>(
-  function StudentCameraView({ studentName, isMuted = false, onToggleMute, compact = false, showControls = false, onStreamReady }, ref) {
+  function StudentCameraView({ studentName, isMuted = false, onToggleMute, compact = false, showControls = false, onStreamReady, onMicChange }, ref) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const [micEnabled, setMicEnabled] = useState(true);
+    const [camEnabled, setCamEnabled] = useState(true);
+
+    const toggleMic = () => {
+      const next = !micEnabled;
+      mediaStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = next; });
+      setMicEnabled(next);
+      onMicChange?.(next);
+    };
+
+    const toggleCam = () => {
+      const next = !camEnabled;
+      mediaStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = next; });
+      setCamEnabled(next);
+    };
     const [cameraActive, setCameraActive] = useState(false);
     const [permissionDenied, setPermissionDenied] = useState(false);
     const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -143,11 +160,25 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
 
           {/* Mic + Video buttons centered at bottom — matches mockup */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-10">
-            <button className="rounded-full bg-white/25 backdrop-blur-sm p-3 hover:bg-white/40 transition-colors shadow-lg">
-              <Mic size={18} className="text-white" />
+            <button
+              type="button"
+              onClick={toggleMic}
+              aria-pressed={!micEnabled}
+              aria-label={micEnabled ? 'Mute microphone' : 'Unmute microphone'}
+              title={micEnabled ? 'Mute microphone' : 'Unmute microphone'}
+              className={`rounded-full backdrop-blur-sm p-3 transition-colors shadow-lg ${micEnabled ? 'bg-white/25 hover:bg-white/40' : 'bg-red-500 hover:bg-red-600'}`}
+            >
+              {micEnabled ? <Mic size={18} className="text-white" /> : <MicOff size={18} className="text-white" />}
             </button>
-            <button className="rounded-full bg-white/25 backdrop-blur-sm p-3 hover:bg-white/40 transition-colors shadow-lg">
-              <Video size={18} className="text-white" />
+            <button
+              type="button"
+              onClick={toggleCam}
+              aria-pressed={!camEnabled}
+              aria-label={camEnabled ? 'Turn camera off' : 'Turn camera on'}
+              title={camEnabled ? 'Turn camera off' : 'Turn camera on'}
+              className={`rounded-full backdrop-blur-sm p-3 transition-colors shadow-lg ${camEnabled ? 'bg-white/25 hover:bg-white/40' : 'bg-red-500 hover:bg-red-600'}`}
+            >
+              {camEnabled ? <Video size={18} className="text-white" /> : <VideoOff size={18} className="text-white" />}
             </button>
           </div>
 

@@ -280,7 +280,7 @@ export default function LiveSession({
 
           {/* Student Camera Card */}
           <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-800 relative" style={{ minHeight: 140 }}>
-            <StudentCameraView studentName={displayStudentName} showControls />
+            <StudentCameraView studentName={displayStudentName} showControls onMicChange={agentCore.setMicEnabled} />
           </div>
 
           {/* Timer */}

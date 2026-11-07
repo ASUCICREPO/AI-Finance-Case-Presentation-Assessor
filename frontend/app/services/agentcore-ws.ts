@@ -194,6 +194,15 @@ export class AgentCoreClient {
   }
 
   /**
+   * Enable/disable the microphone track used for Q&A (mute = enabled false).
+   */
+  setMicEnabled(enabled: boolean): void {
+    this.mediaStream?.getAudioTracks().forEach((t) => {
+      t.enabled = enabled;
+    });
+  }
+
+  /**
    * Play received audio from the AI persona.
    * Uses queue-based playback to prevent overlapping/muffled audio.
    */
