@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { acquireMedia } from '../utils/mediaStreams';
 
 export interface UseVideoRecorderReturn {
   // State
@@ -14,7 +15,7 @@ export interface UseVideoRecorderReturn {
   recordingTime: number;
   error: string | null;
   videoBlob: Blob | null;
-  
+
   // Actions
   startRecording: (stream?: MediaStream) => Promise<void>;
   stopRecording: () => Promise<Blob | null>;
@@ -47,7 +48,7 @@ export function useVideoRecorder(): UseVideoRecorderReturn {
       // Use provided stream or get new one
       let stream = existingStream;
       if (!stream) {
-        stream = await navigator.mediaDevices.getUserMedia({
+        stream = await acquireMedia({
           video: {
             width: { ideal: 1280 },
             height: { ideal: 720 },
@@ -69,7 +70,7 @@ export function useVideoRecorder(): UseVideoRecorderReturn {
         'video/webm',
         'video/mp4',
       ];
-      
+
       let selectedMimeType = '';
       for (const mimeType of mimeTypes) {
         if (MediaRecorder.isTypeSupported(mimeType)) {
@@ -141,7 +142,7 @@ export function useVideoRecorder(): UseVideoRecorderReturn {
       // Wait for onstop to fire and blob to be created
       const currentRecorder = mediaRecorderRef.current;
       const originalOnStop = currentRecorder.onstop;
-      
+
       currentRecorder.onstop = (event) => {
         if (originalOnStop) {
           originalOnStop.call(currentRecorder, event);
@@ -167,12 +168,12 @@ export function useVideoRecorder(): UseVideoRecorderReturn {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      
+
       console.log('[VideoRecorder] Paused');
     }
   }, []);
@@ -182,11 +183,11 @@ export function useVideoRecorder(): UseVideoRecorderReturn {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
-      
+
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
-      
+
       console.log('[VideoRecorder] Resumed');
     }
   }, []);
@@ -194,13 +195,13 @@ export function useVideoRecorder(): UseVideoRecorderReturn {
   // Get the recorded video blob
   const getVideoBlob = useCallback(() => {
     if (videoBlob) return videoBlob;
-    
+
     // If recording is still going, create blob from current chunks
     if (chunksRef.current.length > 0) {
       const mimeType = mediaRecorderRef.current?.mimeType || 'video/webm';
       return new Blob(chunksRef.current, { type: mimeType });
     }
-    
+
     return null;
   }, [videoBlob]);
 
@@ -210,13 +211,13 @@ export function useVideoRecorder(): UseVideoRecorderReturn {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    
+
     // Don't stop the stream - let the camera component manage it
-    
+
     chunksRef.current = [];
     mediaRecorderRef.current = null;
     setIsRecording(false);

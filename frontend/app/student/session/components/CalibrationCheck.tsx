@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Video, Mic, Volume2, CheckCircle, AlertCircle, ChevronRight, ArrowLeft, HelpCircle } from 'lucide-react';
+import { acquireMedia, stopStream } from '../../../utils/mediaStreams';
 
 interface CalibrationCheckProps {
   onComplete: () => void;
@@ -26,10 +27,16 @@ export default function CalibrationCheck({ onComplete, onBack }: CalibrationChec
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
 
+  const unmountedRef = useRef(false);
+
   const checkPermissions = useCallback(async () => {
     // Check camera
     try {
-      const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const videoStream = await acquireMedia({ video: true });
+      if (unmountedRef.current) {
+        stopStream(videoStream);
+        return;
+      }
       if (videoRef.current) {
         videoRef.current.srcObject = videoStream;
       }
@@ -41,7 +48,11 @@ export default function CalibrationCheck({ onComplete, onBack }: CalibrationChec
 
     // Check microphone
     try {
-      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioStream = await acquireMedia({ audio: true });
+      if (unmountedRef.current) {
+        stopStream(audioStream);
+        return;
+      }
       setMicStatus('passed');
 
       // Set up audio level monitoring
@@ -77,18 +88,19 @@ export default function CalibrationCheck({ onComplete, onBack }: CalibrationChec
   }, []);
 
   useEffect(() => {
+    unmountedRef.current = false;
     checkPermissions();
 
     return () => {
+      unmountedRef.current = true;
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      }
+      stopStream(mediaStreamRef.current);
+      mediaStreamRef.current = null;
     };
   }, [checkPermissions]);
 
@@ -238,8 +250,8 @@ export default function CalibrationCheck({ onComplete, onBack }: CalibrationChec
                 onClick={playTestSound}
                 disabled={isPlayingSound}
                 className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${isPlayingSound
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-700 text-white hover:bg-gray-800'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-700 text-white hover:bg-gray-800'
                   }`}
               >
                 <Volume2 size={16} />
@@ -348,8 +360,8 @@ export default function CalibrationCheck({ onComplete, onBack }: CalibrationChec
           onClick={onComplete}
           disabled={!canProceed}
           className={`inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium transition-colors font-sans ${canProceed
-              ? 'bg-maroon-600 text-white hover:bg-maroon-700'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            ? 'bg-maroon-600 text-white hover:bg-maroon-700'
+            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
         >
           Begin Q&A session

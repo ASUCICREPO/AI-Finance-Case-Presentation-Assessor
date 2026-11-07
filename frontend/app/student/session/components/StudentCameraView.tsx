@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Video, VideoOff, Mic, MicOff } from 'lucide-react';
+import { acquireMedia, stopStream } from '../../../utils/mediaStreams';
 
 interface StudentCameraViewProps {
   studentName: string;
@@ -60,12 +61,12 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
     const startCamera = useCallback(async () => {
       if (mediaStreamRef.current) return;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await acquireMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: true, // Include audio for recording
         });
         if (!mountedRef.current) {
-          stream.getTracks().forEach(t => t.stop());
+          stopStream(stream);
           return;
         }
         mediaStreamRef.current = stream;
@@ -91,10 +92,8 @@ const StudentCameraView = forwardRef<StudentCameraViewRef, StudentCameraViewProp
       startCamera();
       return () => {
         mountedRef.current = false;
-        if (mediaStreamRef.current) {
-          mediaStreamRef.current.getTracks().forEach(t => t.stop());
-          mediaStreamRef.current = null;
-        }
+        stopStream(mediaStreamRef.current);
+        mediaStreamRef.current = null;
       };
     }, [startCamera]);
 

@@ -17,6 +17,7 @@ import { Sha256 } from '@aws-crypto/sha256-js';
 import { SignatureV4 } from '@aws-sdk/signature-v4';
 import { HttpRequest } from '@aws-sdk/protocol-http';
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers';
+import { acquireMedia, stopStream } from '../utils/mediaStreams';
 
 // ──────────────────────────────────────────────────────────
 // Types
@@ -63,6 +64,7 @@ export class AgentCoreClient {
   private eventHandlers: Set<AgentCoreEventHandler> = new Set();
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
+  private captureCancelled = false;
   private audioWorklet: AudioWorkletNode | null = null;
   private isConnected = false;
   private setupParams: AgentCoreSetupParams | null = null;
@@ -154,7 +156,8 @@ export class AgentCoreClient {
    */
   async startAudioCapture(): Promise<void> {
     try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      this.captureCancelled = false;
+      const stream = await acquireMedia({
         audio: {
           sampleRate: 16000,
           channelCount: 1,
@@ -163,6 +166,13 @@ export class AgentCoreClient {
           autoGainControl: true,
         },
       });
+
+      // Session ended/disconnected while the permission prompt was open
+      if (this.captureCancelled) {
+        stopStream(stream);
+        return;
+      }
+      this.mediaStream = stream;
 
       this.audioContext = new AudioContext({ sampleRate: 16000 });
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
@@ -310,6 +320,21 @@ export class AgentCoreClient {
   endSession(): void {
     this.sendJson({ action: 'end' });
     this.isSessionActive = false;
+    // Release the microphone right away; the socket stays open for the final report
+    this.stopAudioCapture();
+  }
+
+  /**
+   * Stop microphone capture and release the device.
+   */
+  stopAudioCapture(): void {
+    this.captureCancelled = true;
+    stopStream(this.mediaStream);
+    this.mediaStream = null;
+    if (this.audioContext) {
+      this.audioContext.close().catch(() => { });
+      this.audioContext = null;
+    }
   }
 
   /**
@@ -323,14 +348,7 @@ export class AgentCoreClient {
     this.clearPlaybackQueue();
 
     // Stop audio capture
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach((track) => track.stop());
-      this.mediaStream = null;
-    }
-    if (this.audioContext) {
-      this.audioContext.close().catch(() => { });
-      this.audioContext = null;
-    }
+    this.stopAudioCapture();
 
     // Close playback context
     if (this.playbackContext) {

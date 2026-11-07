@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useAgentCore } from '../../hooks/useAgentCore';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
+import { stopAllMedia } from '../../utils/mediaStreams';
 import { generateSessionId, config } from '../../config/config';
 import { uploadFile, parseExcel, listPersonas, createSubmission, getAssessment, Assessment, getDownloadUrl } from '../../services/api';
 import { Persona } from '../../config/config';
@@ -107,6 +108,11 @@ export default function SessionPage() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [isSessionActive]);
 
+  // Safety net: release camera/mic whenever the session page unmounts
+  useEffect(() => {
+    return () => stopAllMedia();
+  }, []);
+
   // Handle confirmed leave
   const handleConfirmLeave = useCallback(() => {
     setShowLeaveModal(false);
@@ -116,6 +122,7 @@ export default function SessionPage() {
     } catch (e) {
       // Ignore errors
     }
+    stopAllMedia();
     if (pendingNavigation) {
       pendingNavigation();
     } else {
@@ -444,6 +451,8 @@ export default function SessionPage() {
       // Continue to complete view even if save fails
     } finally {
       setSubmitting(false);
+      // Assessment is over: release camera and microphone
+      stopAllMedia();
       setSessionView('complete');
     }
   };
