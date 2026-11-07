@@ -24,7 +24,7 @@ out/
 # Production
 /build
 
-agents/
+.agents/
 
 # Compiled JavaScript files
 backend/**/*.js
