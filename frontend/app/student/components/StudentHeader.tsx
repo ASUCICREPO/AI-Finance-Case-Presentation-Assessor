@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { HelpCircle } from 'lucide-react';
 import StudentTutorialModal from './StudentTutorialModal';
 import Image from 'next/image';
+import UserMenu from '../../components/UserMenu';
 
 export default function StudentHeader() {
   const { userName } = useAuth();
@@ -45,19 +46,11 @@ export default function StudentHeader() {
           <span className="hidden sm:inline">Tutorial</span>
         </button>
 
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-maroon-100 flex items-center justify-center overflow-hidden">
-            <span className="text-sm font-medium text-maroon-600">
-              {userName?.charAt(0)?.toUpperCase() || 'S'}
-            </span>
-          </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-medium text-gray-900 font-sans">
-              {userName || 'Student'}
-            </p>
-            <p className="text-xs text-gray-500 font-sans">Student</p>
-          </div>
-        </div>
+        <UserMenu
+          displayName={userName || 'Student'}
+          roleLabel="Student"
+          initial={userName?.charAt(0)?.toUpperCase() || 'S'}
+        />
       </div>
 
       {/* Student Tutorial Modal */}

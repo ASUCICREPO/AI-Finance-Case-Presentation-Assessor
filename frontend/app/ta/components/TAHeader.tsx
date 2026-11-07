@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Settings, HelpCircle } from 'lucide-react';
 import InstructorTutorialModal from './InstructorTutorialModal';
 import Image from 'next/image';
+import UserMenu from '../../components/UserMenu';
 
 export default function TAHeader() {
   const { userName } = useAuth();
@@ -97,19 +98,11 @@ export default function TAHeader() {
         </div>
 
         {/* User Info */}
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-maroon-100 flex items-center justify-center">
-            <span className="text-sm font-medium text-maroon-600">
-              {userName?.charAt(0)?.toUpperCase() || 'T'}
-            </span>
-          </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-medium text-gray-900 font-sans">
-              {userName || 'Teaching Assistant'}
-            </p>
-            <p className="text-xs text-gray-500 font-sans">Admin / Instructor</p>
-          </div>
-        </div>
+        <UserMenu
+          displayName={userName || 'Teaching Assistant'}
+          roleLabel="Admin / Instructor"
+          initial={userName?.charAt(0)?.toUpperCase() || 'T'}
+        />
       </div>
 
       {/* Click outside to close dropdowns */}
