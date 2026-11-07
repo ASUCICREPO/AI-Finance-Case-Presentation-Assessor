@@ -356,7 +356,8 @@ export class FinanceAssessorStack extends cdk.Stack {
       description: 'Exchanges Anam API key for short-lived session token for avatar rendering',
       environment: {
         ANAM_API_KEY_SECRET_ARN: anamApiKeySecret.secretArn,
-        ALLOWED_ORIGINS: 'http://localhost:3000,https://main.d2y1cwozysxwnb.amplifyapp.com',
+        // Single source of truth: same origins as S3 and API Gateway CORS
+        ALLOWED_ORIGINS: props.allowedOrigins.join(','),
       },
     });
 
