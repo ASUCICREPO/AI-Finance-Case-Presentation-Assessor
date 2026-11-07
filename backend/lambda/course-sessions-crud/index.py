@@ -89,8 +89,9 @@ def get_all_sessions(query_params):
         # Enrich with student/group counts if not cached
         for session in sessions:
             session_id = session.get("courseSessionId")
-            if session.get("studentCount") is None:
-                session["studentCount"] = _count_students_in_session(session_id)
+            # Always recount: the stored value is initialised to 0 at creation and
+            # never updated, so it goes stale as students are enrolled.
+            session["studentCount"] = _count_students_in_session(session_id)
             if session.get("groupCount") is None:
                 session["groupCount"] = _count_groups_in_session(session_id)
 
@@ -114,11 +115,18 @@ def _count_students_in_session(session_id):
     """Count students enrolled in a session."""
     try:
         # Students are linked via courseSessionId field
-        result = students_table.scan(
-            FilterExpression="courseSessionId = :sid",
-            ExpressionAttributeValues={":sid": session_id},
-        )
-        return len(result.get("Items", []))
+        kwargs = {
+            "FilterExpression": "courseSessionId = :sid",
+            "ExpressionAttributeValues": {":sid": session_id},
+            "Select": "COUNT",
+        }
+        count = 0
+        while True:
+            result = students_table.scan(**kwargs)
+            count += result.get("Count", 0)
+            if "LastEvaluatedKey" not in result:
+                return count
+            kwargs["ExclusiveStartKey"] = result["LastEvaluatedKey"]
     except Exception:
         return 0
 
