@@ -3,6 +3,7 @@
 cdk.out
 cdk.out.*
 
+
 # Dependencies
 node_modules
 /.pnp
@@ -22,6 +23,8 @@ out/
 
 # Production
 /build
+
+agents/
 
 # Compiled JavaScript files
 backend/**/*.js
