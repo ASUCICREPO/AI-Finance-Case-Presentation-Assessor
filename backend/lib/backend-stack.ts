@@ -473,6 +473,22 @@ export class FinanceAssessorStack extends cdk.Stack {
     // ──────────────────────────────────────────────────────────
     const api = new apigateway.RestApi(this, 'FinanceAssessorApi', {
       restApiName: 'Finance Case Assessor API',
+      // Throttling guardrails: cap request rates to limit cost amplification and abuse.
+      deployOptions: {
+        // Stage-wide default for every method
+        throttlingRateLimit: 50,
+        throttlingBurstLimit: 100,
+        methodOptions: {
+          // Bedrock-invoking endpoint: tight limit, each call is expensive
+          '/generate-ai-score/GET': { throttlingRateLimit: 2, throttlingBurstLimit: 5 },
+          '/generate-ai-score/POST': { throttlingRateLimit: 2, throttlingBurstLimit: 5 },
+          // Public (pre-login) endpoint that checks the admin access code: slow brute force
+          '/validate-admin-code/POST': { throttlingRateLimit: 1, throttlingBurstLimit: 3 },
+          // Anam session tokens consume a paid third-party API
+          '/anam-session/GET': { throttlingRateLimit: 5, throttlingBurstLimit: 10 },
+          '/anam-session/POST': { throttlingRateLimit: 5, throttlingBurstLimit: 10 },
+        },
+      },
       defaultCorsPreflightOptions: {
         allowOrigins: props.allowedOrigins,
         allowMethods: apigateway.Cors.ALL_METHODS,
