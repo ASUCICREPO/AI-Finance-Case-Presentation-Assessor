@@ -219,8 +219,8 @@ The platform supports configurable AI personas for Q&A sessions:
 
 This application was developed by :
 
-- <a href="https://www.linkedin.com/in/sreeram-s-5454961aa/" target="_blank">Sreeram Saravana Prasad</a>
-- <a href="https://www.linkedin.com/in/arti-javkar-4910a51bb/" target="_blank">Arti Sandeep Javkar</a>
+- <a href="https://www.linkedin.com/in/sreeram-s-5454961aa/" target="_blank">Sreeram Saravana Prasad</a> - AI Cloud Developer
+- <a href="https://www.linkedin.com/in/arti-javkar-4910a51bb/" target="_blank">Arti Sandeep Javkar</a> - UI/UX Designer
 
 ---
 
