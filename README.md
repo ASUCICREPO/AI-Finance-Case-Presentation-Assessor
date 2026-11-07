@@ -168,6 +168,11 @@ npm install
 npx cdk deploy --all -c branchName=main
 ```
 
+> **Data protection:** by default, the DynamoDB tables, the uploads S3 bucket, and the Cognito
+> User Pool are **retained** when the stack is destroyed, and the DynamoDB tables have
+> point-in-time recovery enabled. For a throwaway sandbox that should be fully removable, add
+> `-c ephemeral=true` to both `cdk deploy` and `cdk destroy`.
+
 ### Environment Variables
 
 After CDK deployment, update `frontend/.env.local` with the stack outputs:

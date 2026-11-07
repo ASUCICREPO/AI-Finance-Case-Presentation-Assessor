@@ -41,6 +41,11 @@ export class FinanceAssessorStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: FinanceAssessorStackProps) {
     super(scope, id, props);
 
+    // Data-protection defaults: RETAIN data stores unless this is a throwaway sandbox.
+    // Opt in to destructive teardown explicitly with: cdk deploy/destroy -c ephemeral=true
+    const isEphemeral = String(this.node.tryGetContext('ephemeral')) === 'true';
+    const removalPolicy = isEphemeral ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
+
     // ──────────────────────────────────────────────────────────
     // Cognito User Pool
     // ──────────────────────────────────────────────────────────
@@ -64,7 +69,7 @@ export class FinanceAssessorStack extends cdk.Stack {
         requireLowercase: true,
         requireDigits: true,
       },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
     });
 
     this.userPoolClient = this.userPool.addClient('WebClient', {
@@ -122,8 +127,8 @@ export class FinanceAssessorStack extends cdk.Stack {
       ],
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
+      removalPolicy,
+      autoDeleteObjects: isEphemeral,
     });
 
     // ──────────────────────────────────────────────────────────
@@ -132,26 +137,30 @@ export class FinanceAssessorStack extends cdk.Stack {
     this.personasTable = new dynamodb.Table(this, 'PersonasTable', {
       partitionKey: { name: 'personaID', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
 
     const casesTable = new dynamodb.Table(this, 'CasesTable', {
       partitionKey: { name: 'caseID', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
 
     const sessionsTable = new dynamodb.Table(this, 'SessionsTable', {
       partitionKey: { name: 'sessionID', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'userID', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
 
     const assessmentsTable = new dynamodb.Table(this, 'AssessmentsTable', {
       partitionKey: { name: 'assessmentID', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
 
     // TA Dashboard Tables
@@ -159,7 +168,8 @@ export class FinanceAssessorStack extends cdk.Stack {
     const studentsTable = new dynamodb.Table(this, 'StudentsTable', {
       partitionKey: { name: 'studentId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
     // GSI for querying students by email
     studentsTable.addGlobalSecondaryIndex({
@@ -183,7 +193,8 @@ export class FinanceAssessorStack extends cdk.Stack {
     const groupsTable = new dynamodb.Table(this, 'GroupsTable', {
       partitionKey: { name: 'groupId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
     // GSI for querying groups by assessment
     groupsTable.addGlobalSecondaryIndex({
@@ -202,7 +213,8 @@ export class FinanceAssessorStack extends cdk.Stack {
     const submissionsTable = new dynamodb.Table(this, 'SubmissionsTable', {
       partitionKey: { name: 'submissionId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
     // GSI for querying submissions by student
     submissionsTable.addGlobalSecondaryIndex({
@@ -227,7 +239,8 @@ export class FinanceAssessorStack extends cdk.Stack {
     const courseSessionsTable = new dynamodb.Table(this, 'CourseSessionsTable', {
       partitionKey: { name: 'courseSessionId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
     });
     // GSI for querying by status (active, upcoming, archived)
     courseSessionsTable.addGlobalSecondaryIndex({
