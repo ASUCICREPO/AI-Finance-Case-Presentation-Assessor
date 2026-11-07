@@ -3,6 +3,7 @@
  * Handles all REST API calls to the backend Lambda functions via API Gateway.
  */
 
+import { CognitoUserPool, CognitoUserSession } from 'amazon-cognito-identity-js';
 import { config, Persona, AssessmentReport, SessionInfo } from '../config/config';
 
 // Re-export types for convenience
@@ -26,7 +27,7 @@ async function fetchApi<T>(
   };
 
   // Add auth token if available
-  const token = getAuthToken();
+  const token = await getAuthToken();
   if (token) {
     headers['Authorization'] = token;
   }
@@ -44,11 +45,34 @@ async function fetchApi<T>(
   return response.json();
 }
 
-function getAuthToken(): string | null {
-  // Retrieve the current Cognito ID token from localStorage
-  // This will be set by the AuthContext after login
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('auth_id_token');
+/**
+ * Returns a valid Cognito ID token for the API Gateway authorizer.
+ * getSession() returns the cached session if still valid and transparently
+ * refreshes it with the refresh token once the ID token has expired, so
+ * long-lived tabs keep working. Falls back to the stored token on any error.
+ */
+function getAuthToken(): Promise<string | null> {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  const stored = localStorage.getItem('auth_id_token');
+  if (!config.userPoolId || !config.userPoolClientId) return Promise.resolve(stored);
+
+  const currentUser = new CognitoUserPool({
+    UserPoolId: config.userPoolId,
+    ClientId: config.userPoolClientId,
+  }).getCurrentUser();
+  if (!currentUser) return Promise.resolve(stored);
+
+  return new Promise((resolve) => {
+    currentUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
+      if (err || !session) {
+        resolve(stored);
+        return;
+      }
+      const token = session.getIdToken().getJwtToken();
+      localStorage.setItem('auth_id_token', token);
+      resolve(token);
+    });
+  });
 }
 
 export class ApiError extends Error {
